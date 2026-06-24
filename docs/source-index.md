@@ -24,6 +24,7 @@ Co., Ltd.）Smart Health Cabin collaboration project.
 | `workstreams/smart-health-cabin/module-b-questionnaire-triage-discovery.md` | Questionnaire, CMS, field classification, and source-governance design questions. |
 | `workstreams/smart-health-cabin/module-c-avatar-interaction-discovery.md` | Avatar voice interaction scope and implementation gates. |
 | `workstreams/smart-health-cabin/2026-06-24-open-source-module-research-plan.md` | Open-source module adaptation research plan for hearing, vision, questionnaire, Avatar, and the small shared event/report layer. |
+| `workstreams/smart-health-cabin/2026-06-24-mvp-monorepo-redpanda-architecture-note.md` | Reference architecture note for MVP monorepo, modular monolith boundaries, PostgreSQL, Redpanda, event contracts, and repo-splitting gates. |
 | `research-packets/2026-06-24-smart-health-cabin-module-research/README.md` | Packetized module research set with independent module packets and cross-packet relationship map. |
 | `workstreams/smart-health-cabin/external-authority-verification.md` | Verification notes for standards, regulatory, measurement, interoperability, browser, and stack references. |
 

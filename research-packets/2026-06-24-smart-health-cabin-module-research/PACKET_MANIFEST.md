@@ -19,6 +19,7 @@ research-packets/2026-06-24-smart-health-cabin-module-research/
 | `questionnaire-module/README.md` | Questionnaire module research packet |
 | `live-avatar-module/README.md` | Live Avatar module research packet |
 | `module-event-layer/README.md` | Small Kafka-like event/report layer packet |
+| `module-event-layer/mvp-monorepo-redpanda-architecture-note.md` | Self-contained copy of the MVP monorepo / Redpanda reference architecture note |
 
 ## Completion State
 

@@ -27,6 +27,7 @@ event/report layer.
 | `questionnaire-module/README.md` | Public-health questionnaire and risk-factor self-assessment research | Provides structured answers and review prompts consumed by report and Avatar flows |
 | `live-avatar-module/README.md` | Live Avatar interaction, guidance, and education research | Guides users through enabled modules and records interaction events |
 | `module-event-layer/README.md` | Small Kafka-like module event/report layer research | Connects all modules without forcing full Kafka infrastructure at MVP stage |
+| `module-event-layer/mvp-monorepo-redpanda-architecture-note.md` | MVP monorepo / Redpanda reference architecture note | Explains how one repo, modular monolith boundaries, PostgreSQL, Redpanda, and event contracts can support a fast MVP |
 | `cross-packet-relationship-map.md` | Full relationship map | Shows how the packets connect inside the Smart Health Cabin system |
 | `open-source-candidate-template.md` | Candidate evaluation template | Reusable table for future GitHub repo findings |
 

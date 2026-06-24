@@ -75,6 +75,7 @@ level, or live HIS writeback claims.
 | `workstreams/smart-health-cabin/module-b-questionnaire-triage-discovery.md` | Questionnaire/CMS/source-governance discovery. |
 | `workstreams/smart-health-cabin/module-c-avatar-interaction-discovery.md` | Avatar voice interaction discovery. |
 | `workstreams/smart-health-cabin/2026-06-24-open-source-module-research-plan.md` | Open-source module adaptation research plan. |
+| `workstreams/smart-health-cabin/2026-06-24-mvp-monorepo-redpanda-architecture-note.md` | Reference architecture note for MVP monorepo, modular monolith, PostgreSQL, Redpanda, and event contracts. |
 | `research-packets/2026-06-24-smart-health-cabin-module-research/README.md` | Packetized research set for hearing, vision, questionnaire, live Avatar, and the small module event layer. |
 | `source/2026-06-23-imedtac-onsite-visit-smart-health-cabin/` | 2026-06-23 onsite meeting source package. |
 | `source/2026-06-23-wu-line-hpa-adult-preventive-health-form/` | Prof. Wu LINE HPA adult preventive health form source package. |

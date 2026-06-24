@@ -82,3 +82,17 @@ After module candidate research is added, choose:
 - JSONL prototype log;
 - simple queue;
 - Kafka-like streaming proof-of-concept.
+
+## Related Architecture Note
+
+The MVP monorepo / Redpanda reference design is recorded in:
+
+```text
+../../../workstreams/smart-health-cabin/2026-06-24-mvp-monorepo-redpanda-architecture-note.md
+```
+
+That note keeps Redpanda as reference architecture, not an external delivery
+commitment. It recommends one repo, modular monolith boundaries, PostgreSQL for
+query/report stability, event contracts for future separability, and service
+splitting only after ownership, scaling, security, or deployment pressure
+appears.
