@@ -53,7 +53,9 @@ consumers, durable ordering, realtime fan-out, or cross-service scale.
 
 The same date's MVP monorepo / Redpanda architecture note records Jason's
 repo-splitting question, the modular-monolith answer, the event-contract
-principle, and the conditions for future multi-repo extraction.
+principle, and the conditions for future multi-repo extraction. The fast-march
+Sprint 0-4 plan compresses the MVP path into `10` working days as a thin-slice
+demo schedule, not as a full-product commitment.
 
 Packet root:
 
@@ -93,6 +95,7 @@ missing. Keep future Smart Health Cabin material here rather than inside
 | `2026-06-24-open-source-module-research-plan.md` | Open-source module adaptation research plan. |
 | `2026-06-24-mvp-monorepo-redpanda-architecture-note.md` | Reference architecture note for MVP monorepo, modular monolith, PostgreSQL, Redpanda, event contracts, and future repo-splitting gates. |
 | `../../docs/specs/MVP-SYSTEM-SPEC.md` | Full-system MVP reference spec for repo strategy, apps, modules, PostgreSQL, Redpanda, API, deployment, versioning, tests, and acceptance gates. |
+| `../../docs/specs/MVP-FAST-MARCH-SPRINT-PLAN.md` | Fast-march Sprint 0-4 reference plan from `2026-06-24` to `2026-07-07`, with two working days per sprint and explicit deferred scope. |
 | `../../research-packets/2026-06-24-smart-health-cabin-module-research/README.md` | Independent research packets for hearing, vision, questionnaire, live Avatar, and module event-layer architecture. |
 | `hpa-adult-preventive-health-questionnaire-mvp-design-note.md` | Expert record and MVP design note for using HPA adult preventive health fields plus WHO STEPS and standardized modules. |
 | `meeting-question-bank.md` | Questions to bring to Johnny, Jason Miao, imedtac engineering, and clinical/content owners. |

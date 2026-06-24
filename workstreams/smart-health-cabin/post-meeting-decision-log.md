@@ -66,6 +66,7 @@ or implementation planning.
 | Report / QR Code | Integrated report and QR Code remain cross-module presentation needs so users can view or carry results after the session. | `2026-06-23` corrected transcript |
 | HIS-ready data | HIS/API/JSON and report integration remain cross-module data questions. The transcript contains tension between self-screening report needs and whether any values enter HIS fields. | `2026-06-23` corrected transcript |
 | Schedule | The meeting discussed a tight first-release path: July architecture / MVP direction, August adjustment and completion, and late-August or early-September readiness before September presentation / trial operation. | `2026-06-23` corrected transcript |
+| Fast-march reference schedule | A `2026-06-24` planning exercise compresses Sprint 0-4 into a `10` working-day thin-slice MVP path from `2026-06-24` to `2026-07-07`. It is a reference plan for system-spine validation, not a full-product delivery commitment. | `docs/specs/MVP-FAST-MARCH-SPRINT-PLAN.md` |
 
 ## Decisions
 
@@ -83,6 +84,7 @@ or implementation planning.
 | Standards / regulatory validation path | TBD | TBD | TBD |
 | Standards scope: internal background, design controls, formal deliverables, or out of scope | TBD | TBD | TBD |
 | September MVP tier: narrow, expanded, or deferred | TBD | TBD | TBD |
+| Fast-march Sprint 0-4 plan as an internal reference schedule | NYCU | `2026-06-24` | Use `docs/specs/MVP-FAST-MARCH-SPRINT-PLAN.md` for thin-slice planning; confirm owners, staffing, and scope before using it as a delivery commitment. |
 
 ## Open Questions
 

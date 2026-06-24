@@ -661,65 +661,64 @@ Production minimum:
 
 ## 12. Iteration Plan
 
-Reference timeline from `2026-06-24`.
-
-Sprint 0: system skeleton, `2026-06-24` to `2026-06-30`.
+The active compressed schedule is the fast-march thin-slice plan:
 
 ```text
-1. monorepo 建立
-2. Docker Compose
-3. PostgreSQL migration
-4. API server skeleton
-5. kiosk-web skeleton
-6. admin-web skeleton
-7. contracts package
-8. auth / role enum
-9. session / module_run / report_section 基礎表
-10. GitHub Actions：lint / test / build
+docs/specs/MVP-FAST-MARCH-SPRINT-PLAN.md
 ```
 
-Sprint 1: Session + Report + Module SDK, `2026-07-01` to `2026-07-07`.
+This replaces the earlier broad multi-week estimate with a `10` working-day
+thin-slice MVP path. The goal is not to complete the full product. The goal is
+to make the system spine runnable:
 
 ```text
-1. 開始 session
-2. 啟用模組列表
-3. module_run lifecycle
-4. public report assembler
-5. QR Code report token
-6. outbox_events table
-7. module manifest loader
+session -> enabled modules -> questionnaire -> vision -> hearing -> Avatar guide
+-> report -> QR Code -> PostgreSQL save -> outbox -> Redpanda event
 ```
 
-Sprint 2: Vision and Hearing MVP UI, `2026-07-08` to `2026-07-31`.
+Fast-march calendar:
+
+| Sprint | Dates | Working days | Finish line |
+| --- | --- | ---: | --- |
+| Sprint 0 | `2026-06-24` to `2026-06-25` | 2 | monorepo, app skeletons, DB migration, API skeleton, CI |
+| Sprint 1 | `2026-06-26` + `2026-06-29` | 2 | session, module registry, module_run lifecycle, report skeleton, QR token |
+| Sprint 2 | `2026-06-30` to `2026-07-01` | 2 | vision and hearing thin-slice results plus report integration |
+| Sprint 3 | `2026-07-02` to `2026-07-03` | 2 | questionnaire CMS thin slice and kiosk answering |
+| Sprint 4 | `2026-07-06` to `2026-07-07` | 2 | deterministic Avatar guide, outbox-worker, Redpanda event visibility, E2E demo |
+
+Operating controls:
 
 ```text
-視力：Landolt C / Tumbling E、四方向大按鈕、視力分級、public summary、internal metrics
-聽力：Web Audio tone generator、左右側喇叭輸出、ambient noise check、frequency / level test、catch trial、public summary
+1. Keep one monorepo.
+2. Keep PostgreSQL as the source of truth.
+3. Keep Redpanda outside the kiosk critical path.
+4. Use one report_section shape for all modules.
+5. Keep Avatar deterministic in Sprint 4.
+6. Defer calibration, complex CMS, HIS adapter, Kubernetes, full FHIR mapping,
+   real AI Avatar, and full clinical-validation scope to Sprint 5+.
 ```
 
-Sprint 3: Questionnaire CMS, `2026-08-01` to `2026-08-15`.
+Calendar source control:
 
 ```text
-題目 CRUD、排序、if/then 跳題、版本 publish、前台答題、questionnaire_result、report section
+The workday assumptions are based on the 2026 government administrative
+calendar published by Taiwan DGPA. The planning window excludes 2026-06-27 to
+2026-06-28 and 2026-07-04 to 2026-07-05 weekends. 2026-06-26 is treated as a
+working day in this schedule.
 ```
 
-Sprint 4: Avatar guidance + Redpanda, `2026-08-16` to `2026-08-31`.
+Sprint 5+ backlog:
 
 ```text
-Avatar 開場與流程導引、各模組語音提示、avatar_events、outbox-worker publish Redpanda、topics、Schema Registry、Redpanda Console
-```
-
-Sprint 5: Integration testing and acceptance prep, `2026-09-01` to
-`2026-09-10`.
-
-```text
-完整流程 E2E、kiosk mode、斷網 / API failure、Postgres backup / restore、權限、QR、部署說明、API 文件、ERD、操作手冊
-```
-
-Sprint 6: trial freeze, `2026-09-11` to `2026-09-15`.
-
-```text
-只修 bug，不加功能。
+formal vision calibration
+formal hearing calibration
+complex questionnaire rule editor
+review workflow
+real AI Avatar conversation
+HIS adapter
+Kubernetes
+full FHIR mapping
+production governance package
 ```
 
 ## 13. Versioning And Extension Rules

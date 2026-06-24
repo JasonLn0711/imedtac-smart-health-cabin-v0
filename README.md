@@ -40,7 +40,8 @@ durable ordering, or cross-service scale.
 The `2026-06-24` monorepo / Redpanda architecture note is the canonical record
 of today's repo-splitting question, engineering answer, and future service-split
 activation gates. The MVP system spec expands that note into an implementation
-reference.
+reference. The fast-march sprint plan compresses Sprint 0-4 into a `10`
+working-day thin-slice MVP schedule from `2026-06-24` to `2026-07-07`.
 
 Packet root:
 
@@ -77,6 +78,7 @@ level, or live HIS writeback claims.
 | `workstreams/smart-health-cabin/post-meeting-decision-log.md` | Confirmed facts, decisions, open questions, and next actions. |
 | `workstreams/smart-health-cabin/hpa-adult-preventive-health-questionnaire-mvp-design-note.md` | Expert note and MVP design rules for the questionnaire path. |
 | `docs/specs/MVP-SYSTEM-SPEC.md` | Full-system MVP reference spec for monorepo structure, four modules, API, PostgreSQL, Redpanda, deployment, versioning, tests, and acceptance gates. |
+| `docs/specs/MVP-FAST-MARCH-SPRINT-PLAN.md` | Ten-working-day thin-slice Sprint 0-4 schedule for system skeleton, module lifecycle, vision/hearing, questionnaire, Avatar guide, and Redpanda events. |
 | `workstreams/smart-health-cabin/module-a-vision-hearing-discovery.md` | Hearing and vision discovery constraints. |
 | `workstreams/smart-health-cabin/module-b-questionnaire-triage-discovery.md` | Questionnaire/CMS/source-governance discovery. |
 | `workstreams/smart-health-cabin/module-c-avatar-interaction-discovery.md` | Avatar voice interaction discovery. |

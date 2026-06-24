@@ -23,6 +23,7 @@ Key architecture links:
 ```text
 workstreams/smart-health-cabin/2026-06-24-mvp-monorepo-redpanda-architecture-note.md
 docs/specs/MVP-SYSTEM-SPEC.md
+docs/specs/MVP-FAST-MARCH-SPRINT-PLAN.md
 research-packets/2026-06-24-smart-health-cabin-module-research/module-event-layer/
 ```
 
