@@ -1,44 +1,128 @@
 ---
 id: smart-health-cabin-post-meeting-decision-log
 title: "Smart Health Cabin Post-Meeting Decision Log"
-date: 2026-06-24
+date: 2026-06-17
+topic: smart-health-cabin
 type: decision-log
 status: active
+source:
+  - ./2026-06-23-onsite-discovery-plan.md
+  - ./README.md
+  - ../../source/2026-06-23-imedtac-onsite-visit-smart-health-cabin/source.md
+  - ../../source/2026-06-23-wu-line-hpa-adult-preventive-health-form/source.md
+  - ./hpa-adult-preventive-health-questionnaire-mvp-design-note.md
+  - ../../source/2026-06-17-smart-health-cabin-expert-tutorial-note/source.md
+  - ./external-authority-verification.md
 ---
 
 # Smart Health Cabin Post-Meeting Decision Log
 
-## Current State
+## Meeting Metadata
 
-The Smart Health Cabin lane is in source-backed discovery. The active module
-shape is:
+| Field | Value |
+| --- | --- |
+| Meeting date | `2026-06-23` |
+| Location | 慧誠智醫 onsite visit |
+| Attendees | TBD |
+| Meeting purpose | AI Triage equipment review and Smart Health Cabin discovery |
+| Source package | `source/2026-06-23-imedtac-onsite-visit-smart-health-cabin/` |
+| Preserved transcript | `2026-06-23-imedtac-onsite-visit-smart-health-cabin-transcript-corrected-verified-agent-readable.md` |
 
-- hearing;
-- vision;
-- questionnaire;
-- Avatar interaction.
+## FIRST PRINCIPLE Capture Rule
 
-The next useful decision is which modules should be delivered first, which
-module outputs enter the shared report, and whether the next artifact is a
-feasibility memo, prototype spike, quotation input, or stakeholder-facing scope
-document.
+This log owns the interpreted record after the `2026-06-23` visit. It should
+capture what the meeting establishes, what remains open, who owns the next
+answer, and which evidence path supports each decision.
+
+Use the following split:
+
+- confirmed equipment, workflow, browser, network, audio, camera, device, and
+  reporting facts go in `Confirmed Facts`;
+- explicit scope, owner, repository, schedule, or standards choices go in
+  `Decisions`;
+- missing clinical-content ownership, validation path, CMS scope, report / QR
+  privacy, HIS-ready level, and feasibility-response assumptions go in
+  `Open Questions`;
+- raw screenshots, transcripts, copied external messages, or meeting exports
+  stay in a dated `source/2026-06-23-.../` folder;
+- planning mirrors only the locator, status, capacity boundary, and next gate.
+
+The done condition is a source-backed post-meeting split that lets NYCU answer
+which Smart Health Cabin scope should enter feasibility, quotation, prototype,
+or implementation planning.
 
 ## Confirmed Facts
 
-- Pending source import / confirmation.
+| Topic | Fact | Source / speaker |
+| --- | --- | --- |
+| Overall module split | The post-meeting software scope is four user-facing modules: hearing, vision, questionnaire, and Avatar interaction. Data integration remains a cross-module layer. | `2026-06-23` corrected transcript; user-provided meeting note |
+| Hearing module | Hearing remains a self-screening / preliminary support problem because the cabin concept uses speakers rather than headphones, and left/right isolation plus cabin noise need hardware validation. | `2026-06-23` corrected transcript |
+| Vision module | Vision should stay in self-screening / reference language; the meeting favored simpler first scope such as visual acuity and color vision before stronger measurement claims. | `2026-06-23` corrected transcript |
+| Questionnaire module | The questionnaire module needs frontend and backend support, with backend form publishing / management. A first feasible path is fixed or limited screening forms such as dementia or depression questionnaires, mostly choice-based. | `2026-06-23` corrected transcript |
+| Prof. Wu adult preventive health form source | Prof. Wu sent the Health Promotion Administration adult preventive health service examination record / result form as an agent-readable Markdown source. It includes user-facing, staff/clinician, measurement, lab, counseling, result/advice, and signature fields. | `source/2026-06-23-wu-line-hpa-adult-preventive-health-form/source.md` |
+| Expert questionnaire source strategy | The expert recommendation is to avoid inventing questionnaires: use the HPA adult preventive health form as the Taiwan backbone, WHO STEPS as the international public-health backbone, and add standardized modules by age and service context. | `hpa-adult-preventive-health-questionnaire-mvp-design-note.md` |
+| Avatar interaction module | Avatar interaction is a fourth user-facing module. It can sit on top of the questionnaire flow, ask fixed questionnaire items, listen to spoken answers, and help input the answer. | `2026-06-23` corrected transcript; user-provided meeting note |
+| CMS / backend | Generic self-service questionnaire CMS remains a larger scope. The near-term path should clarify whether forms are fixed, limited, or truly user-configurable before committing to CMS breadth. | `2026-06-23` corrected transcript |
+| Report / QR Code | Integrated report and QR Code remain cross-module presentation needs so users can view or carry results after the session. | `2026-06-23` corrected transcript |
+| HIS-ready data | HIS/API/JSON and report integration remain cross-module data questions. The transcript contains tension between self-screening report needs and whether any values enter HIS fields. | `2026-06-23` corrected transcript |
+| Schedule | The meeting discussed a tight first-release path: July architecture / MVP direction, August adjustment and completion, and late-August or early-September readiness before September presentation / trial operation. | `2026-06-23` corrected transcript |
 
-## Open Decisions
+## Decisions
 
-| Decision | Owner | Status | Next action |
+| Decision | Owner | Date | Follow-up |
 | --- | --- | --- | --- |
-| September MVP tier | pending | pending | Confirm minimum module set and output format |
-| Hearing module scope | pending | pending | Confirm screening-support vs stronger measurement claim |
-| Vision module scope | pending | pending | Confirm test types, calibration assumptions, and report wording |
-| Questionnaire backbone | pending | pending | Confirm HPA / WHO / local forms and review owner |
-| Avatar interaction role | pending | pending | Confirm guidance, education, navigation, or data-entry role |
-| Shared event/report layer | pending | pending | Choose simple event envelope first; revisit Kafka-like infra only if needed |
+| Repository strategy: use `imedtac-smart-health-cabin-v0` as the standalone Smart Health Cabin workspace | Jason / NYCU | `2026-06-23` | Keep active Smart Health Cabin source and workstream material here; keep `../imedtac-ai-triage-kiosk-v0` focused on the English AI triage kiosk demo. |
+| Module split: four user-facing modules are hearing, vision, questionnaire, and Avatar interaction | NYCU / imedtac | `2026-06-23` | Keep data integration as cross-module layer, not a fifth user-facing module. |
+| Hearing and vision positioning: first-release wording should stay in self-screening / preliminary support language | NYCU / imedtac / hospital clinical owner | `2026-06-23` | Confirm exact wording with imedtac and hospital owners before external material. |
+| Questionnaire first path: favor fixed or limited reviewed forms before generic CMS breadth | NYCU / imedtac | `2026-06-23` | Identify the first forms and their owner, scoring, export, and report behavior. |
+| Official-form handling: classify each field before turning it into questionnaire UI or CMS schema | NYCU / imedtac / hospital clinical owner | `2026-06-23` | Use the adult preventive health form as a source example; separate user intake, staff/clinician entry, measured/lab data, counseling, result/advice, and signatures. |
+| MVP questionnaire stack: HPA red-box fields + WHO STEPS core + PHQ-2 + basic measurements | NYCU | `2026-06-23` | Keep output as health measurement summary and public-health risk self-assessment, not diagnosis. |
+| Avatar first path: pair Avatar with questionnaire interaction rather than autonomous open clinical conversation | NYCU / imedtac | `2026-06-23` | Decide fixed-script, fixed-question voice I/O, or real-time ASR/TTS scope. |
+| Report / QR privacy model | TBD | TBD | TBD |
+| HIS-ready level: custom JSON, FHIR/TW Core mapping draft, or live integration | TBD | TBD | TBD |
+| Standards / regulatory validation path | TBD | TBD | TBD |
+| Standards scope: internal background, design controls, formal deliverables, or out of scope | TBD | TBD | TBD |
+| September MVP tier: narrow, expanded, or deferred | TBD | TBD | TBD |
 
-## Source-Backed Next Gate
+## Open Questions
 
-Complete `2026-06-24-open-source-module-research-plan.md` after Jason posts the
-research findings.
+| Question | Owner | Needed by | Why it matters |
+| --- | --- | --- | --- |
+| Who is accountable for clinical content and wording sign-off? | TBD | TBD | Required before report and questionnaire guidance can be considered stable. |
+| Who owns CMS build, hosting, review workflow, and maintenance? | TBD | TBD | Determines implementation scope, budget, and source-code boundary. |
+| Can the cabin support credible fixed-speaker hearing screening? | TBD | TBD | Determines whether Module A can use hearing output beyond guided interaction. |
+| What exact equipment/browser/network constraints apply onsite? | TBD | TBD | Determines feasible frontend, API, and deployment architecture. |
+| Which questionnaire forms are first-release scope? | imedtac / hospital clinical owner | immediate | The transcript suggests dementia and depression scales as better questionnaire-shaped candidates, but the actual hospital requirement needs confirmation. |
+| Which portions of the adult preventive health service form are actually patient-fillable inside a cabin? | imedtac / hospital clinical owner | immediate | The form includes clinician, lab, institution, result, and advice sections that should not be treated as ordinary patient questionnaire fields. |
+| Is Avatar required for the September show path, the durable product path, or both? | imedtac / NYCU | immediate | Avatar scope drives ASR/TTS/GPU/microphone/design schedule and whether fixed-script interaction is enough. |
+| Is voice input/output real-time or fixed-script for first release? | NYCU / imedtac engineering | immediate | Real-time ASR/TTS and lip-sync carry GPU, latency, microphone, and noise risks; fixed-script voice is a smaller first-release path. |
+| What should the post-meeting response become? | TBD | TBD | Determines whether to write feasibility memo, proposal, quotation input, or design spec. |
+| Which verified standards should appear in external material? | TBD | TBD | Determines whether FDA/IMDRF/ISO/FHIR/TW Core references remain internal background or become proposal commitments. |
+
+## Implementation Decision
+
+| Criterion | Met? | Evidence |
+| --- | --- | --- |
+| Standalone workspace needed | yes | User correction on `2026-06-23`: Smart Health Cabin is another cooperation project and should be separated from kiosk v0. |
+| Formal feasibility response requested | TBD | TBD |
+| Quotation or schedule requested | TBD | TBD |
+| Implementation or prototype requested | TBD | TBD |
+| Source-code delivery requested | TBD | TBD |
+| Hospital-facing material requested | TBD | TBD |
+
+Decision:
+
+```text
+Use this workspace as the Smart Health Cabin project home. Decide later whether
+the scope enters formal feasibility, quotation, prototype, or implementation.
+```
+
+## Next Action
+
+| Action | Owner | Due |
+| --- | --- | --- |
+| Prepare a four-module feasibility recap: hearing, vision, questionnaire, Avatar, plus cross-module report / QR / HIS/API/CMS layer | NYCU | TBD |
+| Map the adult preventive health service form into field classes before using it as questionnaire or report scope | NYCU | TBD |
+| Build the MVP questionnaire source registry: HPA red-box fields, WHO STEPS core, PHQ-2, and basic measurement output rules | NYCU | TBD |
+| Confirm first-release questionnaire forms and scoring/report ownership | imedtac / hospital owner | TBD |
+| Confirm whether Avatar uses fixed-script voice interaction or real-time ASR/TTS in first release | NYCU / imedtac | TBD |

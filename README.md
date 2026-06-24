@@ -1,74 +1,94 @@
-# imedtac Smart Health Cabin Workspace
+---
+id: imedtac-smart-health-cabin-v0
+title: "imedtac Smart Health Cabin Collaboration Workspace"
+date: 2026-06-23
+type: project-index
+status: active
+---
 
-This workspace owns the 慧誠智醫（imedtac Co., Ltd.）Smart Health Cabin
-collaboration lane. The first product principle is modular adoption: customers
-can choose hearing, vision, questionnaire, Avatar interaction, or any useful
-combination without forcing a full system rollout.
+# imedtac Smart Health Cabin Collaboration Workspace
 
-## Current Decision
+This folder is the standalone workspace for the 慧誠智醫（imedtac Co., Ltd.）
+Smart Health Cabin collaboration project.
 
-The `2026-06-24` work target is to research whether open-source GitHub projects
-can be adapted into the four Smart Health Cabin modules while preserving the
-repo design principle:
+The project is distinct from `../imedtac-ai-triage-kiosk-v0`. The AI Triage
+repo remains the execution home for the English vital-aware triage demo and its
+stable API history. This folder owns the Smart Health Cabin cooperation lane.
 
-- four independent modules;
-- shared structured outputs;
-- customer-selectable activation;
-- a lightweight event/report layer that can connect modules without overbuilding
-  a production streaming platform too early.
+## Current Product Scope
 
-Canonical task note:
+The `2026-06-23` onsite meeting reframed the user-facing software scope as four
+modules:
+
+1. hearing module;
+2. vision module;
+3. questionnaire module;
+4. Avatar interaction module.
+
+Data integration is a cross-module layer: integrated report, QR Code report
+access, structured JSON export, database/CMS connection, and future HIS-ready
+planning.
+
+## 2026-06-24 Module Research Packet
+
+The active research packet asks whether open-source GitHub projects can be
+adapted into the four modules while preserving customer-selectable activation.
+It also frames the shared data layer as a lightweight module event/report layer
+first, with Kafka-like infrastructure reserved for replay, multiple consumers,
+durable ordering, or cross-service scale.
+
+Packet root:
 
 ```text
-workstreams/smart-health-cabin/2026-06-24-open-source-module-research-plan.md
+research-packets/2026-06-24-smart-health-cabin-module-research/
 ```
 
-## Module Map
+## Current MVP Direction
 
-| Module | Customer value | Output to shared layer |
-| --- | --- | --- |
-| Hearing | Guided hearing self-check / screening-support workflow | test context, response result, quality flag, report text |
-| Vision | Guided vision self-check / screening-support workflow | test context, response result, quality flag, report text |
-| Questionnaire | Public-health questionnaire and risk-factor self-assessment | answer set, score/rule trace, follow-up prompt, version |
-| Avatar interaction | Guided interaction, education, and navigation support | session prompts, user choices, completion state, handoff notes |
+The questionnaire MVP should not invent a new medical questionnaire.
 
-## Shared Layer
+Use:
 
-Use a small module event layer first. Kafka is a candidate only if the project
-needs replay, multiple downstream consumers, ordering guarantees, or deployment
-scale that a simple append-only event table / queue cannot handle.
+- HPA adult preventive health service red-box fields as the Taiwan public-sector
+  backbone;
+- WHO STEPS core simplified public-health risk-factor fields as the
+  international backbone;
+- PHQ-2 as the first mental-health screen;
+- basic measurement summaries for height, weight, waist, blood pressure,
+  vision, and hearing;
+- source-backed, non-diagnostic report wording.
 
-Minimum event shape:
+The MVP report should provide health measurement summary, self-assessment
+summary, health behavior reminders, and staff / healthcare-professional follow
+up prompts. It should not output diagnosis, treatment advice, formal triage
+level, or live HIS writeback claims.
 
-```text
-module_id, session_id, event_type, payload_version, payload, created_at,
-source_module_version, quality_flag, reviewer_state
-```
-
-## Important Files
+## Key Files
 
 | File | Purpose |
 | --- | --- |
-| `AGENTS.md` | Workspace operating rules |
-| `docs/repo-relationships.md` | Ownership split across Smart Health Cabin, AI Triage, planning, and proposal repos |
-| `docs/source-index.md` | Source package index and pending source routes |
-| `workstreams/smart-health-cabin/README.md` | Active workstream index |
-| `workstreams/smart-health-cabin/2026-06-24-open-source-module-research-plan.md` | Today's open-source adaptation research plan |
-| `research-packets/2026-06-24-smart-health-cabin-module-research/README.md` | Complete module research packet set for hearing, vision, questionnaire, live Avatar, and module event layer |
-| `workstreams/smart-health-cabin/2026-06-23-onsite-discovery-plan.md` | Copied onsite discovery prep packet |
-| `workstreams/smart-health-cabin/meeting-question-bank.md` | Copied meeting question bank |
-| `workstreams/smart-health-cabin/post-meeting-decision-log.md` | Decision log for confirmed facts and gates |
+| `docs/source-index.md` | Project-level source map. |
+| `workstreams/smart-health-cabin/README.md` | Workstream index and current post-meeting scope. |
+| `workstreams/smart-health-cabin/post-meeting-decision-log.md` | Confirmed facts, decisions, open questions, and next actions. |
+| `workstreams/smart-health-cabin/hpa-adult-preventive-health-questionnaire-mvp-design-note.md` | Expert note and MVP design rules for the questionnaire path. |
+| `workstreams/smart-health-cabin/module-a-vision-hearing-discovery.md` | Hearing and vision discovery constraints. |
+| `workstreams/smart-health-cabin/module-b-questionnaire-triage-discovery.md` | Questionnaire/CMS/source-governance discovery. |
+| `workstreams/smart-health-cabin/module-c-avatar-interaction-discovery.md` | Avatar voice interaction discovery. |
+| `workstreams/smart-health-cabin/2026-06-24-open-source-module-research-plan.md` | Open-source module adaptation research plan. |
+| `research-packets/2026-06-24-smart-health-cabin-module-research/README.md` | Packetized research set for hearing, vision, questionnaire, live Avatar, and the small module event layer. |
+| `source/2026-06-23-imedtac-onsite-visit-smart-health-cabin/` | 2026-06-23 onsite meeting source package. |
+| `source/2026-06-23-wu-line-hpa-adult-preventive-health-form/` | Prof. Wu LINE HPA adult preventive health form source package. |
 
-## Planning Bridge
+## Next Gate
 
-Planning stays thin:
+Create the first Smart Health Cabin feasibility response only after these are
+clear:
 
-```text
-../planning-everything-track/data/projects/2026-06-imedtac-smart-health-cabin.md
-```
-
-The AI Triage kiosk API lane stays separate:
-
-```text
-../imedtac-ai-triage-kiosk-v0/
-```
+- which MVP modules are in the September show path;
+- which questionnaire forms are first-release scope;
+- which fields are user-filled, staff-assisted, measured, lab-derived,
+  clinician-interpreted, or report-only;
+- whether Avatar is fixed-script, fixed-question voice I/O, or real-time
+  ASR/TTS;
+- whether the deliverable is feasibility memo, quotation input, prototype,
+  implementation plan, or hospital-facing material.

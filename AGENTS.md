@@ -1,65 +1,72 @@
 # AGENTS.md
 
-This workspace is the canonical execution home for the 慧誠智醫（imedtac
+This folder is the execution and source workspace for the 慧誠智醫（imedtac
 Co., Ltd.）Smart Health Cabin collaboration lane.
 
 ## Mission
 
-Build and preserve source-backed discovery, module architecture, feasibility,
-and handoff material for a customer-configurable Smart Health Cabin system.
+Preserve and develop the materials needed to evaluate, scope, and eventually
+implement the Smart Health Cabin collaboration project: hearing, vision,
+questionnaire, Avatar interaction, integrated report, QR report access,
+structured export, and future HIS-ready interface planning.
 
-The product direction is four independently adoptable modules:
+## Ownership
 
-- hearing module;
-- vision module;
-- questionnaire module;
-- Avatar interaction module.
+- This folder owns Smart Health Cabin source copies, meeting records,
+  feasibility notes, module discovery notes, questionnaire-source analysis,
+  MVP scope, and future handoff material.
+- `../imedtac-ai-triage-kiosk-v0` owns the separate AI Triage demo lane and its stable
+  imedtac-facing demo API history.
+- `../planning-everything-track` owns capacity, priority, status, project
+  locators, and day-note mirrors.
 
-Each module should be usable alone or combined with other modules through a
-shared report and event-data layer.
+## Scope Controls
 
-## Non-Goals
+- Treat Smart Health Cabin as a distinct cooperation project, not as a feature
+  inside `imedtac-ai-triage-kiosk-v0`.
+- Keep the first release in screening support, health measurement summary,
+  public-health risk self-assessment, and human-review workflow language.
+- Do not present this folder as a production clinical product, diagnosis
+  system, treatment system, medical-device validation package, or live HIS
+  integration.
+- Do not store real patient data, credentials, private API tokens, production
+  HIS details, or unredacted private links in tracked files.
+- Keep patent-sensitive method details internal unless Prof. Wu / Tomi clear a
+  sharing path.
+- Keep customer module choice visible: hearing, vision, questionnaire, and
+  Avatar interaction should each state what they produce, what they consume,
+  and how they can be enabled without forcing the other modules.
+- Treat Kafka or Kafka-like infrastructure as an activation gate, not a default.
+  Start from a small module event/report envelope and add heavier streaming only
+  when replay, multiple consumers, ordering, or deployment scale requires it.
 
-Do not turn this workspace into:
+## Writing Method
 
-- the AI Triage kiosk demo repo;
-- a production clinical diagnosis system;
-- a live patient-data repository;
-- a broad medical-device regulatory submission package;
-- a speculative implementation playground before source facts and ownership are
-  confirmed.
+Use affirmative, product-minded writing:
 
-## Canonical Ownership
+```text
+capability -> workflow value -> evidence/source control -> human-review or
+screening-support boundary -> next decision
+```
 
-- This workspace owns Smart Health Cabin source packages, module discovery,
-  module-fit research, feasibility-response drafts, report/QR/API/ERD notes, and
-  customer-configurable module architecture.
-- `../imedtac-ai-triage-kiosk-v0` owns the separate English AI Triage kiosk demo
-  API lane.
-- `../planning-everything-track` owns priority, capacity, status, deadlines, and
-  project locator notes.
-- Related clinical / proposal reasoning may live in
-  `../urology-ai-previsit-thinking-spec` when the work belongs to the Health
-  Taiwan / deep-cultivation proposal lane.
+For company-facing material, lead with what the project can own and what the
+next decision is. State safety and validation boundaries as design controls,
+not apologies.
 
-## Working Rules
+## File Routing
 
-1. Keep source evidence under `source/`.
-2. Keep active interpretation under `workstreams/`.
-3. Keep outward-facing drafts under `handoff/`.
-4. Use positive-scope wording: capability, evidence, ownership, scope control,
-   next validation layer.
-5. Do not store credentials, private tokens, real patient data, or identifiable
-   medical records in tracked files.
-6. Keep customer module choice visible: each module must state what it produces,
-   what it consumes, and how it can be enabled without forcing other modules.
-7. Treat Kafka or Kafka-like infrastructure as an activation gate, not a default.
-   Start from a simple module event envelope and add heavier streaming only when
-   replay, multiple consumers, ordering, or deployment scale require it.
+- `source/`: copied evidence, meeting transcripts, LINE/Gmail/Teams records,
+  requirement packages, and agent-readable source files.
+- `workstreams/`: interpreted discovery notes, MVP scope, feasibility logic,
+  module plans, decision logs, and reusable internal analysis.
+- `handoff/`: future cleared company-facing or Prof. Wu-facing drafts.
+- `docs/`: repo-level indexes, source maps, and operating policies.
+- `decisions/`: dated decisions once project scope, repo strategy, or delivery
+  commitments are fixed.
 
 ## Git Rules
 
-- This workspace is local-first unless the user explicitly asks to publish it.
+- Keep this project separate from `../imedtac-ai-triage-kiosk-v0` commits.
 - Do not push to GitHub without explicit confirmation.
-- If planning is updated in the same work session, commit this workspace and
+- If planning is updated in the same work session, commit this folder and
   `../planning-everything-track` separately.

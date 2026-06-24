@@ -1,31 +1,37 @@
 # Source Index
 
-This file tracks the Smart Health Cabin source packages and their active
-interpretation routes.
+This folder preserves source and derived analysis for the 慧誠智醫（imedtac
+Co., Ltd.）Smart Health Cabin collaboration project.
 
-## Current Source Status
+## Sources
 
-| Source package | Status | Route |
+| Date | Source | Why it matters |
 | --- | --- | --- |
-| `source/2026-06-17-imedtac-smart-health-cabin-requirements/` | pending source import | Requirements source for module scope, schedule, and ownership assumptions |
-| `source/2026-06-23-imedtac-onsite-visit-smart-health-cabin/` | pending source import | Onsite transcript, screenshots, equipment facts, and confirmed owner facts |
-| `source/2026-06-23-wu-line-hpa-adult-preventive-health-form/` | pending source import | HPA adult preventive health form source for questionnaire MVP grounding |
-| `../imedtac-ai-triage-kiosk-v0/source/2026-06-16-imedtac-teams-question-option-adjustment/` | adjacent source available | AI Triage / Smart Health Cabin Teams follow-up context |
+| `2026-06-17` | `source/2026-06-17-imedtac-smart-health-cabin-requirements/` | Johnny Fang's Smart Health Cabin requirements package and the `2026-06-15` requirements PDF. Defines the initial cooperation ask around vision/hearing self-measurement, questionnaire-guided triage, report, QR Code, CMS, ERD, API/JSON, and HIS-ready planning. |
+| `2026-06-17` | `source/2026-06-17-smart-health-cabin-expert-tutorial-note/` | Preserved expert tutorial note for workspace setup and discovery discipline. Use selectively as internal preparation, not as external commitment. |
+| `2026-06-19` | `source/2026-06-19-wu-tomi-ai-triage-smart-health-cabin-ip-sync/` | Prof. Wu / Tomi / 多寶 / Jason internal source bundle about Smart Health Cabin, AI Triage adjacency, patent/IP, measured-context workflow, and cooperation boundaries. |
+| `2026-06-23 14:59` | `source/2026-06-23-imedtac-onsite-visit-smart-health-cabin/` | Corrected onsite meeting transcript. Establishes four user-facing modules: hearing, vision, questionnaire, and Avatar interaction. Keeps report/QR/HIS/API/CMS as cross-module integration layer. |
+| `2026-06-23` | `source/2026-06-23-wu-line-hpa-adult-preventive-health-form/` | Prof. Wu LINE source containing the HPA adult preventive health service examination record / result form. Supports questionnaire field classification and MVP source strategy. |
 
-## Active Derived Notes
+## Derived Workstreams
 
 | File | Purpose |
 | --- | --- |
-| `workstreams/smart-health-cabin/2026-06-23-onsite-discovery-plan.md` | Onsite discovery prep and meeting control |
-| `workstreams/smart-health-cabin/meeting-question-bank.md` | Question bank for equipment, module, report, ownership, and validation discovery |
-| `workstreams/smart-health-cabin/post-meeting-decision-log.md` | Confirmed facts, owner map, open decisions, and next gate |
-| `workstreams/smart-health-cabin/2026-06-24-open-source-module-research-plan.md` | Open-source GitHub adaptation research plan for the four modules |
+| `workstreams/smart-health-cabin/README.md` | Workstream overview, boundaries, source bundle, and project-separation rule. |
+| `workstreams/smart-health-cabin/post-meeting-decision-log.md` | Confirmed facts, decisions, open questions, and next actions from the 2026-06-23 meeting and follow-up sources. |
+| `workstreams/smart-health-cabin/hpa-adult-preventive-health-questionnaire-mvp-design-note.md` | Expert MVP note: HPA form + WHO STEPS + standardized modules, with non-diagnostic report boundaries. |
+| `workstreams/smart-health-cabin/module-a-vision-hearing-discovery.md` | Vision/hearing device, calibration, and wording controls. |
+| `workstreams/smart-health-cabin/module-b-questionnaire-triage-discovery.md` | Questionnaire, CMS, field classification, and source-governance design questions. |
+| `workstreams/smart-health-cabin/module-c-avatar-interaction-discovery.md` | Avatar voice interaction scope and implementation gates. |
+| `workstreams/smart-health-cabin/2026-06-24-open-source-module-research-plan.md` | Open-source module adaptation research plan for hearing, vision, questionnaire, Avatar, and the small shared event/report layer. |
+| `research-packets/2026-06-24-smart-health-cabin-module-research/README.md` | Packetized module research set with independent module packets and cross-packet relationship map. |
+| `workstreams/smart-health-cabin/external-authority-verification.md` | Verification notes for standards, regulatory, measurement, interoperability, browser, and stack references. |
 
 ## Source Rules
 
-- Treat source packages as copied evidence.
-- Do not rewrite transcripts as if they were canonical meeting minutes.
-- Redact credentials, private links, tokens, and identifiable medical data before
-  storing anything in Git.
-- If a source is not yet imported, mark it as pending rather than inventing
-  facts from memory.
+- Treat `source/` files as copied evidence and meeting context.
+- Keep raw source separate from feasibility conclusions and implementation
+  scope.
+- Do not treat adult preventive health forms, questionnaire sources, or expert
+  notes as approval to collect real patient data or connect to production HIS.
+- Use workstream notes for interpreted scope, MVP decisions, and next gates.
