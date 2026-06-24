@@ -71,6 +71,7 @@ level, or live HIS writeback claims.
 | `workstreams/smart-health-cabin/README.md` | Workstream index and current post-meeting scope. |
 | `workstreams/smart-health-cabin/post-meeting-decision-log.md` | Confirmed facts, decisions, open questions, and next actions. |
 | `workstreams/smart-health-cabin/hpa-adult-preventive-health-questionnaire-mvp-design-note.md` | Expert note and MVP design rules for the questionnaire path. |
+| `docs/specs/MVP-SYSTEM-SPEC.md` | Full-system MVP reference spec for monorepo structure, four modules, API, PostgreSQL, Redpanda, deployment, versioning, tests, and acceptance gates. |
 | `workstreams/smart-health-cabin/module-a-vision-hearing-discovery.md` | Hearing and vision discovery constraints. |
 | `workstreams/smart-health-cabin/module-b-questionnaire-triage-discovery.md` | Questionnaire/CMS/source-governance discovery. |
 | `workstreams/smart-health-cabin/module-c-avatar-interaction-discovery.md` | Avatar voice interaction discovery. |

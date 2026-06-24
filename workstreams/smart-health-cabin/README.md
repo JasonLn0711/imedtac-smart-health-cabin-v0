@@ -88,6 +88,7 @@ missing. Keep future Smart Health Cabin material here rather than inside
 | `module-c-avatar-interaction-discovery.md` | Discovery note for the Avatar voice interaction module added in the `2026-06-23` onsite meeting. |
 | `2026-06-24-open-source-module-research-plan.md` | Open-source module adaptation research plan. |
 | `2026-06-24-mvp-monorepo-redpanda-architecture-note.md` | Reference architecture note for MVP monorepo, modular monolith, PostgreSQL, Redpanda, event contracts, and future repo-splitting gates. |
+| `../../docs/specs/MVP-SYSTEM-SPEC.md` | Full-system MVP reference spec for repo strategy, apps, modules, PostgreSQL, Redpanda, API, deployment, versioning, tests, and acceptance gates. |
 | `../../research-packets/2026-06-24-smart-health-cabin-module-research/README.md` | Independent research packets for hearing, vision, questionnaire, live Avatar, and module event-layer architecture. |
 | `hpa-adult-preventive-health-questionnaire-mvp-design-note.md` | Expert record and MVP design note for using HPA adult preventive health fields plus WHO STEPS and standardized modules. |
 | `meeting-question-bank.md` | Questions to bring to Johnny, Jason Miao, imedtac engineering, and clinical/content owners. |

@@ -565,6 +565,7 @@ MVP first builds a separable monolith, not a prematurely fragmented distributed 
 | File | Connection |
 | --- | --- |
 | `workstreams/smart-health-cabin/README.md` | Keeps this as Smart Health Cabin work, not AI Triage implementation. |
+| `docs/specs/MVP-SYSTEM-SPEC.md` | Expands this architecture note into the full-system MVP reference spec. |
 | `workstreams/smart-health-cabin/reuse-from-ai-triage.md` | Reuses AI Triage architecture discipline and report/questionnaire patterns without changing the AI Triage API. |
 | `workstreams/smart-health-cabin/post-meeting-decision-log.md` | Future decisions can promote or reject this reference architecture after owner confirmation. |
 | `docs/repo-relationships.md` | Confirms this repo is the Smart Health Cabin execution workspace. |
