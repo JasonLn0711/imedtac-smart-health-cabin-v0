@@ -24,6 +24,20 @@ implementation can reuse these concepts while still changing folder names,
 module names, infrastructure choices, or deployment details after scope, budget,
 ownership, and delivery path are confirmed.
 
+## 今日思考紀錄
+
+- 思考起點：第一次參與大型軟體開發時，先把 repo、module、deployment
+  三種邊界分清楚。
+- 提問：四個使用者模組和 Redpanda 是否需要拆成獨立 repo，或 MVP 先寫進
+  同一個 repo。
+- 理解：repo 數量不是模組化本身；可測試的模組邊界、穩定 schema、event
+  contract、本機啟動與部署流程，才是 MVP 可控性的核心。
+- 回答：MVP 預設採 monorepo + modular monolith + event-driven boundary；
+  PostgreSQL 先承接查詢與報告，Redpanda 作為 infra / worker messaging
+  layer，未來在 ownership、scale、security、deploy cadence 成熟後再拆 repo。
+- 使用方式：這份 note 提供參考語言、架構判斷、repo routing 與下一步 spec
+  連結；不代表最終 folder name、API、runtime、vendor 或交付承諾。
+
 ## 中文讀法與結論
 
 這份紀錄保存今天對「四個模組加上 Redpanda，MVP 階段要不要拆成多個

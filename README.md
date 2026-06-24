@@ -37,6 +37,11 @@ It also frames the shared data layer as a lightweight module event/report layer
 first, with Kafka-like infrastructure reserved for replay, multiple consumers,
 durable ordering, or cross-service scale.
 
+The `2026-06-24` monorepo / Redpanda architecture note is the canonical record
+of today's repo-splitting question, engineering answer, and future service-split
+activation gates. The MVP system spec expands that note into an implementation
+reference.
+
 Packet root:
 
 ```text

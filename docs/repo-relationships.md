@@ -14,7 +14,17 @@ Role:
   architecture decisions, and handoff drafts;
 - keeps the four-module design principle visible;
 - stores open-source adaptation research for hearing, vision, questionnaire, and
-  Avatar interaction modules.
+  Avatar interaction modules;
+- owns the MVP monorepo / Redpanda reference architecture note and the full MVP
+  system spec for future implementation planning.
+
+Key architecture links:
+
+```text
+workstreams/smart-health-cabin/2026-06-24-mvp-monorepo-redpanda-architecture-note.md
+docs/specs/MVP-SYSTEM-SPEC.md
+research-packets/2026-06-24-smart-health-cabin-module-research/module-event-layer/
+```
 
 ## AI Triage Kiosk Repo
 

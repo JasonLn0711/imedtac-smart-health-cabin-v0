@@ -51,6 +51,10 @@ modules. The shared data path should begin as a small module event/report layer;
 Kafka-like infrastructure remains an activation gate for replay, multiple
 consumers, durable ordering, realtime fan-out, or cross-service scale.
 
+The same date's MVP monorepo / Redpanda architecture note records Jason's
+repo-splitting question, the modular-monolith answer, the event-contract
+principle, and the conditions for future multi-repo extraction.
+
 Packet root:
 
 ```text
