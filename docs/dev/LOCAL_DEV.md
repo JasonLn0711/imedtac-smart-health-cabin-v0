@@ -139,6 +139,7 @@ LLM_CPU_OFFLOAD=false \
 LLM_ALLOW_CPU_FALLBACK=false \
 LLM_BASE_URL=http://localhost:11434 \
 LLM_MODEL=gemma4:e4b \
+LLM_TEMPERATURE=0.3 \
 OLLAMA_THINK=false \
 LLM_MAX_TOKENS=80 \
 TTS_PROVIDER=breezyvoice_default \
@@ -157,7 +158,7 @@ Expected services:
 - `http://localhost:8011/v1/asr/transcribe`: FastAPI sidecar for
   faster-whisper Breeze-ASR-26 CT2 int8.
 - `http://localhost:11434/api/chat`: native Ollama local Gemma 4 E4B runtime
-  with `think:false` for short guidance.
+  with `think:false` for 1-5 sentence questionnaire guidance.
 - `http://localhost:8012/v1/tts/synthesize`: FastAPI sidecar for BreezyVoice
   default voice.
 
@@ -184,8 +185,8 @@ LLM, or TTS provider status that reports `computeBackend` other than `gpu`,
 vLLM remains available as an alternative for provider comparison, but the
 current workstation path uses native Ollama because it is lower-friction,
 lower-VRAM, faster on the same Gemma 4 E4B prompt, and can disable thinking for
-short guidance. The deterministic Chinese guidance fallback remains active when
-model output is unusable.
+questionnaire guidance. The deterministic Chinese guidance fallback remains
+active when model output is unusable.
 
 Current workstation compatibility path:
 
@@ -208,6 +209,7 @@ LLM_ALLOW_CPU_FALLBACK=false \
 VLLM_CPU_OFFLOAD_GB=0 \
 LLM_BASE_URL=http://localhost:11434 \
 LLM_MODEL=gemma4:e4b \
+LLM_TEMPERATURE=0.3 \
 OLLAMA_THINK=false \
 LLM_MAX_TOKENS=80 \
 TTS_COMPUTE_BACKEND=gpu \
@@ -230,6 +232,7 @@ LLM_MODEL=gemma4:e4b \
 LLM_PROVIDER=ollama_native \
 LLM_DEVICE=cuda \
 LLM_CPU_OFFLOAD=false \
+LLM_TEMPERATURE=0.3 \
 OLLAMA_THINK=false \
 LLM_MAX_TOKENS=80 \
 corepack pnpm --filter @shc/voice-agent-server start
@@ -237,9 +240,15 @@ corepack pnpm --filter @shc/voice-agent-server start
 
 Strict LLM acceptance uses `SPRINT5_ALLOWED_LLM_PROVIDERS`; the default allows
 `ollama_native`, `ollama_openai_compatible`, and `vllm_openai_compatible`.
-For this short questionnaire-guidance path, keep `OLLAMA_THINK=false` and
-`LLM_MAX_TOKENS=80`. If a future experiment explicitly enables thinking, use
-`LLM_MAX_TOKENS=768` as the current minimum stable budget.
+For this 1-5 sentence questionnaire-guidance path, keep `OLLAMA_THINK=false`,
+`LLM_TEMPERATURE=0.3`, and `LLM_MAX_TOKENS=80`. The 2026-06-25 threshold
+experiment found `72` as the lowest passing cap across the tested prompt set
+and keeps `80` as the operating default for margin. The temperature sweep found
+`0.3` as the largest flexible default because it kept hard-rule success without
+length stops or markup, while `0` remains the most stable validation baseline.
+If a future experiment
+explicitly enables thinking, use `LLM_MAX_TOKENS=768` as the current minimum
+stable budget.
 
 For this Smart Health Cabin lane, do not start BreezyVoice with Jason's later
 customized prompt audio/text. The TTS API rejects reference audio, speaker

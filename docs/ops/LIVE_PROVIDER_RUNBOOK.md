@@ -24,13 +24,14 @@ Current LLM choice: use native Ollama for Gemma 4 E4B. The OpenAI-compatible
 Ollama and vLLM paths both returned empty visible content on the same PHQ-9
 guidance prompt because thinking-mode tokens consumed the output budget before
 final text was emitted. Native Ollama with `OLLAMA_THINK=false` and
-`LLM_MAX_TOKENS=80` returns usable short Traditional Chinese guidance, uses
-less VRAM, has lower latency, and does not require the local vLLM GGUF loader
-patch. If thinking mode is explicitly enabled for a research run, use
+`LLM_MAX_TOKENS=80` returns usable 1-5 sentence Traditional Chinese guidance,
+uses less VRAM, has lower latency, and does not require the local vLLM GGUF
+loader patch. If thinking mode is explicitly enabled for a research run, use
 `LLM_MAX_TOKENS=768`; `512` was not stable.
-Hardware, driver, runtime, package-version, and loaded-process measurement
-details for these conclusions are recorded in
-`docs/evidence/2026-06-25-llm-thinking-mode-provider-log.md`.
+Hardware, driver, runtime, package-version, loaded-process, prompt, and token
+threshold measurement details for these conclusions are recorded in
+`docs/evidence/2026-06-25-llm-thinking-mode-provider-log.md` and
+`docs/evidence/2026-06-25-llm-one-to-five-guidance-experiment-log.md`.
 
 Current local Ollama Gemma 4 E4B command:
 
@@ -104,6 +105,7 @@ LLM_CPU_OFFLOAD=false \
 LLM_ALLOW_CPU_FALLBACK=false \
 LLM_BASE_URL=http://localhost:11434 \
 LLM_MODEL=gemma4:e4b \
+LLM_TEMPERATURE=0.3 \
 OLLAMA_THINK=false \
 LLM_MAX_TOKENS=80 \
 TTS_PROVIDER=breezyvoice_default \
@@ -131,6 +133,7 @@ LLM_CPU_OFFLOAD=false \
 LLM_ALLOW_CPU_FALLBACK=false \
 LLM_BASE_URL=http://localhost:11434 \
 LLM_MODEL=gemma4:e4b \
+LLM_TEMPERATURE=0.3 \
 OLLAMA_THINK=false \
 LLM_MAX_TOKENS=80 \
 corepack pnpm --filter @shc/voice-agent-server start
@@ -164,6 +167,7 @@ LLM_CPU_OFFLOAD=false \
 LLM_ALLOW_CPU_FALLBACK=false \
 LLM_BASE_URL=http://localhost:11434 \
 LLM_MODEL=gemma4:e4b \
+LLM_TEMPERATURE=0.3 \
 OLLAMA_THINK=false \
 LLM_MAX_TOKENS=80 \
 TTS_PROVIDER=breezyvoice_default \

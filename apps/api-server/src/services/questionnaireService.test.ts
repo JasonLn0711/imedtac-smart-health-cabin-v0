@@ -317,7 +317,7 @@ describe("QuestionnaireService", () => {
     process.env.VOICE_MODEL_MODE = "real";
     process.env.LLM_BASE_URL = "http://ollama.local";
     process.env.LLM_MODEL = "gemma4:e4b";
-    const fetchMock = vi.fn(async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => {
       return new Response(JSON.stringify({ message: { content: "請依照題目選一個最接近的頻率。" } }), {
         status: 200,
         headers: { "content-type": "application/json" }
@@ -340,6 +340,11 @@ describe("QuestionnaireService", () => {
         body: expect.stringContaining('"think":false')
       })
     );
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+    expect(body.messages[0].content).toContain("回答 1 到 5 句話");
+    expect(body.messages[0].content).toContain("這題需要現場人員關心與協助");
+    expect(body.options.temperature).toBe(0.3);
+    expect(body.options.num_predict).toBe(80);
   });
 
   it("falls back to deterministic guidance when live LLM guidance is unusable", async () => {

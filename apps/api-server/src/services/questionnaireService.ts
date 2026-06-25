@@ -99,7 +99,7 @@ function llmModel(): string {
 }
 
 function llmTemperature(): number {
-  return Number(process.env.LLM_TEMPERATURE ?? 0.2);
+  return Number(process.env.LLM_TEMPERATURE ?? 0.3);
 }
 
 function llmMaxTokens(): number {
@@ -517,7 +517,7 @@ const liveLlmAdapter: LLMAdapter = {
       {
         role: "system",
         content:
-          "你是 Smart Health Cabin 的問卷語音導引。只用繁體中文，回答一句，協助使用者理解題目與選項。不得診斷、不得改變問卷分數、不得替使用者作答。"
+          "你是 Smart Health Cabin 的問卷語音導引。只用繁體中文，回答 1 到 5 句話。你要協助使用者理解題目、回想時間範圍、知道如何在畫面選項中作答，不得診斷、不得改變問卷分數、不得替使用者作答。若題目提到「不如死掉」或「傷害自己」，第一句要說：這題需要現場人員關心與協助，您可以請現場人員一起完成。接著再提醒使用者依照過去兩週的頻率從畫面選項作答。"
       },
       {
         role: "user",
