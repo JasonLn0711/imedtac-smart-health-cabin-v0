@@ -142,6 +142,25 @@ corepack pnpm --filter @shc/voice-agent-server start
 The TTS path owns BreezyVoice default voice only. Reference audio, speaker
 embedding, custom voice ID, and voice-cloning fields are rejected by contract.
 
+Wake word activation gate:
+
+```bash
+WAKE_WORD_ENABLED=true \
+WAKE_WORD_PROVIDER=openwakeword \
+WAKE_WORD_SERVICE_URL=http://localhost:8013 \
+WAKE_WORD_THRESHOLD=0.65 \
+WAKE_WORD_COOLDOWN_MS=2000 \
+WAKE_WORD_LOCAL_ONLY=true \
+VOICE_AUDIO_RETENTION=none \
+uvicorn app:app --host 0.0.0.0 --port 8013
+```
+
+The wake word sidecar owns activation only. It emits `wake.detected`, after
+which kiosk-web shows the recording state and still requires VAD / endpointing,
+ASR candidate mapping, and user confirmation before any questionnaire write.
+`POST /simulate-wake` is for local e2e testing and must not become production
+UI.
+
 ## Current Local Compatibility Set
 
 The current workstation also has a direct-port live-provider set already

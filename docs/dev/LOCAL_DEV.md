@@ -162,6 +162,37 @@ Expected services:
 - `http://localhost:8012/v1/tts/synthesize`: FastAPI sidecar for BreezyVoice
   default voice.
 
+## Wake Word Activation Gate
+
+Sprint 5.6 adds a local wake word gate. It activates the recording state only;
+ASR candidate mapping and user confirmation still control questionnaire writes.
+Tap-to-start and touch questionnaire remain complete fallback paths.
+
+Run the sidecar:
+
+```bash
+cd apps/model-sidecars/wakeword-service
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+WAKE_WORD_ENABLED=true \
+WAKE_WORD_PROVIDER=openwakeword \
+WAKE_WORD_SERVICE_URL=http://localhost:8013 \
+WAKE_WORD_THRESHOLD=0.65 \
+WAKE_WORD_COOLDOWN_MS=2000 \
+WAKE_WORD_LOCAL_ONLY=true \
+.venv/bin/python -m uvicorn app:app --host 0.0.0.0 --port 8013
+```
+
+Check:
+
+```bash
+curl -fsS http://localhost:8013/healthz
+curl -fsS http://localhost:8013/status
+curl -fsS -X POST http://localhost:8013/simulate-wake \
+  -H 'content-type: application/json' \
+  -d '{"score":0.82}'
+```
+
 Provider status:
 
 ```bash

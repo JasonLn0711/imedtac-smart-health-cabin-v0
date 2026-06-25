@@ -10,6 +10,7 @@ source:
   - ./MVP-QUESTIONNAIRE-AVATAR-SPRINT-PLAN.md
   - ../handoff/sprint-4.5-model-selection.md
   - ../../apps/voice-agent-server/README.md
+  - ../../apps/model-sidecars/wakeword-service/README.md
   - ../../apps/model-sidecars/asr-service/README.md
   - ../../apps/model-sidecars/tts-service/README.md
 ---
@@ -18,15 +19,17 @@ source:
 
 ## Purpose
 
-This draft records the current selected technology stack and the next decision
-points for the Smart Health Cabin voice entry layer.
+This draft records the current selected technology stack and the Sprint 5.6
+Voice Entry Activation Gate decision for the Smart Health Cabin voice entry
+layer.
 
 The voice entry layer owns a controlled path from user speech to reviewable
 questionnaire input:
 
 ```text
-user intent -> recording gate -> VAD -> endpointing -> ASR -> confidence
-routing -> confirmation or staff review -> questionnaire answer
+wake word or tap -> visible recording state -> VAD / endpointing auto-stop
+-> ASR -> candidate answer mapping -> user confirmation or staff review
+-> questionnaire answer
 ```
 
 The first release scope is staff-review intake support and questionnaire
@@ -34,6 +37,23 @@ guidance for Traditional Chinese users in Taiwan enterprise settings. The voice
 Agent guides, reads questions/options, maps candidate answers, and asks for
 confirmation. It does not diagnose, recommend treatment, change PHQ-9 scoring,
 or write low-confidence answers without confirmation.
+
+## Sprint 5.6 Product Decision
+
+```text
+Voice Entry Decision:
+- Primary activation: wake word, local only
+- Required fallback: tap-to-start + auto-stop
+- No audio retention by default
+- Wake word only triggers recording state
+- Wake word never writes questionnaire answers
+- ASR result must still go through candidate mapping + user confirmation
+- Touch questionnaire remains complete path when voice stack fails
+```
+
+Wake word is the entrance control layer. ASR is the understanding layer. LLM
+guidance and bounded mapping are the interaction layer. Questionnaire write is
+still a confirmation-gated state change.
 
 ## Already Selected
 
@@ -59,6 +79,8 @@ configuration.
 | Avatar visual | Static SVG avatar | `apps/kiosk-web/public/avatar/default-avatar.svg` |
 | Avatar UI state | XState + `@xstate/react` | `apps/kiosk-web/src/features/avatar/` |
 | Browser capture | Web `MediaRecorder` | `docs/handoff/sprint-4.5-model-selection.md` |
+| Voice activation gate | Local wake word with tap-to-start fallback | Sprint 5.6 decision |
+| Wake word provider | `openWakeWord` sidecar first; Picovoice Porcupine as commercial fallback | `apps/model-sidecars/wakeword-service/README.md` |
 | Voice provider mode | `mock`, `live`, `unavailable` status model | `apps/voice-agent-server/README.md` |
 | ASR provider | `faster-whisper` + `Breeze-ASR-26` CTranslate2 int8 | `docs/handoff/sprint-4.5-model-selection.md` |
 | ASR sidecar | Python FastAPI sidecar on port `8011` | `apps/model-sidecars/asr-service/README.md` |
@@ -71,16 +93,17 @@ configuration.
 | Voice write policy | Confirmation before voice answers write to questionnaire state | `apps/voice-agent-server/README.md` |
 | Critical path rule | Redpanda failure must not block kiosk completion | `apps/outbox-worker/README.md` |
 
-## Newly Proposed Voice Entry Selection
+## Voice Entry Selection
 
-These choices should become the voice entry baseline unless a hardware or
-customer constraint changes them.
+These choices are the Sprint 5.6 baseline unless a hardware or customer
+constraint changes them.
 
 | Area | Proposed choice | Reason |
 | --- | --- | --- |
-| Start recording | Tap-to-start, auto-stop after endpointing | Clear consent, low surprise, suitable for health cabin users |
-| Always-listening mode | Not enabled in Phase 1 | Reduces privacy, noise, and enterprise acceptance risk |
-| Wake word | Not enabled by default | Adds training and false-trigger risk before the core flow is proven |
+| Start recording | Local wake word primary, tap-to-start fallback | Supports hands-free activation without making the system always write from speech |
+| Always-listening mode | Not enabled as an assistant behavior | Wake word listens only as a local activation gate |
+| Wake word | Enabled as local gate through `openWakeWord` sidecar | Fits local-first sidecar architecture |
+| Wake word commercial fallback | Picovoice Porcupine evaluation gate | Use only if Mandarin wake phrase false trigger / miss rate is unacceptable |
 | VAD primary | Silero VAD | Better modern VAD baseline for speech gating |
 | VAD fallback | WebRTC VAD only if Silero cannot run | Lightweight fallback for constrained devices |
 | VAD runtime | Prefer local runtime near capture path | Keeps noise gating before ASR cost and privacy exposure |
@@ -92,33 +115,31 @@ customer constraint changes them.
 
 ## Voice Entry State Machine
 
-The MVP can use one small state machine:
+The MVP uses one small state machine:
 
 ```text
-idle
--> armed
--> listening
--> speech_detected
--> endpoint_pending
+idle_touch_ready
+-> wake_armed
+-> wake_detected
+-> recording_answer
+-> endpointing_wait
 -> transcribing
--> candidate_answer
--> confirmation_required
--> committed | repeat_requested | touch_fallback | staff_review
+-> confirming_candidate
+-> committed | retry_or_touch | voice_unavailable | staff_review
 ```
 
 State rules:
 
-- `idle`: microphone is not capturing for questionnaire input.
-- `armed`: user taps the voice button or the Avatar opens the current question.
-- `listening`: browser captures audio, and VAD receives frames.
-- `speech_detected`: VAD sees stable speech for the configured minimum duration.
-- `endpoint_pending`: VAD sees silence long enough to close the utterance.
+- `idle_touch_ready`: microphone is not capturing; touch questionnaire remains available.
+- `wake_armed`: local wake word gate is active.
+- `wake_detected`: wake word fired and the UI makes recording state visible.
+- `recording_answer`: browser captures the answer utterance.
+- `endpointing_wait`: VAD / endpointing closes the utterance.
 - `transcribing`: ASR receives the clipped utterance.
-- `candidate_answer`: ASR text is mapped to a questionnaire option candidate.
-- `confirmation_required`: the UI asks the user to confirm the candidate.
+- `confirming_candidate`: ASR text is mapped to a questionnaire option candidate.
 - `committed`: only confirmed answers write to questionnaire state.
-- `repeat_requested`: user or system asks for a new utterance.
-- `touch_fallback`: user finishes the answer by touch.
+- `retry_or_touch`: user or system asks for a new utterance or touch fallback.
+- `voice_unavailable`: voice stack is down; touch questionnaire still works.
 - `staff_review`: system preserves evidence and asks staff to assist.
 
 ## Suggested VAD And Endpoint Parameters
@@ -165,7 +186,7 @@ into the main system design.
 | Multi-speaker policy | Staff review on ambiguity | Reject and retry; diarization; staff-assisted mode |
 | Audio retention | Do not retain audio by default | No audio retention; short debug retention; full retention with consent |
 | Cloud ASR fallback | Not enabled by default | OpenAI; Google Cloud; Azure; none |
-| Wake word | Not in Phase 1 | None; openWakeWord custom phrase; vendor wake word |
+| Formal wake phrase | Not frozen yet | Temporary/built-in model first; later custom Mandarin phrase; commercial Porcupine fallback |
 | Diarization | Not in Phase 1 | None; OpenAI diarize; pyannote; vendor diarization |
 | Hardware mic | To be selected onsite | USB directional mic; kiosk array mic; headset; built-in mic |
 | Taigi support | Confirmation-first support | Mandarin only; mixed Mandarin/Taigi support; separate Taigi validation |
@@ -227,8 +248,8 @@ That principle sets the order of design:
 
 ## Next Update
 
-After Jason / imedtac select the open decision items, promote this draft into
-the main system design and update:
+After onsite validation selects the formal wake phrase and VAD runtime, promote
+the final values into:
 
 - `docs/specs/MVP-SYSTEM-SPEC.md`;
 - `docs/specs/MVP-QUESTIONNAIRE-AVATAR-SPRINT-PLAN.md`, if sprint scope changes;

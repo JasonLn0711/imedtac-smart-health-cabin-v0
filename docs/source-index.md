@@ -50,6 +50,8 @@ Co., Ltd.）Smart Health Cabin collaboration project.
 | `docs/evidence/raw/2026-06-25-llm-temperature-sweep-0.0-0.7.json` | Complete raw temperature-sweep artifact with 120 run-level rows, environment metadata, summaries, and full generated outputs. |
 | `docs/devlog/README.md` | Daily sprint closeout convention for actual implementation results, validation evidence, blockers, and next handoff. |
 | `docs/devlog/2026-06-25.md` | Pivot/source devlog for the questionnaire + Avatar MVP route, PHQ-9 seed, and planning-repo coordination. |
+| `apps/model-sidecars/wakeword-service/README.md` | Sprint 5.6 wake word activation gate sidecar: local openWakeWord provider, status/event API, and test-only simulation route. |
+| `apps/model-sidecars/wakeword-service/app.py` | FastAPI implementation for `/healthz`, `/status`, `/simulate-wake`, and `WS /events`; wake word is activation-only and never writes questionnaire answers. |
 | `docs/devlog/2026-06-26.md` | Sprint 0 D2 closeout for monorepo, app/API/storage skeleton, local dev, CI, and validation evidence. |
 | `docs/devlog/2026-06-29.md` | Sprint 1 D1 closeout for PHQ-9 SurveyJS kiosk render and browser fill/submit evidence. |
 | `docs/devlog/2026-06-30.md` | Sprint 1 D2 closeout for PostgreSQL persistence, backend scoring, item-9 safety flag, and public summary. |

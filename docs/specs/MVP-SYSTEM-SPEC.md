@@ -240,6 +240,17 @@ Core purpose:
 串接能力，但 Phase 1 MVP 不直接實作正式視聽力量測或正式 HIS 寫入。
 ```
 
+Sprint 5.6 voice entry update:
+
+```text
+wake word detected -> visible recording state -> VAD / endpointing auto-stop
+-> ASR -> candidate answer mapping -> user confirmation -> questionnaire write
+```
+
+Wake word is a local activation gate only. It does not diagnose, transcribe,
+start free conversation, or write questionnaire answers. Tap-to-start and touch
+questionnaire remain complete fallback paths.
+
 Scope controls:
 
 ```text
