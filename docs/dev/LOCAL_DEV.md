@@ -153,9 +153,36 @@ Provider status:
 curl -fsS http://localhost:3000/api/v1/providers/status
 ```
 
+Sprint 5 live checks:
+
+```bash
+corepack pnpm smoke:redpanda
+corepack pnpm smoke:api
+corepack pnpm live:check
+```
+
 Compatibility: if the local machine only has Ollama or BreezyVoice's upstream
 OpenAI-compatible server running, set `LLM_BASE_URL=http://localhost:11434/v1`
 and/or `BREEZYVOICE_BASE_URL=http://localhost:9003/v1`.
+
+Current workstation compatibility path:
+
+```bash
+VOICE_PROVIDER_MODE=live \
+ASR_SERVICE_URL=http://localhost:8001 \
+ASR_HEALTH_PATH=/health \
+ASR_TRANSCRIBE_PATH=/asr \
+ASR_MODEL=Breeze-ASR-26-CT2-int8 \
+ASR_LANGUAGE=zh \
+LLM_PROVIDER=ollama_openai_compatible \
+LLM_BASE_URL=http://localhost:11434/v1 \
+LLM_MODEL=gemma4:e4b \
+BREEZYVOICE_BASE_URL=http://localhost:9003/v1 \
+BREEZYVOICE_MODEL=MediaTek-Research/BreezyVoice \
+TTS_VOICE=default \
+BREEZYVOICE_VOICE_ID=default \
+corepack pnpm --filter @shc/api-server start
+```
 
 For this Smart Health Cabin lane, do not start BreezyVoice with Jason's later
 customized prompt audio/text. The TTS API rejects reference audio, speaker

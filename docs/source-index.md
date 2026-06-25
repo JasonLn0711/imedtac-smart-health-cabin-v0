@@ -37,6 +37,12 @@ Co., Ltd.）Smart Health Cabin collaboration project.
 | `docs/handoff/sprint-0-4-to-sprint-5-plus-handoff.md` | Sprint 0-4.5 capability map and revised Sprint 5+ continuation guide: provider-mode entry gate, static Avatar scope, repeatable demo hardening, Phase 1 exit definition, and post-Sprint 5 activation lanes. |
 | `docs/handoff/sprint-5-to-last-sprint-next-phase-handoff.md` | Sprint 5 to final closeout handoff: Phase 1 evidence-freeze work order, Phase 1 exit claim, and Phase 2 entry gate. |
 | `docs/phase2/activation-roadmap.md` | Phase 2 activation roadmap for provider validation, questionnaire expansion, vision/hearing activation, and integration/governance sequencing. |
+| `docs/phase2/ACTIVATION_PLAN.md` | Phase 2 activation gates after Sprint 5: provider validation, questionnaire expansion, vision/hearing activation, and integration governance. |
+| `docs/ops/LIVE_PROVIDER_RUNBOOK.md` | Sprint 5 live-provider startup and checks for Breeze-ASR-26 int8, Gemma 4 E4B, BreezyVoice default voice, Redpanda, and provider status. |
+| `docs/ops/ROLLBACK_AND_FALLBACK.md` | Runtime fallback and rollback controls that preserve questionnaire/report/outbox continuity without counting mock behavior as Sprint 5 acceptance. |
+| `docs/api/API_SUMMARY.md` | API endpoint summary for questionnaire, report, admin CMS, voice-agent turns, and provider status. |
+| `docs/db/ERD_SUMMARY.md` | PostgreSQL entity relationship summary for questionnaire versions, responses, reports, agent turns, and outbox events. |
+| `docs/evidence/sprint-5-five-run-demo.md` | Sprint 5 five-run evidence file with current provider smoke and remaining strict live acceptance gates. |
 | `docs/devlog/README.md` | Daily sprint closeout convention for actual implementation results, validation evidence, blockers, and next handoff. |
 | `docs/devlog/2026-06-25.md` | Pivot/source devlog for the questionnaire + Avatar MVP route, PHQ-9 seed, and planning-repo coordination. |
 | `docs/devlog/2026-06-26.md` | Sprint 0 D2 closeout for monorepo, app/API/storage skeleton, local dev, CI, and validation evidence. |
@@ -49,6 +55,7 @@ Co., Ltd.）Smart Health Cabin collaboration project.
 | `docs/devlog/2026-07-07.md` | Sprint 4 D1 closeout for Avatar state UI and 3 voice-confirmed PHQ-9 answers. |
 | `docs/devlog/2026-07-08.md` | Sprint 4 D2 closeout for outbox-worker, Redpanda topics, published events, and failure isolation. |
 | `docs/devlog/2026-07-09.md` | Sprint 4.5 closeout for provider selection, status route, Zod contracts, static Avatar path, MediaRecorder capture, sidecar scaffolds, and fallback status. |
+| `docs/devlog/2026-07-10.md` | Sprint 5 live-hardening closeout for provider acceptance status, live-check scripts, local provider smoke, and remaining strict vLLM/Redpanda gate. |
 | `docs/dev/LOCAL_DEV.md` | Local install, PostgreSQL, API, kiosk, admin, and validation commands. |
 | `workstreams/smart-health-cabin/2026-06-25-questionnaire-avatar-mvp-pivot.md` | Decision record for the Phase 1 MVP pivot based on the 2026-06-25 LINE discussion. |
 | `modules/questionnaire/seed/phq9.zh-TW.surveyjs.json` | SurveyJS PHQ-9 seed used as the first questionnaire-system demo form. |
