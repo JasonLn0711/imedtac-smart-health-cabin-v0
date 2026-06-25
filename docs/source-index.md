@@ -26,6 +26,9 @@ Co., Ltd.）Smart Health Cabin collaboration project.
 | `docs/specs/MVP-QUESTIONNAIRE-AVATAR-SPRINT-PLAN.md` | Active revised sprint plan for open questionnaire system plus ASR/LLM/TTS Avatar Agent, with vision/hearing deferred to Phase 2. |
 | `docs/prompts/sprint-0-codex-goal-prompt.md` | Codex execution prompt for updated Sprint 0: monorepo skeleton, module registry, API skeleton, DB migration skeleton, PHQ-9 seed path, local dev docs, CI skeleton, and closeout devlog. |
 | `docs/prompts/sprint-1-codex-goal-prompt.md` | Codex execution prompt for updated Sprint 1: PHQ-9 SurveyJS render, answer persistence, backend scoring, item-9 safety flag, non-diagnostic public summary, and validation evidence. |
+| `docs/prompts/sprint-2-codex-goal-prompt.md` | Codex execution prompt for updated Sprint 2: questionnaire CMS, version publish, report section, public token / QR route, admin response list, audit trail, and Sprint 0/1 baseline protection. |
+| `docs/prompts/sprint-3-codex-goal-prompt.md` | Codex execution prompt for updated Sprint 3: ASR / LLM / TTS voice Agent MVP, agent session/turn logs, PHQ-9 question and option reading from SurveyJS, answer confirmation, safety boundary, and touch fallback. |
+| `docs/prompts/sprint-4-codex-goal-prompt.md` | Codex execution prompt for updated Sprint 4: Avatar UI states, voice-confirmed PHQ-9 answers, public report / QR continuity, outbox events, Redpanda publishing, failure isolation, and E2E demo evidence. |
 | `docs/devlog/README.md` | Daily sprint closeout convention for actual implementation results, validation evidence, blockers, and next handoff. |
 | `docs/devlog/2026-06-25.md` | Pivot/source devlog for the questionnaire + Avatar MVP route, PHQ-9 seed, and planning-repo coordination. |
 | `docs/devlog/2026-06-26.md` | Sprint 0 D2 closeout for monorepo, app/API/storage skeleton, local dev, CI, and validation evidence. |
