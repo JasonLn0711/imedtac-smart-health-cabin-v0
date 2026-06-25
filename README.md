@@ -95,17 +95,19 @@ level, or live HIS writeback claims.
 
 ## Local Development
 
-Sprint 0/1 now uses the minimum pnpm workspace:
+Sprint 0-4 now uses the minimum pnpm workspace:
 
 ```text
 apps/kiosk-web
 apps/admin-web
 apps/api-server
+apps/outbox-worker
 packages/contracts
 packages/questionnaire-core
 packages/report-core
 infra/docker-compose.yml
 infra/migrations/0001_sprint0_schema.sql
+infra/migrations/0002_sprint2_3_4_cms_voice_outbox.sql
 ```
 
 Run locally:
@@ -117,6 +119,8 @@ pnpm --filter @shc/api-server migrate
 pnpm --filter @shc/api-server dev
 pnpm --filter @shc/kiosk-web dev
 pnpm --filter @shc/admin-web dev
+docker compose -f infra/docker-compose.yml up -d redpanda redpanda-console
+pnpm --filter @shc/outbox-worker start
 ```
 
 Verify:
@@ -149,8 +153,11 @@ docs/dev/LOCAL_DEV.md
 | `docs/specs/MVP-QUESTIONNAIRE-AVATAR-SPRINT-PLAN.md` | Active revised sprint plan for questionnaire platform plus ASR/LLM/TTS Avatar Agent. |
 | `docs/devlog/README.md` | Daily sprint closeout convention for actual results, validation, blockers, and handoff. |
 | `docs/devlog/2026-06-25.md` | Pivot/source devlog for the questionnaire + Avatar MVP route, PHQ-9 seed, and planning mirror. |
-| `docs/dev/LOCAL_DEV.md` | Sprint 0/1 local development and verification commands. |
+| `docs/dev/LOCAL_DEV.md` | Sprint 0-4 local development and verification commands. |
 | `.github/workflows/ci.yml` | CI skeleton for install, JSON validation, lint, typecheck, tests, and build. |
+| `apps/api-server/src/routes/questionnaireRoutes.ts` | Questionnaire, admin CMS, public report, and voice Agent API routes. |
+| `apps/kiosk-web/src/features/avatar/` | Avatar state UI and voice-confirmed questionnaire helpers. |
+| `apps/outbox-worker/src/` | Redpanda outbox worker, topic mapping, and mockable publisher seam. |
 | `workstreams/smart-health-cabin/2026-06-25-questionnaire-avatar-mvp-pivot.md` | Decision record for moving vision/hearing to Phase 2 and making questionnaire + Avatar the MVP spine. |
 | `modules/questionnaire/seed/phq9.zh-TW.surveyjs.json` | First SurveyJS questionnaire seed. |
 | `modules/questionnaire/scoring/phq9.public-scoring-config.json` | PHQ-9 public report and safety-flag scoring configuration. |

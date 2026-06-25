@@ -34,6 +34,12 @@ Co., Ltd.）Smart Health Cabin collaboration project.
 | `docs/devlog/2026-06-26.md` | Sprint 0 D2 closeout for monorepo, app/API/storage skeleton, local dev, CI, and validation evidence. |
 | `docs/devlog/2026-06-29.md` | Sprint 1 D1 closeout for PHQ-9 SurveyJS kiosk render and browser fill/submit evidence. |
 | `docs/devlog/2026-06-30.md` | Sprint 1 D2 closeout for PostgreSQL persistence, backend scoring, item-9 safety flag, and public summary. |
+| `docs/devlog/2026-07-01.md` | Sprint 2 D1 closeout for admin CMS, SurveyJS validation/preview, active publish, and audit. |
+| `docs/devlog/2026-07-02.md` | Sprint 2 D2 closeout for report section, public token / QR URL, admin response list, and public report filtering. |
+| `docs/devlog/2026-07-03.md` | Sprint 3 D1 closeout for mock ASR/respond/TTS endpoints, agent session, and turn logging. |
+| `docs/devlog/2026-07-06.md` | Sprint 3 D2 closeout for SurveyJS-derived voice mapping, confirmation boundary, and touch fallback. |
+| `docs/devlog/2026-07-07.md` | Sprint 4 D1 closeout for Avatar state UI and 3 voice-confirmed PHQ-9 answers. |
+| `docs/devlog/2026-07-08.md` | Sprint 4 D2 closeout for outbox-worker, Redpanda topics, published events, and failure isolation. |
 | `docs/dev/LOCAL_DEV.md` | Local install, PostgreSQL, API, kiosk, admin, and validation commands. |
 | `workstreams/smart-health-cabin/2026-06-25-questionnaire-avatar-mvp-pivot.md` | Decision record for the Phase 1 MVP pivot based on the 2026-06-25 LINE discussion. |
 | `modules/questionnaire/seed/phq9.zh-TW.surveyjs.json` | SurveyJS PHQ-9 seed used as the first questionnaire-system demo form. |

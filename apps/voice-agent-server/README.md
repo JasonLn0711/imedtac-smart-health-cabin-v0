@@ -1,8 +1,10 @@
-# Voice Agent Server Placeholder
+# Voice Agent Server Route
 
-Sprint 0 keeps this as a Phase 1 placeholder only.
+Sprint 3 uses the existing `apps/api-server` process for the first voice Agent
+seam. A separate runtime remains an activation gate, not a requirement for the
+local MVP.
 
-Sprint 3 activation owns:
+Implemented Sprint 3 routes:
 
 - ASR endpoint;
 - LLM flow-guidance endpoint;
@@ -13,3 +15,13 @@ Sprint 3 activation owns:
 Scope control: the voice Agent guides flow, reads questions/options, and asks
 for confirmation. It does not diagnose, recommend treatment, or change PHQ-9
 scoring.
+
+Routes:
+
+```text
+POST /api/v1/agent-sessions
+POST /api/v1/agent-turns/asr
+POST /api/v1/agent-turns/respond
+POST /api/v1/agent-turns/tts
+POST /api/v1/agent-turns/map-answer
+```

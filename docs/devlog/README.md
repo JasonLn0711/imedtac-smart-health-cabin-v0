@@ -39,6 +39,12 @@ Planning mirrors live in:
 | `2026-06-26` | Sprint 0 D2 | Monorepo, app/API/storage skeleton, local dev, CI, validation evidence. |
 | `2026-06-29` | Sprint 1 D1 | PHQ-9 SurveyJS kiosk render and browser fill/submit evidence. |
 | `2026-06-30` | Sprint 1 D2 | PostgreSQL persistence, backend score, item-9 safety flag, public summary. |
+| `2026-07-01` | Sprint 2 D1 | Admin CMS template list, SurveyJS JSON validation/preview, draft creation, active publish, audit. |
+| `2026-07-02` | Sprint 2 D2 | Report section, public token / QR URL, admin response list, public report filtering. |
+| `2026-07-03` | Sprint 3 D1 | Mock ASR/respond/TTS endpoints, agent session, and agent turn logging. |
+| `2026-07-06` | Sprint 3 D2 | SurveyJS-derived voice guidance, deterministic answer mapping, confirmation boundary, touch fallback. |
+| `2026-07-07` | Sprint 4 D1 | Visible Avatar state UI and 3 voice-confirmed PHQ-9 answers in kiosk smoke. |
+| `2026-07-08` | Sprint 4 D2 | Outbox worker, Redpanda topics, published events, and non-blocking failure behavior. |
 
 ## Daily Entry Shape
 

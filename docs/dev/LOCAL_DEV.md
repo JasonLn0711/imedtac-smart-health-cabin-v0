@@ -68,7 +68,26 @@ Open:
 http://localhost:5174
 ```
 
-Admin CMS / versioning starts in Sprint 2. Sprint 0/1 only provides the shell.
+Admin CMS / versioning is active in Sprint 2. Use it to validate SurveyJS JSON,
+preview PHQ-9, create a draft version, and publish one active questionnaire
+version.
+
+## Redpanda / Outbox Worker
+
+```bash
+docker compose -f infra/docker-compose.yml up -d redpanda redpanda-console
+pnpm --filter @shc/outbox-worker start
+```
+
+Redpanda Console:
+
+```text
+http://localhost:8080
+```
+
+The API writes outbox rows inside PostgreSQL transactions. The worker publishes
+pending rows asynchronously; Redpanda is not required for kiosk questionnaire
+completion or public report creation.
 
 ## Checks
 
@@ -89,7 +108,7 @@ git diff --check
 - Sprint 1: PHQ-9 SurveyJS render, touch answer capture, API submit,
   PostgreSQL persistence, server-side score, item-9 safety flag, and
   non-diagnostic public summary.
-- Sprint 2+: questionnaire CMS / versioning.
-- Sprint 3+: ASR / LLM / TTS voice Agent.
-- Sprint 4+: Avatar UI and Redpanda outbox publishing.
+- Sprint 2: questionnaire CMS / versioning / public report token.
+- Sprint 3: mock ASR / LLM / TTS voice Agent seam and agent turn log.
+- Sprint 4: Avatar UI and Redpanda outbox publishing.
 - Phase 2: vision and hearing implementation.
