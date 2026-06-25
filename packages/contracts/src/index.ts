@@ -295,6 +295,20 @@ export interface VoiceAnswerCandidate {
   evidence_text?: string;
 }
 
+export interface VoiceRerankerTrace {
+  provider: string;
+  model: string;
+  mode: VoiceProviderMode;
+  candidate_options: Array<{
+    optionId: string;
+    text: string;
+    score: number;
+    rank: number;
+  }>;
+  confirmation_required: true;
+  error_code?: string;
+}
+
 export interface VoiceAnswerMappingResponse {
   candidate: VoiceAnswerCandidate | null;
   transcript: string;
@@ -303,6 +317,7 @@ export interface VoiceAnswerMappingResponse {
   confirmation_required?: boolean;
   semantic_frame?: VoiceSemanticFrame;
   voice_evidence_metadata?: VoiceEvidenceMetadata;
+  reranker_trace?: VoiceRerankerTrace;
 }
 
 export const VoiceDomainTermCategorySchema = z.enum([

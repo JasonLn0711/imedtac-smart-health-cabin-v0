@@ -10,6 +10,7 @@ import type {
   CreateQuestionnaireVersionRequest,
   ProviderStatusResponse,
   PublicReportResponse,
+  RerankOptionsResponse,
   VoiceAnswerMappingResponse
 } from "@shc/contracts";
 import {
@@ -206,9 +207,9 @@ function gpuOnlyEligible(input: {
   );
 }
 
-async function postJson<T>(url: string, body: unknown): Promise<T> {
+async function postJson<T>(url: string, body: unknown, timeoutMs = voiceModelTimeoutMs()): Promise<T> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), voiceModelTimeoutMs());
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(url, {
       method: "POST",
@@ -223,6 +224,64 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
     return JSON.parse(text) as T;
   } finally {
     clearTimeout(timeout);
+  }
+}
+
+function rerankerEnabled(): boolean {
+  return booleanEnv(["RERANKER_ENABLED"]);
+}
+
+function rerankerMode(): "mock" | "live" {
+  return process.env.RERANKER_MODE === "live" ? "live" : "mock";
+}
+
+function rerankerTimeoutMs(): number {
+  return Number(process.env.RERANKER_TIMEOUT_MS ?? 3000);
+}
+
+function rerankerErrorCode(error: unknown): string {
+  return error instanceof Error ? error.name || error.message : "RERANKER_UNAVAILABLE";
+}
+
+async function rerankVoiceOptions(input: {
+  query: string;
+  questionId: string;
+  options: Array<{ value: number; text: string }>;
+}) {
+  if (!rerankerEnabled() || input.options.length === 0) {
+    return undefined;
+  }
+
+  const provider = env("RERANKER_PROVIDER", defaultRerankerProvider);
+  const model = env("RERANKER_MODEL", defaultRerankerModel);
+  try {
+    const response = await postJson<RerankOptionsResponse>(
+      joinUrl(env("RERANKER_SERVICE_URL", "http://localhost:8014"), "/rerank-options"),
+      {
+        query: input.query,
+        questionId: input.questionId,
+        options: input.options.map((option) => ({ optionId: String(option.value), text: option.text })),
+        topK: Number(process.env.RERANKER_TOP_K ?? Math.min(3, input.options.length))
+      },
+      rerankerTimeoutMs()
+    );
+
+    return {
+      provider,
+      model,
+      mode: rerankerMode(),
+      candidate_options: response.candidateOptions,
+      confirmation_required: response.confirmationRequired
+    };
+  } catch (error) {
+    return {
+      provider,
+      model,
+      mode: "unavailable" as const,
+      candidate_options: [],
+      confirmation_required: true as const,
+      error_code: rerankerErrorCode(error)
+    };
   }
 }
 
@@ -908,6 +967,11 @@ export class QuestionnaireService {
           evidence_text: safetyCandidate.evidenceText
         }
       : null;
+    const rerankerTrace = await rerankVoiceOptions({
+      query: safety.semanticFrame.retrievalQuery ?? safety.normalizedText,
+      questionId: question.name,
+      options: question.choices
+    });
     await this.repository.saveAgentTurn({
       agentSessionId: input.agent_session_id,
       sessionId: input.session_id,
@@ -919,7 +983,8 @@ export class QuestionnaireService {
         normalized_transcript: safety.normalizedText,
         routing_decision: safety.routingDecision,
         semantic_frame: safety.semanticFrame,
-        voice_evidence_metadata: safety.metadata
+        voice_evidence_metadata: safety.metadata,
+        reranker_trace: rerankerTrace
       }
     });
     return {
@@ -929,7 +994,8 @@ export class QuestionnaireService {
       routing_decision: safety.routingDecision,
       confirmation_required: safety.confirmationRequired,
       semantic_frame: safety.semanticFrame,
-      voice_evidence_metadata: safety.metadata
+      voice_evidence_metadata: safety.metadata,
+      reranker_trace: rerankerTrace
     };
   }
 }

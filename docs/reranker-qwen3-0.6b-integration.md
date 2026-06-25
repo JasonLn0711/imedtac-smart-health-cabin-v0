@@ -31,6 +31,13 @@ Endpoints:
 `/rerank-options` ranks bounded choices only. It returns
 `confirmationRequired=true` and never writes questionnaire state.
 
+When `RERANKER_ENABLED=true`, API `POST /api/v1/agent-turns/map-answer` calls
+`/rerank-options` for the active SurveyJS choices and stores the result as
+`reranker_trace` in the agent-turn payload. The mapped questionnaire candidate
+still comes from the voice-safety pipeline and still needs user confirmation.
+If the reranker call is unavailable, the API records an unavailable trace and
+continues with deterministic mapping, confirmation, or touch fallback.
+
 ## Failure Behavior
 
 - In mock mode, the sidecar uses deterministic lexical scoring for tests.

@@ -182,6 +182,7 @@ afterEach(() => {
   delete process.env.TTS_REQUEST_STYLE;
   delete process.env.RERANKER_PROVIDER;
   delete process.env.RERANKER_MODEL;
+  delete process.env.RERANKER_ENABLED;
   delete process.env.RERANKER_SERVICE_URL;
   delete process.env.RERANKER_HEALTH_PATH;
   delete process.env.RERANKER_COMPUTE_BACKEND;
@@ -189,6 +190,8 @@ afterEach(() => {
   delete process.env.RERANKER_CPU_OFFLOAD;
   delete process.env.RERANKER_CPU_OFFLOAD_GB;
   delete process.env.RERANKER_ALLOW_CPU_FALLBACK;
+  delete process.env.RERANKER_TOP_K;
+  delete process.env.RERANKER_TIMEOUT_MS;
   delete process.env.BREEZYVOICE_BASE_URL;
   delete process.env.BREEZYVOICE_MODEL;
   delete process.env.BREEZYVOICE_VOICE_ID;
@@ -341,6 +344,61 @@ describe("QuestionnaireService", () => {
     expect(mapped.candidate).toMatchObject({ value: 3 });
     expect(mapped.routing_decision).toBe("low_confidence_retry");
     expect(mapped.confirmation_required).toBe(true);
+  });
+
+  it("stores reranker option trace without letting reranker choose the answer", async () => {
+    process.env.RERANKER_ENABLED = "true";
+    process.env.RERANKER_SERVICE_URL = "http://reranker.local";
+    const fetchMock = vi.fn(async () => {
+      return new Response(
+        JSON.stringify({
+          candidateOptions: [{ optionId: "3", text: "幾乎每天", score: 0.99, rank: 1 }],
+          confirmationRequired: true
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const repository = new InMemoryQuestionnaireRepository();
+    const service = new QuestionnaireService(repository);
+
+    const mapped = await service.mapVoiceAnswer({
+      question_name: "phq9_01",
+      transcript: "完全沒有"
+    });
+
+    expect(mapped.candidate).toMatchObject({ value: 0, text: "完全沒有" });
+    expect(mapped.reranker_trace).toMatchObject({
+      provider: "qwen3_reranker_0_6b",
+      model: "Qwen3-Reranker-0.6B",
+      mode: "mock",
+      candidate_options: [{ optionId: "3", text: "幾乎每天", score: 0.99, rank: 1 }],
+      confirmation_required: true
+    });
+    expect(repository.savedTurns[0]?.payload).toMatchObject({
+      candidate: { value: 0 },
+      reranker_trace: { candidate_options: [{ optionId: "3" }] }
+    });
+  });
+
+  it("keeps deterministic voice mapping when reranker options are unavailable", async () => {
+    process.env.RERANKER_ENABLED = "true";
+    process.env.RERANKER_SERVICE_URL = "http://reranker.local";
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("down", { status: 503 })));
+    const service = new QuestionnaireService(new InMemoryQuestionnaireRepository());
+
+    const mapped = await service.mapVoiceAnswer({
+      question_name: "phq9_01",
+      transcript: "幾天"
+    });
+
+    expect(mapped.candidate).toMatchObject({ value: 1, text: "幾天" });
+    expect(mapped.reranker_trace).toMatchObject({
+      mode: "unavailable",
+      candidate_options: [],
+      confirmation_required: true,
+      error_code: "Error"
+    });
   });
 
   it("calls the configured faster-whisper Breeze ASR adapter in real mode", async () => {
