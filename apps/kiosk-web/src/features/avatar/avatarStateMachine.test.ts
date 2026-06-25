@@ -60,6 +60,6 @@ describe("Avatar voice entry state machine", () => {
 
   it("uses a static replaceable Avatar image with Traditional Chinese alt text", () => {
     expect(avatarImageSrc).toBe("/avatar/default-avatar.svg");
-    expect(avatarImageAltText).toBe("健康檢測助理");
+    expect(avatarImageAltText).toBe("AI 健康互動助理");
   });
 });

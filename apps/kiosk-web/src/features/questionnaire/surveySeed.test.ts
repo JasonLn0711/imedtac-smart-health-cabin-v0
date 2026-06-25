@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Model } from "survey-core";
 import phq9Seed from "../../../../../modules/questionnaire/seed/phq9.zh-TW.surveyjs.json";
+import { createKioskSurveyModel } from "./SurveyJsQuestionnaireRenderer";
 
 describe("PHQ-9 SurveyJS seed", () => {
   it("loads as 9 required radio questions", () => {
@@ -21,5 +22,14 @@ describe("PHQ-9 SurveyJS seed", () => {
     ]);
     expect(questions.every((question) => question.isRequired)).toBe(true);
     expect(questions.every((question) => question.getType() === "radiogroup")).toBe(true);
+  });
+
+  it("uses one-question-per-page kiosk navigation with explicit final submit", () => {
+    const survey = createKioskSurveyModel(phq9Seed);
+
+    expect(survey.questionsOnPageMode).toBe("questionPerPage");
+    expect(survey.goNextPageAutomatic).toBe(true);
+    expect(survey.allowCompleteSurveyAutomatic).toBe(false);
+    expect(survey.completeText).toBe("送出問卷");
   });
 });

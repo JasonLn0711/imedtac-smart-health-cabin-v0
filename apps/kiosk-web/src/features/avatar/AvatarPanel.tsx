@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Model, Question } from "survey-core";
+import type { Model } from "survey-core";
 import { useMachine } from "@xstate/react";
 import { AvatarImage } from "./AvatarImage";
 import { avatarStateLabel, avatarStateMachine } from "./avatarStateMachine";
 import type { AvatarState, VoiceAnswerDraft } from "./avatarTypes";
-import { candidateFromTranscript, confirmVoiceAnswer } from "./voiceQuestionnaireController";
+import { candidateFromTranscript, confirmVoiceAnswer, getCurrentSurveyQuestion } from "./voiceQuestionnaireController";
 
 interface AvatarPanelProps {
   model: Model;
@@ -23,10 +23,6 @@ const maxUtteranceMs = Number(
   import.meta.env.VITE_VOICE_MAX_UTTERANCE_MS ?? (endpointMode === "elder" ? 30000 : 20000)
 );
 const noSpeechTimeoutMs = Number(import.meta.env.VITE_VOICE_NO_SPEECH_TIMEOUT_MS ?? 5000);
-
-function getCurrentQuestion(model: Model): Question | null {
-  return model.getAllQuestions().find((question) => question.value === undefined || question.value === null) ?? null;
-}
 
 function toWakeSocketUrl(baseUrl: string): string {
   const url = new URL(baseUrl);
@@ -49,6 +45,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
   const [transcript, setTranscript] = useState("完全沒有");
   const [draft, setDraft] = useState<VoiceAnswerDraft | null>(null);
   const [confirmedCount, setConfirmedCount] = useState(0);
+  const [surveyRevision, setSurveyRevision] = useState(0);
   const [message, setMessage] = useState("等待喚醒詞，或直接使用手動開始與觸控問卷。");
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaChunksRef = useRef<Blob[]>([]);
@@ -56,11 +53,21 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
   const stopReasonRef = useRef<StopReason | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
   const state = snapshot.value as AvatarState;
-  const currentQuestion = useMemo(() => getCurrentQuestion(model), [model, confirmedCount]);
+  const currentQuestion = useMemo(() => getCurrentSurveyQuestion(model), [model, confirmedCount, surveyRevision]);
 
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
+
+  useEffect(() => {
+    const refresh = () => setSurveyRevision((revision) => revision + 1);
+    model.onCurrentPageChanged.add(refresh);
+    model.onValueChanged.add(refresh);
+    return () => {
+      model.onCurrentPageChanged.remove(refresh);
+      model.onValueChanged.remove(refresh);
+    };
+  }, [model]);
 
   useEffect(() => {
     if (!wakeWordEnabled) {
@@ -249,6 +256,9 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
       return;
     }
     confirmVoiceAnswer(currentQuestion, draft.candidate);
+    if (!model.isLastPage) {
+      model.nextPage();
+    }
     send({ type: "CONFIRM_YES" });
     setDraft(null);
     setConfirmedCount((count) => count + 1);
@@ -276,13 +286,13 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
   }
 
   return (
-    <aside className="avatar-panel" aria-label="Avatar voice guide">
+    <aside className="avatar-panel" aria-label="AI health interaction guide">
       <div className="avatar-figure">
         <AvatarImage state={state} />
       </div>
       <div className="avatar-content">
         <div className="avatar-status-row">
-          <strong>Avatar Agent</strong>
+          <strong>AI 健康互動助理</strong>
           <span className={`avatar-state avatar-state-${state}`}>{avatarStateLabel(state)}</span>
         </div>
         <p>{message}</p>
@@ -312,13 +322,13 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
             </button>
           )}
           <button type="button" onClick={readQuestion}>
-            Read
+            朗讀題目
           </button>
           <button type="button" onClick={mapAnswer}>
-            Map
+            產生候選答案
           </button>
           <button type="button" onClick={retry}>
-            Retry
+            重試
           </button>
         </div>
         {draft && (
@@ -330,7 +340,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
               Candidate: {draft.candidate.text} ({draft.candidate.value})
             </span>
             <button type="button" onClick={confirmAnswer}>
-              Confirm Answer
+              確認寫入
             </button>
           </div>
         )}

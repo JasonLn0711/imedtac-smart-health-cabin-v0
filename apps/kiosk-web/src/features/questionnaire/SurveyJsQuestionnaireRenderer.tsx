@@ -9,18 +9,29 @@ interface SurveyJsQuestionnaireRendererProps {
   renderSidecar?: (model: Model) => ReactNode;
 }
 
+export function createKioskSurveyModel(surveyJson: unknown): Model {
+  const survey = new Model({
+    ...(typeof surveyJson === "object" && surveyJson !== null ? surveyJson : {}),
+    questionsOnPageMode: "questionPerPage",
+    goNextPageAutomatic: true,
+    allowCompleteSurveyAutomatic: false,
+    showProgressBar: true,
+    progressBarLocation: "top"
+  });
+  survey.showCompletedPage = false;
+  survey.focusFirstQuestionAutomatic = false;
+  survey.completeText = "送出問卷";
+  survey.pageNextText = "下一題";
+  survey.pagePrevText = "上一題";
+  return survey;
+}
+
 export function SurveyJsQuestionnaireRenderer({
   surveyJson,
   onComplete,
   renderSidecar
 }: SurveyJsQuestionnaireRendererProps) {
-  const model = useMemo(() => {
-    const survey = new Model(surveyJson);
-    survey.showCompletedPage = false;
-    survey.focusFirstQuestionAutomatic = false;
-    survey.completeText = "送出問卷";
-    return survey;
-  }, [surveyJson]);
+  const model = useMemo(() => createKioskSurveyModel(surveyJson), [surveyJson]);
 
   useEffect(() => {
     const handler = (sender: Model) => {
@@ -34,9 +45,11 @@ export function SurveyJsQuestionnaireRenderer({
   }, [model, onComplete]);
 
   return (
-    <>
-      {renderSidecar?.(model)}
-      <Survey model={model} />
-    </>
+    <div className="survey-experience">
+      {renderSidecar && <div className="survey-avatar-rail">{renderSidecar(model)}</div>}
+      <div className="survey-question-stage">
+        <Survey model={model} />
+      </div>
+    </div>
   );
 }

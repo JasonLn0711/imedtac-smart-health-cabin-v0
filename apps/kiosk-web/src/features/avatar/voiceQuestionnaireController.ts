@@ -1,6 +1,26 @@
-import type { Question } from "survey-core";
+import type { Model, Question } from "survey-core";
 import type { SurveyChoice, VoiceAnswerCandidate } from "@shc/contracts";
 import { mapTranscriptToSurveyChoice } from "@shc/questionnaire-core";
+
+function isQuestion(element: unknown): element is Question {
+  const candidate = element as Question | null | undefined;
+  const type = candidate?.getType?.();
+  return Boolean(candidate?.name && type && type !== "page" && type !== "panel");
+}
+
+export function getCurrentSurveyQuestion(model: Model): Question | null {
+  if (isQuestion(model.currentSingleQuestion)) {
+    return model.currentSingleQuestion;
+  }
+  if (isQuestion(model.currentElement)) {
+    return model.currentElement;
+  }
+  const visiblePageQuestion = model.currentPage?.questions.find((question: Question) => question.isVisible);
+  if (visiblePageQuestion) {
+    return visiblePageQuestion;
+  }
+  return model.getAllQuestions().find((question) => question.value === undefined || question.value === null) ?? null;
+}
 
 export function getQuestionChoices(question: Question): SurveyChoice[] {
   const choices = question.visibleChoices as Array<{ value: unknown; text: unknown }>;

@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { Model } from "survey-core";
 import phq9Seed from "../../../../../modules/questionnaire/seed/phq9.zh-TW.surveyjs.json";
-import { candidateFromTranscript, confirmVoiceAnswer } from "./voiceQuestionnaireController";
+import { createKioskSurveyModel } from "../questionnaire/SurveyJsQuestionnaireRenderer";
+import { candidateFromTranscript, confirmVoiceAnswer, getCurrentSurveyQuestion } from "./voiceQuestionnaireController";
 
 function makeModel() {
   return new Model(phq9Seed);
@@ -52,6 +53,18 @@ describe("voice questionnaire controller", () => {
     });
   });
 
+  it("uses the current visible question for one-question-per-page voice mapping", () => {
+    const model = createKioskSurveyModel(phq9Seed);
+    const firstQuestion = getCurrentSurveyQuestion(model);
+
+    expect(firstQuestion?.name).toBe("phq9_01");
+    confirmVoiceAnswer(firstQuestion!, candidateFromTranscript(firstQuestion!, "完全沒有")!);
+    expect(model.nextPage()).toBe(true);
+    expect(getCurrentSurveyQuestion(model)?.name).toBe("phq9_02");
+    expect(model.prevPage()).toBe(true);
+    expect(getCurrentSurveyQuestion(model)?.name).toBe("phq9_01");
+  });
+
   it("returns no candidate for invalid speech so touch fallback remains needed", () => {
     const model = makeModel();
     const question = model.getQuestionByName("phq9_01");
@@ -59,4 +72,3 @@ describe("voice questionnaire controller", () => {
     expect(candidateFromTranscript(question, "不知道怎麼回答")).toBeNull();
   });
 });
-
