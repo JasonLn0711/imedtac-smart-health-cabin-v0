@@ -65,6 +65,16 @@ WAKE_WORD_LOCAL_ONLY=true \
 uvicorn app:app --host 0.0.0.0 --port 8013
 ```
 
+Live acceptance check:
+
+```bash
+WAKE_WORD_LIVE_WAIT_MS=15000 corepack pnpm smoke:wakeword:live
+```
+
+This check does not call `/simulate-wake`. It requires `/status` to report
+`mode=live`, `ready=true`, `listening=true`, and `last_error=null`, then waits
+for a real `wake.detected` event while the selected wake phrase is spoken.
+
 Event shape:
 
 ```json
