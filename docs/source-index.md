@@ -37,7 +37,8 @@ Co., Ltd.）Smart Health Cabin collaboration project.
 | `docs/prompts/voice-asr-safety-qwen3-reranker-codex-goal-prompt.md` | Codex execution prompt for the six-layer ASR safety pipeline, versioned voice domain packs, hotword-capability routing, Qwen3-Reranker-0.6B integration, and confirmation-gated questionnaire/RAG protection. |
 | `docs/voice-asr-safety-six-layer-pipeline.md` | Implemented six-layer ASR safety reference: confidence routing, N-best capability contract, domain-pack normalization, semantic frames, evidence metadata, confirmation, and touch fallback. |
 | `docs/reranker-qwen3-0.6b-integration.md` | Local Qwen3-Reranker-0.6B sidecar reference, endpoints, env vars, failure behavior, and bounded option-ranking scope. |
-| `packages/voice-safety-core/` | Deterministic ASR safety core with versioned domain packs for PHQ-9, HPA adult preventive health, Smart Cabin measurements, hotwords, normalization, semantic frames, and routing decisions. |
+| `packages/voice-safety-core/` | Deterministic ASR safety core with versioned domain packs for PHQ-9, HPA adult preventive health, Smart Cabin measurements, kiosk FAQ, phase-2 vision/hearing vocabulary, hotwords, normalization, semantic frames, and routing decisions. |
+| `packages/voice-safety-core/domain-packs/README.md` | Domain-pack extension contract for adding future questionnaire, measurement, vision, hearing, or kiosk FAQ vocabulary without rewriting the six-layer safety pipeline. |
 | `apps/model-sidecars/reranker-service/` | FastAPI reranker boundary on port `8014` exposing `/healthz`, `/status`, `/rerank`, and `/rerank-options` for Qwen3-Reranker-0.6B-compatible ranking. |
 | `docs/handoff/sprint-4.5-model-selection.md` | Sprint 4.5 handoff for frozen provider choices, provider modes, default-voice boundary, static Avatar, sidecar paths, and deferred animation/custom-voice scope. |
 | `docs/handoff/sprint-0-4-to-sprint-5-plus-handoff.md` | Sprint 0-4.5 capability map and revised Sprint 5+ continuation guide: provider-mode entry gate, static Avatar scope, repeatable demo hardening, Phase 1 exit definition, and post-Sprint 5 activation lanes. |
@@ -60,7 +61,7 @@ Co., Ltd.）Smart Health Cabin collaboration project.
 | `apps/model-sidecars/wakeword-service/app.py` | FastAPI implementation for `/healthz`, `/status`, `/simulate-wake`, `WS /events`, and local live microphone readiness; wake word is activation-only and never writes questionnaire answers. |
 | `docs/prompts/wakeword-sherpa-onnx-kws-goal-prompt.md` | Executable Codex goal prompt for installing the sherpa-onnx KWS Zipformer zh-en 3M model, generating the `你好小慧` keyword file, and running live wakeword acceptance. |
 | `apps/kiosk-web/src/features/questionnaire/SurveyJsQuestionnaireRenderer.tsx` | Kiosk SurveyJS adapter for one-question-per-page rendering and Avatar/question layout shell. |
-| `apps/kiosk-web/src/features/avatar/voiceQuestionnaireController.ts` | Voice-to-SurveyJS controller that maps speech candidates to the currently visible SurveyJS question. |
+| `apps/kiosk-web/src/features/avatar/voiceQuestionnaireController.ts` | SurveyJS confirmation helper for applying already-confirmed voice candidates to the currently visible question; live voice mapping routes through the API safety pipeline first. |
 | `apps/kiosk-web/src/styles/app.css` | Kiosk layout rules for replaceable Avatar rail, active-question stage, desktop 1:2 columns, and mobile stacked fallback. |
 | `docs/devlog/2026-06-26.md` | Sprint 0 D2 closeout for monorepo, app/API/storage skeleton, local dev, CI, and validation evidence. |
 | `docs/devlog/2026-06-29.md` | Sprint 1 D1 closeout for PHQ-9 SurveyJS kiosk render and browser fill/submit evidence. |
