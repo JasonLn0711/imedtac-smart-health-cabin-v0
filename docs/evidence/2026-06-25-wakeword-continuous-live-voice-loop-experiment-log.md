@@ -1068,6 +1068,716 @@ say "你好小慧" -> hear greeting -> hear first question -> speak an answer
 -> confirm mapping -> hear <= 2 sentence answer summary plus next question.
 ```
 
+## Experiment Run: Answer Follow-up LLM Transcript And TTS
+
+Experiment purpose:
+
+```text
+Validate that after a user answer is mapped and confirmed, the API sends the
+user voice transcript into the LLM, receives a <= 2 sentence follow-up, and
+plays that follow-up through BreezyVoice TTS before continuing to the next
+question.
+```
+
+Time record:
+
+| Field | Value |
+| --- | --- |
+| Hardware / runtime snapshot | `2026-06-25T23:58:10+08:00` / `2026-06-25T15:58:10Z` |
+| Focused answer-followup test run | `2026-06-25T23:57:30+08:00` local start from Vitest output |
+| Live acceptance check started | `2026-06-25T23:58:28.053+08:00` / `2026-06-25T15:58:28.053Z` |
+| Live acceptance check ended | `2026-06-25T23:58:31.653+08:00` / `2026-06-25T15:58:31.653Z` |
+| Direct API answer-followup smoke started | `2026-06-25T23:58:52.403+08:00` / `2026-06-25T15:58:52.403Z` |
+| Direct API answer-followup smoke ended | `2026-06-25T23:59:02.516+08:00` / `2026-06-25T15:59:02.516Z` |
+| Browser manual-transcript smoke started | `2026-06-25T23:59:45.867+08:00` / `2026-06-25T15:59:45.867Z` |
+| Browser manual-transcript smoke ended | `2026-06-25T23:59:47.958+08:00` / `2026-06-25T15:59:47.958Z` |
+| Browser fake-mic boundary run started | `2026-06-26T00:01:49.021+08:00` / `2026-06-25T16:01:49.021Z` |
+| Browser fake-mic boundary run ended | `2026-06-26T00:03:20.018+08:00` / `2026-06-25T16:03:20.018Z` |
+| Hard-cap focused test run | `2026-06-26T00:04:00+08:00` local start from Vitest output |
+| Browser fake-mic retry started | `2026-06-26T00:04:19.788+08:00` / `2026-06-25T16:04:19.788Z` |
+| Browser fake-mic retry ended | `2026-06-26T00:05:50.811+08:00` / `2026-06-25T16:05:50.811Z` |
+| Log update timestamp | `2026-06-26T00:06:11+08:00` |
+
+Code state:
+
+| Field | Value |
+| --- | --- |
+| Repo | `/home/jnclaw/every_on_git_jnclaw/phd-life-system/imedtac-smart-health-cabin-v0` |
+| Branch | `main` |
+| Base commit at snapshot | `447963ec1634b126f557541cf827cf0c534b1405` |
+| Follow-up implementation commit visible later | `6018440 feat: add answer followup guidance` |
+| Worktree state at snapshot | Local modified files were present. The answer-followup implementation was visible in source; unrelated repository/outbox/contracts files were also dirty later and were not changed for this experiment log. |
+
+Implementation surfaces validated:
+
+| File | Evidence |
+| --- | --- |
+| `apps/api-server/src/services/questionnaireService.ts` | Added `answer_followup` guidance prompt with `transcript`, `answer_text`, and `next_question_name`; LLM receives the transcript and fallback remains TTS-ready. |
+| `apps/api-server/src/routes/questionnaireRoutes.ts` | `/api/v1/agent-turns/respond` accepts `next_question_name`, `transcript`, `answer_text`, and `purpose`. |
+| `apps/kiosk-web/src/features/avatar/voiceAgentApi.ts` | Kiosk sends `purpose: "answer_followup"` with transcript and mapped answer text. |
+| `apps/kiosk-web/src/features/avatar/AvatarPanel.tsx` | Confirmed answer flow now requests LLM follow-up before TTS; a hard max recording cap was added to cover endpointing stalls. |
+| `apps/api-server/src/services/questionnaireService.test.ts` | Test proves answer transcript enters the LLM prompt and fallback text does not expose prompt instructions. |
+
+### Hardware And Runtime Snapshot
+
+```text
+OS: Ubuntu 24.04.4 LTS noble
+Kernel: Linux 6.17.0-35-generic x86_64
+CPU: Intel(R) Core(TM) i9-14900HX
+CPU topology: 24 cores / 32 logical CPUs
+RAM: 62 GiB total, 41 GiB available at capture
+Swap: 8.0 GiB total
+GPU: NVIDIA GeForce RTX 4090 Laptop GPU
+NVIDIA driver: 580.159.03
+CUDA runtime shown by nvidia-smi: 13.0
+GPU memory: 16,376 MiB total, 6,102 MiB used at capture
+GPU temperature: 47 C
+GPU power draw: 5.98 W at capture
+GPU utilization: 0% at capture
+node: v22.23.1
+pnpm: 9.15.0
+system python3: Python 3.12.3
+Docker: 29.1.3
+Docker Compose: v2.30.3
+```
+
+GPU compute processes at capture:
+
+```text
+PID 86692  ../../.venv-asr/bin/python                                     2234 MiB
+PID 388803 /home/jnclaw/every_on_git_jnclaw/BreezyVoice/.venv/bin/python  3840 MiB
+```
+
+Runtime services:
+
+| Port | Service | PID / container | Role |
+| ---: | --- | --- | --- |
+| `3010` | `@shc/api-server` live server | PID `471336` | API with current answer-followup code |
+| `3011` | `@shc/voice-agent-server` live server | PID `450942` | Voice-agent readiness and LLM gate |
+| `5176` | `kiosk-web` Vite server | PID `451093` | User test browser |
+| `8001` | Breeze ASR sidecar | PID `86692` | Live ASR endpoint |
+| `8013` | sherpa-onnx wakeword sidecar | PID `358195` | Live wakeword event stream |
+| `9003` | BreezyVoice upstream | PID `388803` | Live TTS upstream |
+| `9092` | Redpanda broker | Docker `smart-health-cabin-redpanda` | Event broker |
+| `9644` | Redpanda admin | Docker `smart-health-cabin-redpanda` | Provider readiness |
+| `11434` | Ollama | PID `86744` | Local LLM endpoint |
+
+Wakeword status remained live:
+
+```json
+{
+  "provider": "sherpa-onnx",
+  "phrase": "你好小慧",
+  "model": "sherpa-onnx-kws-zipformer-zh-en-3M-2025-12-20",
+  "mode": "live",
+  "ready": true,
+  "healthy": true,
+  "listening": true,
+  "threshold": 0.65,
+  "last_error": null
+}
+```
+
+### Focused Local Checks
+
+Commands:
+
+```bash
+corepack pnpm test apps/api-server/src/services/questionnaireService.test.ts apps/kiosk-web/src/features/avatar/avatarStateMachine.test.ts apps/kiosk-web/src/features/avatar/voiceQuestionnaireController.test.ts packages/voice-safety-core/src/voice-safety-core.test.ts
+corepack pnpm --filter @shc/api-server typecheck
+corepack pnpm --filter @shc/kiosk-web typecheck
+corepack pnpm --filter @shc/voice-safety-core typecheck
+git diff --check
+```
+
+Observed result:
+
+```text
+Focused Vitest at 2026-06-25T23:57:30+08:00: 4 files passed, 60 tests passed.
+@shc/api-server typecheck: passed.
+@shc/kiosk-web typecheck: passed.
+@shc/voice-safety-core typecheck: passed.
+git diff --check: passed.
+```
+
+After adding the browser recording hard cap:
+
+```bash
+corepack pnpm test apps/kiosk-web/src/features/avatar/avatarStateMachine.test.ts apps/kiosk-web/src/features/avatar/voiceQuestionnaireController.test.ts apps/api-server/src/services/questionnaireService.test.ts
+corepack pnpm --filter @shc/kiosk-web typecheck
+git diff --check
+```
+
+Observed result:
+
+```text
+Focused Vitest at 2026-06-26T00:04:00+08:00: 3 files passed, 50 tests passed.
+@shc/kiosk-web typecheck: passed.
+git diff --check: passed.
+```
+
+### Live Acceptance Check
+
+Command:
+
+```bash
+API_BASE_URL=http://localhost:3010 \
+VOICE_AGENT_SERVER_URL=http://localhost:3011 \
+corepack pnpm live:check
+```
+
+Result:
+
+```json
+{
+  "startedAt": "2026-06-25T15:58:28.053Z",
+  "endedAt": "2026-06-25T15:58:31.653Z",
+  "code": 0,
+  "eligible": true,
+  "providers": {
+    "asr": {
+      "provider": "faster_whisper_breeze_asr_26",
+      "model": "Breeze-ASR-26-CT2-int8",
+      "mode": "live",
+      "endpoint": "http://localhost:8001",
+      "ready": true,
+      "healthy": true,
+      "latencyMs": 13,
+      "computeBackend": "gpu",
+      "acceptanceEligible": true
+    },
+    "llm": {
+      "provider": "ollama_native",
+      "model": "gemma4:e4b",
+      "mode": "live",
+      "endpoint": "http://localhost:11434",
+      "ready": true,
+      "healthy": true,
+      "latencyMs": 3013,
+      "computeBackend": "gpu",
+      "acceptanceEligible": true
+    },
+    "tts": {
+      "provider": "breezyvoice_default",
+      "model": "MediaTek-Research/BreezyVoice",
+      "mode": "live",
+      "endpoint": "http://localhost:9003/v1",
+      "ready": true,
+      "healthy": true,
+      "latencyMs": 2,
+      "computeBackend": "gpu",
+      "acceptanceEligible": true
+    },
+    "reranker": {
+      "provider": "qwen3_reranker_0_6b",
+      "model": "Qwen3-Reranker-0.6B",
+      "mode": "unavailable",
+      "endpoint": "http://localhost:8014",
+      "ready": false,
+      "healthy": false,
+      "lastError": "TypeError",
+      "fallback": "deterministic mapping + confirmation / touch fallback"
+    },
+    "redpanda": {
+      "provider": "redpanda",
+      "mode": "live",
+      "endpoint": "http://localhost:9644",
+      "ready": true,
+      "healthy": true,
+      "latencyMs": 2,
+      "acceptanceEligible": true
+    }
+  }
+}
+```
+
+Scope note: reranker remained optional for this run through
+`RERANKER_REQUIRED_FOR_LIVE_ACCEPTANCE=false`; deterministic mapping and
+confirmation remained the active scope-control path.
+
+### Direct API Answer-Followup Smoke
+
+Sequence:
+
+```text
+POST /api/v1/agent-sessions
+POST /api/v1/agent-turns/respond with purpose=wake_greeting
+POST /api/v1/agent-turns/respond with question_name=phq9_01
+POST /api/v1/agent-turns/respond with purpose=answer_followup,
+  question_name=phq9_01,
+  next_question_name=phq9_02,
+  transcript="我想應該是幾乎每天",
+  answer_text="幾乎每天"
+POST /api/v1/agent-turns/tts with the LLM follow-up text
+```
+
+Result:
+
+```json
+{
+  "started": "2026-06-25T15:58:52.403Z",
+  "ended": "2026-06-25T15:59:02.516Z",
+  "agentSessionId": "e6e5526b-a5b9-4687-8cff-3ab6a39c9ba2",
+  "greetingProvider": "ollama_native",
+  "greeting": "您好，我是 Smart Health Cabin 的語音導引。很高興能協助您完成這次的問卷調查。請不用擔心，無論是聽我的引導還是自己操作螢幕都可以。",
+  "firstQuestionProvider": "ollama_native",
+  "firstQuestion": "這題想了解您在過去兩週內，做事情時是否感到提不起勁或沒有樂趣。請您參考畫面上的四個選項：「完全沒有」、「幾天」、「一半以上的天數」以及「幾乎每天」，選擇最符合您狀況的選項即可。",
+  "followupProvider": "ollama_native",
+  "followupModel": "gemma4:e4b",
+  "followupGuidance": "您表示做事情時幾乎每天都提不起勁或沒有樂趣，接下來請告訴我您是否感到心情低落、沮喪或絕望？請從畫面上的選項中選擇最符合您的頻率。",
+  "followupSentenceCountApprox": 2,
+  "followupMentionsAnswer": true,
+  "followupMentionsNextQuestion": true,
+  "ttsProvider": "breezyvoice_default",
+  "ttsModel": "MediaTek-Research/BreezyVoice",
+  "ttsAudioPrefix": "data:audio/wav;base64,UklGRkaa",
+  "ttsAudioLength": 1013886
+}
+```
+
+Interpretation:
+
+- The LLM received answer-followup context including the user transcript and
+  confirmed answer text.
+- The observed follow-up was 2 sentences.
+- The observed follow-up summarized the answer and asked PHQ-9 item 2.
+- BreezyVoice returned a WAV data URL for the follow-up.
+
+### Browser Manual-Transcript Confirmation Smoke
+
+This browser check used the existing debug/manual transcript path to prove that
+the front end sends the confirmed answer through the new answer-followup route.
+
+Flow:
+
+```text
+open http://localhost:5176/
+click "幾乎每天"
+click "整理語音候選"
+click "確認並填入"
+wait for phq9_02 follow-up TTS request
+```
+
+Result:
+
+```json
+{
+  "startedAt": "2026-06-25T15:59:45.867Z",
+  "endedAt": "2026-06-25T15:59:47.958Z",
+  "url": "http://localhost:5176/",
+  "answerFollowupRequestSeen": true,
+  "followupTtsSeen": true,
+  "nextQuestionVisible": true,
+  "errors": []
+}
+```
+
+Observed request bodies:
+
+```json
+[
+  "{\"agent_session_id\":\"1f7a021c-4996-4cf9-ae31-6b28b95ac3f3\",\"question_name\":\"phq9_01\",\"transcript\":\"幾乎每天\"}",
+  "{\"agent_session_id\":\"1f7a021c-4996-4cf9-ae31-6b28b95ac3f3\",\"question_name\":\"phq9_01\",\"next_question_name\":\"phq9_02\",\"transcript\":\"幾乎每天\",\"answer_text\":\"幾乎每天\",\"purpose\":\"answer_followup\"}",
+  "{\"agent_session_id\":\"1f7a021c-4996-4cf9-ae31-6b28b95ac3f3\",\"question_name\":\"phq9_02\",\"text\":\"您表示做事情時幾乎每天都提不起勁或沒有樂趣，接下來我們來問一下您是否感到心情低落、沮喪或絕望呢？請根據過去兩週的狀況，從畫面選項中選取最符合您的答案即可。\"}"
+]
+```
+
+Interpretation:
+
+- Browser confirm flow sent `purpose="answer_followup"`.
+- Browser confirm flow sent `transcript` and `answer_text`.
+- Browser confirm flow played phq9_02 TTS from the LLM follow-up.
+
+### Browser Fake-Microphone Boundary Runs
+
+The closest headless browser test used:
+
+```text
+--use-fake-ui-for-media-stream
+--use-fake-device-for-media-stream
+--use-file-for-fake-audio-capture=/tmp/smart-health-cabin-answer-daily.wav
+--autoplay-policy=no-user-gesture-required
+```
+
+First run result:
+
+```json
+{
+  "startedAt": "2026-06-25T16:01:49.021Z",
+  "endedAt": "2026-06-25T16:03:20.018Z",
+  "confirmVisible": false,
+  "wakeGreetingRequestSeen": true,
+  "firstQuestionRequestSeen": true,
+  "ttsRequestCount": 2,
+  "asrRequestSeen": false,
+  "mapAnswerRequestSeen": false,
+  "answerFollowupRequestSeen": false,
+  "errors": [
+    "locator.waitFor: Timeout 90000ms exceeded"
+  ]
+}
+```
+
+Observed state at timeout:
+
+```text
+正在錄音；系統會用 VAD / endpointing 自動停止，然後以 TTS 回覆。
+連續語音模式啟用中，已完成 0 輪語音回覆。
+phq9_01: 做事時提不起勁或沒有樂趣
+```
+
+Fix applied after this boundary finding:
+
+```text
+apps/kiosk-web/src/features/avatar/AvatarPanel.tsx now adds a hard max
+recording timer in startRecording, so a browser AudioContext/fake-mic
+endpointing stall cannot leave the recorder open indefinitely.
+```
+
+Retry result after the hard cap:
+
+```json
+{
+  "startedAt": "2026-06-25T16:04:19.788Z",
+  "endedAt": "2026-06-25T16:05:50.811Z",
+  "confirmVisible": false,
+  "wakeGreetingRequestSeen": true,
+  "firstQuestionRequestSeen": true,
+  "asrRequestSeen": false,
+  "mapAnswerRequestSeen": false,
+  "answerFollowupRequestSeen": false,
+  "followupTtsSeen": false,
+  "errors": [
+    "locator.waitFor: Timeout 90000ms exceeded"
+  ]
+}
+```
+
+Interpretation:
+
+- The headless fake-microphone path confirmed wake greeting and first-question
+  TTS request ordering.
+- The same headless path did not provide strong evidence for the recorded-answer
+  ASR leg because it did not reach `/api/v1/agent-turns/asr` within the timeout.
+- The answer-followup behavior is therefore proven by direct live API smoke and
+  browser manual-transcript confirmation smoke, not by the fake-microphone
+  browser run.
+- The next validation layer should be a visible browser run with real microphone
+  permission and physical spoken answer on the target workstation.
+
+### Result And Scope Controls
+
+Confirmed capability:
+
+```text
+confirmed answer transcript
+-> API sends transcript and answer_text into LLM prompt
+-> LLM returns <= 2 sentence answer summary + next question prompt
+-> browser sends that text to BreezyVoice TTS
+-> SurveyJS advances to the same next question
+```
+
+Scope controls:
+
+- The wakeword service was live and listening for `你好小慧`.
+- The browser wake tests used the dev-only simulated wake button for
+  deterministic request evidence.
+- The direct live API and browser manual-transcript path prove the
+  answer-followup LLM/TTS contract.
+- The headless fake-microphone VAD/ASR path remains a validation boundary; it
+  needs a visible browser and physical microphone pass before claiming real
+  spoken-answer completion.
+
+## Experiment Run: Accelerated Browser Full Voice Loop
+
+Experiment purpose:
+
+```text
+Validate the complete browser control path:
+simulated wake -> LLM greeting -> BreezyVoice greeting TTS -> LLM first question
+-> BreezyVoice first-question TTS -> fake microphone recording -> ASR
+-> answer mapping -> user confirmation -> LLM answer follow-up from transcript
+-> BreezyVoice next-question TTS -> return to another recording turn.
+```
+
+Time record:
+
+| Field | Value |
+| --- | --- |
+| Hardware / runtime snapshot | `2026-06-26T00:16:41+08:00` / `2026-06-25T16:16:41Z` |
+| Isolated fake-mic recording check started | `2026-06-26T00:13:22.093+08:00` / `2026-06-25T16:13:22.093Z` |
+| Isolated fake-mic recording check ended | `2026-06-26T00:13:28.546+08:00` / `2026-06-25T16:13:28.546Z` |
+| Full browser flow started | `2026-06-26T00:13:52.916+08:00` / `2026-06-25T16:13:52.916Z` |
+| Full browser flow ended | `2026-06-26T00:14:17.098+08:00` / `2026-06-25T16:14:17.098Z` |
+| Continuous-return check started | `2026-06-26T00:15:45.253+08:00` / `2026-06-25T16:15:45.253Z` |
+| Continuous-return check ended | `2026-06-26T00:16:23.749+08:00` / `2026-06-25T16:16:23.749Z` |
+| Final live acceptance check | `2026-06-26T00:16:41+08:00` local capture |
+
+Code state:
+
+| Field | Value |
+| --- | --- |
+| Repo | `/home/jnclaw/every_on_git_jnclaw/phd-life-system/imedtac-smart-health-cabin-v0` |
+| Branch | `main` |
+| Base commit | `60184406f6e374ae429415759418ec948f66d1c1` |
+| Worktree state | Local modified files were present, including the Avatar recording robustness fix and this evidence log. Other dirty files in repository/outbox/contracts were present and not part of this browser voice-loop experiment. |
+
+Runtime snapshot:
+
+```text
+GPU: NVIDIA GeForce RTX 4090 Laptop GPU
+NVIDIA driver: 580.159.03
+GPU memory: 16,376 MiB total, 9,437 MiB used at capture
+GPU temperature: 50 C
+GPU power draw: 16.86 W
+GPU utilization: 0%
+node: v22.23.1
+pnpm: 9.15.0
+python3: Python 3.12.3
+```
+
+Live acceptance check:
+
+```text
+API_BASE_URL=http://localhost:3010 VOICE_AGENT_SERVER_URL=http://localhost:3011 corepack pnpm live:check
+```
+
+Result summary:
+
+```json
+{
+  "eligible": true,
+  "providers": {
+    "asr": { "provider": "faster_whisper_breeze_asr_26", "mode": "live", "ready": true, "healthy": true, "latencyMs": 1, "acceptanceEligible": true },
+    "llm": { "provider": "ollama_native", "model": "gemma4:e4b", "mode": "live", "ready": true, "healthy": true, "latencyMs": 333, "acceptanceEligible": true },
+    "tts": { "provider": "breezyvoice_default", "model": "MediaTek-Research/BreezyVoice", "mode": "live", "ready": true, "healthy": true, "latencyMs": 2, "acceptanceEligible": true },
+    "redpanda": { "provider": "redpanda", "mode": "live", "ready": true, "healthy": true, "latencyMs": 0, "acceptanceEligible": true },
+    "reranker": { "provider": "qwen3_reranker_0_6b", "mode": "unavailable", "ready": false, "fallback": "deterministic mapping + confirmation / touch fallback" }
+  }
+}
+```
+
+### Browser Harness
+
+Playwright used the live kiosk URL:
+
+```text
+http://localhost:5176/
+```
+
+Browser flags:
+
+```text
+--use-fake-ui-for-media-stream
+--use-fake-device-for-media-stream
+--use-file-for-fake-audio-capture=/tmp/smart-health-cabin-answer-daily.wav
+--autoplay-policy=no-user-gesture-required
+```
+
+Playback acceleration:
+
+```text
+HTMLMediaElement.play was patched inside the Playwright page to dispatch
+`ended` immediately. This keeps the browser control-path test fast while still
+calling the live API TTS endpoint and receiving live BreezyVoice audio data.
+```
+
+### Root-Cause Fix Before Full Success
+
+The isolated fake-mic recording check showed the previous recording path could
+drop a usable audio blob when the browser RMS detector reported
+`NO_SPEECH_TIMEOUT`. The minimal fix was:
+
+```text
+If MediaRecorder produces a non-empty audio Blob, send it to ASR even when the
+RMS endpointing path labels the stop reason as NO_SPEECH_TIMEOUT. Only a truly
+empty audio Blob stays in no-speech retry.
+```
+
+Focused checks after the fix:
+
+```bash
+corepack pnpm test apps/kiosk-web/src/features/avatar/avatarStateMachine.test.ts apps/kiosk-web/src/features/avatar/voiceQuestionnaireController.test.ts
+corepack pnpm --filter @shc/kiosk-web typecheck
+git diff --check
+```
+
+Observed result:
+
+```text
+Focused Vitest at 2026-06-26T00:13:07+08:00: 2 files passed, 23 tests passed.
+@shc/kiosk-web typecheck: passed.
+git diff --check: passed.
+```
+
+Isolated recording result after the fix:
+
+```json
+{
+  "startedAt": "2026-06-25T16:13:22.093Z",
+  "endedAt": "2026-06-25T16:13:28.546Z",
+  "asrRequestSeen": true,
+  "mapAnswerRequestSeen": true,
+  "confirmVisible": true,
+  "recognizedTranscript": "幾乎每天 幾乎每天 幾乎",
+  "mappedCandidate": "幾乎每天"
+}
+```
+
+### Full Browser Flow Result
+
+Result:
+
+```json
+{
+  "startedAt": "2026-06-25T16:13:52.916Z",
+  "endedAt": "2026-06-25T16:14:17.098Z",
+  "url": "http://localhost:5176/",
+  "confirmVisible": true,
+  "wakeGreetingRequestSeen": true,
+  "greetingTtsSeen": true,
+  "firstQuestionRequestSeen": true,
+  "firstQuestionTtsSeen": true,
+  "asrRequestSeen": true,
+  "mapAnswerRequestSeen": true,
+  "answerFollowupRequestSeen": true,
+  "followupTtsSeen": true,
+  "nextQuestionVisible": true,
+  "errors": []
+}
+```
+
+Observed request sequence:
+
+```json
+[
+  {
+    "at": "2026-06-25T16:13:53.883Z",
+    "path": "/api/v1/agent-turns/respond",
+    "body": { "purpose": "wake_greeting" }
+  },
+  {
+    "at": "2026-06-25T16:13:54.703Z",
+    "path": "/api/v1/agent-turns/tts",
+    "body": {
+      "text": "您好，很高興為您服務。請不用擔心，我在旁邊會一步步引導您完成問卷的。如果遇到任何問題，都可以隨時告訴我喔。"
+    }
+  },
+  {
+    "at": "2026-06-25T16:14:01.100Z",
+    "path": "/api/v1/agent-turns/respond",
+    "body": { "question_name": "phq9_01" }
+  },
+  {
+    "at": "2026-06-25T16:14:02.066Z",
+    "path": "/api/v1/agent-turns/tts",
+    "body": {
+      "question_name": "phq9_01",
+      "text": "這題是在詢問您過去兩週內，在「做事時是否感到提不起勁或沒有樂趣」的頻率。請您回想一下這段時間的狀況，然後根據畫面上的選項選擇最符合您感受的答案即可。"
+    }
+  },
+  {
+    "at": "2026-06-25T16:14:14.603Z",
+    "path": "/api/v1/agent-turns/asr",
+    "body": {
+      "question_name": "phq9_01",
+      "audio_base64": "<base64:108176>",
+      "audio_format": "webm",
+      "transcript": "完全沒有"
+    }
+  },
+  {
+    "at": "2026-06-25T16:14:14.988Z",
+    "path": "/api/v1/agent-turns/map-answer",
+    "body": {
+      "question_name": "phq9_01",
+      "transcript": "幾乎每天 幾乎每天 幾乎",
+      "asr_confidence": 1
+    }
+  },
+  {
+    "at": "2026-06-25T16:14:14.994Z",
+    "path": "/api/v1/agent-turns/tts",
+    "body": {
+      "question_name": "phq9_01",
+      "text": "我剛剛聽到的是「幾乎每天」。請確認後填入問卷。"
+    }
+  },
+  {
+    "at": "2026-06-25T16:14:15.336Z",
+    "path": "/api/v1/agent-turns/respond",
+    "body": {
+      "question_name": "phq9_01",
+      "next_question_name": "phq9_02",
+      "transcript": "幾乎每天 幾乎每天 幾乎",
+      "answer_text": "幾乎每天",
+      "purpose": "answer_followup"
+    }
+  },
+  {
+    "at": "2026-06-25T16:14:16.910Z",
+    "path": "/api/v1/agent-turns/tts",
+    "body": {
+      "question_name": "phq9_02",
+      "text": "您表示自己「做事時提不起勁或沒有樂趣」的頻率是幾乎每天。接下來，請問您是否感到心情低落、沮喪或絕望呢？"
+    }
+  }
+]
+```
+
+### Continuous Return Result
+
+Result:
+
+```json
+{
+  "startedAt": "2026-06-25T16:15:45.253Z",
+  "endedAt": "2026-06-25T16:16:23.749Z",
+  "returnedToSecondAsr": true,
+  "asrRequestCount": 2,
+  "mapAnswerRequestCount": 1,
+  "answerFollowupRequestCount": 1,
+  "ttsQuestionNames": ["greeting", "phq9_01", "phq9_01", "phq9_02"],
+  "visibleNextQuestion": true,
+  "errors": []
+}
+```
+
+Interpretation:
+
+- After the first confirmed answer and phq9_02 TTS, the browser returned to
+  another recording turn and emitted a second ASR request.
+- This proves the loop is continuous at the browser control-path level.
+
+### Result And Scope Controls
+
+Confirmed capability:
+
+```text
+wake event
+-> live LLM generated <= 3 sentence greeting
+-> live BreezyVoice TTS for greeting
+-> live LLM generated oral first-question guidance
+-> live BreezyVoice TTS for first question
+-> fake microphone answer recording
+-> live ASR transcript
+-> deterministic answer mapping and user confirmation
+-> live LLM receives user transcript and confirmed answer
+-> <= 2 sentence answer summary + next question prompt
+-> live BreezyVoice TTS for next question
+-> browser returns to the next recording turn
+```
+
+Scope controls:
+
+- Wakeword sidecar remained live for `你好小慧`; this browser test used the
+  dev-only simulated wake event for deterministic automation.
+- Audio playback was accelerated inside Playwright, but live TTS requests were
+  still sent to the BreezyVoice endpoint.
+- Fake microphone input used `/tmp/smart-health-cabin-answer-daily.wav`; the
+  next validation layer is a visible-browser physical microphone pass in the
+  actual room.
+
 ## Experiment Run: Answer Follow-Up Guidance Code Check
 
 Experiment purpose:
