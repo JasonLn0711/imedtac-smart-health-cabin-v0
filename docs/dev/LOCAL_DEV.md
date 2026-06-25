@@ -176,7 +176,8 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
 WAKE_WORD_ENABLED=true \
 WAKE_WORD_MODE=mock \
-WAKE_WORD_PROVIDER=openwakeword \
+WAKE_WORD_PROVIDER=porcupine \
+WAKE_WORD_PHRASE=小慧你好 \
 WAKE_WORD_SERVICE_URL=http://localhost:8013 \
 WAKE_WORD_THRESHOLD=0.65 \
 WAKE_WORD_COOLDOWN_MS=2000 \
@@ -191,14 +192,15 @@ microphone device are selected:
 cd apps/model-sidecars/wakeword-service
 WAKE_WORD_ENABLED=true \
 WAKE_WORD_MODE=live \
-WAKE_WORD_PROVIDER=openwakeword \
+WAKE_WORD_PROVIDER=porcupine \
+WAKE_WORD_PHRASE=小慧你好 \
 WAKE_WORD_SERVICE_URL=http://localhost:8013 \
-WAKE_WORD_MODEL_PATH=/models/wakeword/smart-health-cabin.tflite \
-WAKE_WORD_INFERENCE_FRAMEWORK=tflite \
+PICOVOICE_ACCESS_KEY="$PICOVOICE_ACCESS_KEY" \
+PORCUPINE_KEYWORD_PATH=.local/models/wakeword/xiao-hui-ni-hao_linux.ppn \
+PORCUPINE_MODEL_PATH=.local/models/picovoice/porcupine_params_zh.pv \
+PORCUPINE_SENSITIVITY=0.65 \
 WAKE_WORD_THRESHOLD=0.65 \
 WAKE_WORD_COOLDOWN_MS=2000 \
-WAKE_WORD_SAMPLE_RATE=16000 \
-WAKE_WORD_CHUNK_SIZE=1280 \
 WAKE_WORD_DEVICE_INDEX=0 \
 WAKE_WORD_LOCAL_ONLY=true \
 .venv/bin/python -m uvicorn app:app --host 0.0.0.0 --port 8013
@@ -222,9 +224,9 @@ WAKE_WORD_LIVE_WAIT_MS=15000 corepack pnpm smoke:wakeword:live
 ```
 
 This live check does not call `/simulate-wake`; speak the selected wake phrase
-while it waits for a real `wake.detected` event. It rejects the default
-`custom_or_builtin` model unless `WAKE_WORD_LIVE_ALLOW_BUILTIN=true` is set for
-engineering-only bundled-model checks.
+`小慧你好` while it waits for a real `wake.detected` event. It requires
+`provider=porcupine`, the selected phrase, a Picovoice AccessKey, the Mandarin
+`.pv` model, and the custom Linux `.ppn` keyword file.
 
 Provider status:
 

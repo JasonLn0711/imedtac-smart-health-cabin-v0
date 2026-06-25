@@ -80,7 +80,7 @@ configuration.
 | Avatar UI state | XState + `@xstate/react` | `apps/kiosk-web/src/features/avatar/` |
 | Browser capture | Web `MediaRecorder` | `docs/handoff/sprint-4.5-model-selection.md` |
 | Voice activation gate | Local wake word with tap-to-start fallback | Sprint 5.6 decision |
-| Wake word provider | `openWakeWord` sidecar first; Picovoice Porcupine as commercial fallback | `apps/model-sidecars/wakeword-service/README.md` |
+| Wake word provider | Picovoice Porcupine first for Mandarin demo reliability; openWakeWord kept as engineering fallback | `apps/model-sidecars/wakeword-service/README.md` |
 | Voice provider mode | `mock`, `live`, `unavailable` status model | `apps/voice-agent-server/README.md` |
 | ASR provider | `faster-whisper` + `Breeze-ASR-26` CTranslate2 int8 | `docs/handoff/sprint-4.5-model-selection.md` |
 | ASR sidecar | Python FastAPI sidecar on port `8011` | `apps/model-sidecars/asr-service/README.md` |
@@ -102,8 +102,9 @@ constraint changes them.
 | --- | --- | --- |
 | Start recording | Local wake word primary, tap-to-start fallback | Supports hands-free activation without making the system always write from speech |
 | Always-listening mode | Not enabled as an assistant behavior | Wake word listens only as a local activation gate |
-| Wake word | Enabled as local gate through `openWakeWord` sidecar | Fits local-first sidecar architecture |
-| Wake word commercial fallback | Picovoice Porcupine evaluation gate | Use only if Mandarin wake phrase false trigger / miss rate is unacceptable |
+| Wake word | Enabled as local gate through Picovoice Porcupine | Fits Mandarin custom phrase support and reliability-first demo needs |
+| Wake phrase | `小慧你好` | Short, natural, project-aligned activation phrase for kiosk users |
+| Wake word engineering fallback | openWakeWord custom model path | Keep only if Porcupine licensing or model packaging blocks deployment |
 | VAD primary | Silero VAD | Better modern VAD baseline for speech gating |
 | VAD fallback | WebRTC VAD only if Silero cannot run | Lightweight fallback for constrained devices |
 | VAD runtime | Prefer local runtime near capture path | Keeps noise gating before ASR cost and privacy exposure |
@@ -186,7 +187,7 @@ into the main system design.
 | Multi-speaker policy | Staff review on ambiguity | Reject and retry; diarization; staff-assisted mode |
 | Audio retention | Do not retain audio by default | No audio retention; short debug retention; full retention with consent |
 | Cloud ASR fallback | Not enabled by default | OpenAI; Google Cloud; Azure; none |
-| Formal wake phrase | Not frozen yet | Temporary/built-in model first; later custom Mandarin phrase; commercial Porcupine fallback |
+| Formal wake phrase | Frozen as `小慧你好` | Custom Picovoice Porcupine Mandarin `.ppn`; tap-to-start remains fallback |
 | Diarization | Not in Phase 1 | None; OpenAI diarize; pyannote; vendor diarization |
 | Hardware mic | To be selected onsite | USB directional mic; kiosk array mic; headset; built-in mic |
 | Taigi support | Confirmation-first support | Mandarin only; mixed Mandarin/Taigi support; separate Taigi validation |

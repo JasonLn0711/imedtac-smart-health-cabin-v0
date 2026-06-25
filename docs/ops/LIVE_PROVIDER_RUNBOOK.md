@@ -147,14 +147,15 @@ Wake word activation gate:
 ```bash
 WAKE_WORD_ENABLED=true \
 WAKE_WORD_MODE=live \
-WAKE_WORD_PROVIDER=openwakeword \
+WAKE_WORD_PROVIDER=porcupine \
+WAKE_WORD_PHRASE=小慧你好 \
 WAKE_WORD_SERVICE_URL=http://localhost:8013 \
-WAKE_WORD_MODEL_PATH=/models/wakeword/smart-health-cabin.tflite \
-WAKE_WORD_INFERENCE_FRAMEWORK=tflite \
+PICOVOICE_ACCESS_KEY="$PICOVOICE_ACCESS_KEY" \
+PORCUPINE_KEYWORD_PATH=.local/models/wakeword/xiao-hui-ni-hao_linux.ppn \
+PORCUPINE_MODEL_PATH=.local/models/picovoice/porcupine_params_zh.pv \
+PORCUPINE_SENSITIVITY=0.65 \
 WAKE_WORD_THRESHOLD=0.65 \
 WAKE_WORD_COOLDOWN_MS=2000 \
-WAKE_WORD_SAMPLE_RATE=16000 \
-WAKE_WORD_CHUNK_SIZE=1280 \
 WAKE_WORD_DEVICE_INDEX=0 \
 WAKE_WORD_LOCAL_ONLY=true \
 VOICE_AUDIO_RETENTION=none \
@@ -162,8 +163,9 @@ uvicorn app:app --host 0.0.0.0 --port 8013
 ```
 
 The wake word sidecar owns activation only. In live mode it opens the selected
-local microphone, feeds 16kHz mono int16 PCM frames into openWakeWord, and emits
-`wake.detected` only after threshold and cooldown pass. After that event,
+local microphone, feeds Porcupine's required mono 16-bit PCM frames into the
+Picovoice runtime, and emits `wake.detected` only after `小慧你好` fires and
+cooldown passes. After that event,
 kiosk-web shows the recording state and still requires VAD / endpointing, ASR
 candidate mapping, and user confirmation before any questionnaire write.
 `POST /simulate-wake` is for local e2e testing and must not become production
@@ -178,7 +180,7 @@ curl -fsS http://localhost:8013/status
 Acceptance requires `mode=live`, `ready=true`, `listening=true`, and
 `last_error=null`. If the selected microphone cannot be opened, keep
 tap-to-start active and tune `WAKE_WORD_DEVICE_INDEX`, threshold, and the formal
-Mandarin wake phrase model before claiming live wake-word completion.
+Mandarin `.ppn` keyword package before claiming live wake-word completion.
 
 Run the live wake phrase check:
 
@@ -187,9 +189,9 @@ WAKE_WORD_LIVE_WAIT_MS=15000 corepack pnpm smoke:wakeword:live
 ```
 
 This command verifies live readiness, then waits for a real `wake.detected`
-event. It intentionally does not call `/simulate-wake`, and it rejects
-`model=custom_or_builtin` unless `WAKE_WORD_LIVE_ALLOW_BUILTIN=true` is set for
-engineering-only bundled-model checks.
+event. It intentionally does not call `/simulate-wake`, and it requires
+`provider=porcupine`, phrase `小慧你好`, the Picovoice AccessKey, the Mandarin
+`.pv` model, and the custom Linux `.ppn` keyword file.
 
 ## Current Local Compatibility Set
 
