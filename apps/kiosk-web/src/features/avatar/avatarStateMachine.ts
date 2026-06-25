@@ -12,6 +12,7 @@ type AvatarEvent =
   | "TRANSCRIBE"
   | "ASR_DONE"
   | "ASR_LOW_CONFIDENCE"
+  | "LOOP_READY"
   | "CONFIRM_YES"
   | "CONFIRM_NO"
   | "TOUCH_SELECTED"
@@ -31,29 +32,59 @@ const transitions: Record<AvatarState, Partial<Record<AvatarEvent, AvatarState>>
     WAKE_DETECTED: "wake_detected",
     MANUAL_START: "recording_answer",
     TOUCH_SELECTED: "idle_touch_ready",
+    RESET: "idle_touch_ready",
     VOICE_SERVICE_DOWN: "voice_unavailable"
   },
   wake_detected: {
     VAD_SPEECH_START: "recording_answer",
     MANUAL_START: "recording_answer",
     NO_SPEECH_TIMEOUT: "retry_or_touch",
+    RESET: "idle_touch_ready",
     VOICE_SERVICE_DOWN: "voice_unavailable"
   },
   recording_answer: {
     VAD_END_SILENCE: "endpointing_wait",
     MAX_UTTERANCE_REACHED: "endpointing_wait",
     NO_SPEECH_TIMEOUT: "retry_or_touch",
+    RESET: "idle_touch_ready",
     VOICE_SERVICE_DOWN: "voice_unavailable"
   },
   endpointing_wait: {
     TRANSCRIBE: "transcribing",
     ASR_DONE: "confirming_candidate",
     ASR_LOW_CONFIDENCE: "retry_or_touch",
+    RESET: "idle_touch_ready",
     VOICE_SERVICE_DOWN: "voice_unavailable"
   },
   transcribing: {
-    ASR_DONE: "confirming_candidate",
+    ASR_DONE: "normalizing_asr",
     ASR_LOW_CONFIDENCE: "retry_or_touch",
+    LOOP_READY: "recording_answer",
+    RESET: "idle_touch_ready",
+    VOICE_SERVICE_DOWN: "voice_unavailable"
+  },
+  normalizing_asr: {
+    ASR_DONE: "building_semantic_frame",
+    ASR_LOW_CONFIDENCE: "retry_or_touch",
+    RESET: "idle_touch_ready",
+    VOICE_SERVICE_DOWN: "voice_unavailable"
+  },
+  building_semantic_frame: {
+    ASR_DONE: "ranking_candidates",
+    ASR_LOW_CONFIDENCE: "retry_or_touch",
+    RESET: "idle_touch_ready",
+    VOICE_SERVICE_DOWN: "voice_unavailable"
+  },
+  ranking_candidates: {
+    ASR_DONE: "confirming_candidate",
+    ASR_LOW_CONFIDENCE: "clarifying_ambiguous",
+    RESET: "idle_touch_ready",
+    VOICE_SERVICE_DOWN: "voice_unavailable"
+  },
+  clarifying_ambiguous: {
+    MANUAL_START: "recording_answer",
+    TOUCH_SELECTED: "idle_touch_ready",
+    RESET: "idle_touch_ready",
     VOICE_SERVICE_DOWN: "voice_unavailable"
   },
   confirming_candidate: {
@@ -114,6 +145,10 @@ export function avatarStateLabel(state: AvatarState): string {
     recording_answer: "正在錄音",
     endpointing_wait: "自動停止中",
     transcribing: "語音辨識中",
+    normalizing_asr: "語音校正中",
+    building_semantic_frame: "建立語意框架",
+    ranking_candidates: "候選排序中",
+    clarifying_ambiguous: "需要重新確認",
     confirming_candidate: "等待確認",
     committed: "已寫入答案",
     retry_or_touch: "請重試或觸控",

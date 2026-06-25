@@ -40,6 +40,7 @@ class TranscribeRequest(BaseModel):
     audio_format: str = "wav"
     language_hint: Optional[str] = "zh"
     turn_id: Optional[str] = None
+    hotwords: list[str] = []
 
 
 def model_path() -> str:
@@ -93,7 +94,8 @@ def transcribe(request: TranscribeRequest):
         audio_file.write(audio)
         audio_file.flush()
         segments, info = load_model().transcribe(audio_file.name, language=request.language_hint)
-        text = "".join(segment.text for segment in segments).strip()
+        segment_list = list(segments)
+        text = "".join(segment.text for segment in segment_list).strip()
 
     latency_ms = int((time.perf_counter() - start) * 1000)
     logger.info(json.dumps({"latency_ms": latency_ms, "turn_id": request.turn_id, "error_code": None}))
@@ -102,4 +104,19 @@ def transcribe(request: TranscribeRequest):
         "language": getattr(info, "language", request.language_hint),
         "confidence": 1.0,
         "duration_ms": latency_ms,
+        "hotwords_requested": request.hotwords,
+        "hotwords_applied": False,
+        "n_best_available": False,
+        "n_best_transcripts": [{"text": text, "rank": 1, "confidence": 1.0}] if text else [],
+        "segments": [
+            {
+                "start_ms": int(segment.start * 1000),
+                "end_ms": int(segment.end * 1000),
+                "text": segment.text,
+                "avg_logprob": getattr(segment, "avg_logprob", None),
+                "no_speech_prob": getattr(segment, "no_speech_prob", None),
+                "compression_ratio": getattr(segment, "compression_ratio", None),
+            }
+            for segment in segment_list
+        ],
     }

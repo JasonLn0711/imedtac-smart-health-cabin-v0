@@ -11,6 +11,9 @@ describe("Avatar voice entry state machine", () => {
     state = nextAvatarState(state, "VAD_END_SILENCE");
     state = nextAvatarState(state, "TRANSCRIBE");
     state = nextAvatarState(state, "ASR_DONE");
+    state = nextAvatarState(state, "ASR_DONE");
+    state = nextAvatarState(state, "ASR_DONE");
+    state = nextAvatarState(state, "ASR_DONE");
 
     expect(state).toBe("confirming_candidate");
     expect(() => nextAvatarState("wake_detected", "CONFIRM_YES")).toThrow("Invalid Avatar event");
@@ -34,6 +37,17 @@ describe("Avatar voice entry state machine", () => {
     state = nextAvatarState(state, "ASR_LOW_CONFIDENCE");
 
     expect(state).toBe("retry_or_touch");
+  });
+
+  it("returns to recording after a continuous voice reply", () => {
+    let state = nextAvatarState("recording_answer", "VAD_END_SILENCE");
+    state = nextAvatarState(state, "TRANSCRIBE");
+    state = nextAvatarState(state, "LOOP_READY");
+
+    expect(state).toBe("recording_answer");
+
+    state = nextAvatarState(state, "RESET");
+    expect(state).toBe("idle_touch_ready");
   });
 
   it("commits only after confirmation and resets to touch-ready idle", () => {

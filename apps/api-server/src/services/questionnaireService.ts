@@ -14,12 +14,12 @@ import type {
 } from "@shc/contracts";
 import {
   getSurveyQuestionContexts,
-  mapTranscriptToSurveyChoice,
   QuestionnaireValidationError,
   scoreQuestionnaire,
   validateSurveyJsQuestionnaire
 } from "@shc/questionnaire-core";
 import { assertPublicSummaryIsNonDiagnostic, buildPhq9PublicSummary } from "@shc/report-core";
+import { collectHotwords, getDomainPacks, processVoiceEvidence } from "@shc/voice-safety-core";
 import type { QuestionnaireRepository } from "../repositories/questionnaireRepository";
 
 const seedPath = "modules/questionnaire/seed/phq9.zh-TW.surveyjs.json";
@@ -33,6 +33,8 @@ const defaultLlmModel = "gemma4:e4b";
 const defaultTtsProvider = "breezyvoice_default";
 const defaultTtsModel = "/models/breezyvoice";
 const defaultTtsVoice = "default";
+const defaultRerankerProvider = "qwen3_reranker_0_6b";
+const defaultRerankerModel = "Qwen3-Reranker-0.6B";
 const forbiddenTtsFields = [
   "reference_audio",
   "reference_audio_base64",
@@ -363,6 +365,11 @@ export class ProviderStatusService {
       cpuOffloadEnv: ["TTS_CPU_OFFLOAD", "TTS_CPU_OFFLOAD_GB", "BREEZYVOICE_CPU_OFFLOAD", "BREEZYVOICE_CPU_OFFLOAD_GB"],
       cpuFallbackEnv: ["TTS_ALLOW_CPU_FALLBACK", "BREEZYVOICE_ALLOW_CPU_FALLBACK"]
     });
+    const rerankerRuntimeScope = modelRuntimeScope({
+      backendEnv: ["RERANKER_COMPUTE_BACKEND", "RERANKER_DEVICE"],
+      cpuOffloadEnv: ["RERANKER_CPU_OFFLOAD", "RERANKER_CPU_OFFLOAD_GB"],
+      cpuFallbackEnv: ["RERANKER_ALLOW_CPU_FALLBACK"]
+    });
 
     if (voiceModelMode() === "mock") {
       const asr = withAcceptance({
@@ -399,13 +406,23 @@ export class ProviderStatusService {
         endpoint: env("REDPANDA_BROKERS", "localhost:9092"),
         fallback: "outbox rows remain pending and retryable"
       });
+      const reranker = withAcceptance({
+        provider: env("RERANKER_PROVIDER", defaultRerankerProvider),
+        model: env("RERANKER_MODEL", defaultRerankerModel),
+        mode: "mock",
+        ready: true,
+        endpoint: env("RERANKER_SERVICE_URL", "http://localhost:8014"),
+        fallback: "deterministic mapping + confirmation / touch fallback",
+        ...rerankerRuntimeScope
+      });
 
       return {
         asr,
         llm,
         tts,
+        reranker,
         redpanda,
-        providers: { asr, llm, tts, redpanda },
+        providers: { asr, llm, tts, reranker, redpanda },
         sprint5Acceptance: { allRequiredLive: false, eligible: false }
       };
     }
@@ -434,6 +451,8 @@ export class ProviderStatusService {
     const ttsProbe = await getProviderReady(joinUrl(ttsBaseUrl, ttsHealthPath));
     const redpandaEndpoint = env("REDPANDA_ADMIN_URL", "http://localhost:9644");
     const redpandaProbe = await getProviderReady(joinUrl(redpandaEndpoint, env("REDPANDA_READY_PATH", "/v1/status/ready")));
+    const rerankerEndpoint = env("RERANKER_SERVICE_URL", "http://localhost:8014");
+    const rerankerProbe = await getProviderReady(joinUrl(rerankerEndpoint, env("RERANKER_HEALTH_PATH", "/healthz")));
 
     const asr = withAcceptance({
       provider: env("ASR_PROVIDER", defaultAsrProvider),
@@ -473,15 +492,26 @@ export class ProviderStatusService {
       fallback: "outbox rows remain pending and retryable",
       ...redpandaProbe
     });
-    const allRequiredLive = [asr, llm, tts, redpanda].every((provider) => provider.mode === "live");
-    const eligible = [asr, llm, tts, redpanda].every((provider) => provider.acceptanceEligible);
+    const reranker = withAcceptance({
+      provider: env("RERANKER_PROVIDER", defaultRerankerProvider),
+      model: env("RERANKER_MODEL", defaultRerankerModel),
+      mode: rerankerProbe.ready ? "live" : "unavailable",
+      endpoint: rerankerEndpoint,
+      fallback: "deterministic mapping + confirmation / touch fallback",
+      ...rerankerProbe,
+      ...rerankerRuntimeScope
+    });
+    const requiredProviders = [asr, llm, tts, redpanda];
+    const allRequiredLive = requiredProviders.every((provider) => provider.mode === "live");
+    const eligible = requiredProviders.every((provider) => provider.acceptanceEligible);
 
     return {
       asr,
       llm,
       tts,
+      reranker,
       redpanda,
-      providers: { asr, llm, tts, redpanda },
+      providers: { asr, llm, tts, reranker, redpanda },
       sprint5Acceptance: { allRequiredLive, eligible }
     };
   }
@@ -489,6 +519,7 @@ export class ProviderStatusService {
 
 const liveAsrAdapter: ASRAdapter = {
   async transcribe(input) {
+    const hotwords = collectHotwords(getDomainPacks(["phq9_zh_tw", "smart_cabin_measurement"]));
     const asr = await postJson<{
       transcript?: string;
       text?: string;
@@ -500,6 +531,7 @@ const liveAsrAdapter: ASRAdapter = {
       audio_format: input.audioFormat,
       audio_base64: input.audioBase64,
       language_hint: asrLanguageHint(),
+      hotwords,
       turn_id: input.agentSessionId
     });
     const transcript = asr.transcript ?? asr.text ?? "";
@@ -814,6 +846,7 @@ export class QuestionnaireService {
     session_id?: string;
     question_name: string;
     transcript: string;
+    asr_confidence?: number;
   }): Promise<VoiceAnswerMappingResponse> {
     const active = await this.repository.getActiveQuestionnaire();
     const question = getSurveyQuestionContexts(active.surveyjsJson).find(
@@ -822,15 +855,48 @@ export class QuestionnaireService {
     if (!question) {
       throw new QuestionnaireValidationError(`Unknown question_name: ${input.question_name}`);
     }
-    const candidate = mapTranscriptToSurveyChoice(input.transcript, question.choices);
+    const safety = processVoiceEvidence({
+      rawText: input.transcript,
+      asrProvider: env("ASR_PROVIDER", defaultAsrProvider),
+      asrModel: env("ASR_MODEL", defaultAsrModel),
+      asrConfidence: input.asr_confidence ?? 1,
+      questionName: question.name,
+      questionTitle: question.title,
+      choices: question.choices,
+      domainPackIds: ["phq9_zh_tw", "smart_cabin_measurement"]
+    });
+    const safetyCandidate = safety.semanticFrame.questionnaireAnswerCandidates[0];
+    const candidate = safetyCandidate
+      ? {
+          value: Number(safetyCandidate.optionId),
+          text: safetyCandidate.optionText,
+          confidence: safetyCandidate.confidence,
+          requires_confirmation: true as const,
+          evidence_text: safetyCandidate.evidenceText
+        }
+      : null;
     await this.repository.saveAgentTurn({
       agentSessionId: input.agent_session_id,
       sessionId: input.session_id,
       turnType: "map_answer",
       questionName: input.question_name,
       transcript: input.transcript,
-      payload: { candidate }
+      payload: {
+        candidate,
+        normalized_transcript: safety.normalizedText,
+        routing_decision: safety.routingDecision,
+        semantic_frame: safety.semanticFrame,
+        voice_evidence_metadata: safety.metadata
+      }
     });
-    return { candidate, transcript: input.transcript };
+    return {
+      candidate,
+      transcript: input.transcript,
+      normalized_transcript: safety.normalizedText,
+      routing_decision: safety.routingDecision,
+      confirmation_required: safety.confirmationRequired,
+      semantic_frame: safety.semanticFrame,
+      voice_evidence_metadata: safety.metadata
+    };
   }
 }

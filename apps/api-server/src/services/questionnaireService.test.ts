@@ -180,6 +180,15 @@ afterEach(() => {
   delete process.env.TTS_HEALTH_PATH;
   delete process.env.TTS_REQUEST_TIMEOUT_MS;
   delete process.env.TTS_REQUEST_STYLE;
+  delete process.env.RERANKER_PROVIDER;
+  delete process.env.RERANKER_MODEL;
+  delete process.env.RERANKER_SERVICE_URL;
+  delete process.env.RERANKER_HEALTH_PATH;
+  delete process.env.RERANKER_COMPUTE_BACKEND;
+  delete process.env.RERANKER_DEVICE;
+  delete process.env.RERANKER_CPU_OFFLOAD;
+  delete process.env.RERANKER_CPU_OFFLOAD_GB;
+  delete process.env.RERANKER_ALLOW_CPU_FALLBACK;
   delete process.env.BREEZYVOICE_BASE_URL;
   delete process.env.BREEZYVOICE_MODEL;
   delete process.env.BREEZYVOICE_VOICE_ID;
@@ -277,8 +286,61 @@ describe("QuestionnaireService", () => {
 
     expect(mapped.candidate).toMatchObject({
       value: 3,
-      requires_confirmation: true
+      requires_confirmation: true,
+      evidence_text: "幾乎每天"
     });
+    expect(mapped).toMatchObject({
+      normalized_transcript: "幾乎每天",
+      routing_decision: "high_confidence_clear_answer",
+      confirmation_required: true
+    });
+    expect(mapped.semantic_frame?.questionnaireAnswerCandidates[0]).toMatchObject({
+      optionId: "3",
+      optionText: "幾乎每天"
+    });
+  });
+
+  it("normalizes ASR text before mapping voice answers", async () => {
+    const service = new QuestionnaireService(new InMemoryQuestionnaireRepository());
+
+    const mapped = await service.mapVoiceAnswer({
+      question_name: "phq9_01",
+      transcript: "機天"
+    });
+
+    expect(mapped).toMatchObject({
+      normalized_transcript: "幾天",
+      routing_decision: "high_confidence_clear_answer"
+    });
+    expect(mapped.candidate).toMatchObject({ value: 1, text: "幾天" });
+  });
+
+  it("routes safety-sensitive speech to staff review in voice evidence metadata", async () => {
+    const service = new QuestionnaireService(new InMemoryQuestionnaireRepository());
+
+    const mapped = await service.mapVoiceAnswer({
+      question_name: "phq9_09",
+      transcript: "我不想活了幾天"
+    });
+
+    expect(mapped.candidate).toMatchObject({ value: 1, text: "幾天" });
+    expect(mapped.routing_decision).toBe("safety_sensitive_staff_review");
+    expect(mapped.semantic_frame?.safetyFlags).toContain("self_harm");
+    expect(mapped.voice_evidence_metadata?.rawAudioStored).toBe(false);
+  });
+
+  it("routes low-confidence mapped speech to retry instead of treating it as answer truth", async () => {
+    const service = new QuestionnaireService(new InMemoryQuestionnaireRepository());
+
+    const mapped = await service.mapVoiceAnswer({
+      question_name: "phq9_01",
+      transcript: "幾乎每天",
+      asr_confidence: 0.4
+    });
+
+    expect(mapped.candidate).toMatchObject({ value: 3 });
+    expect(mapped.routing_decision).toBe("low_confidence_retry");
+    expect(mapped.confirmation_required).toBe(true);
   });
 
   it("calls the configured faster-whisper Breeze ASR adapter in real mode", async () => {
@@ -472,6 +534,8 @@ describe("QuestionnaireService", () => {
     process.env.LLM_DEVICE = "cuda";
     process.env.TTS_SERVICE_URL = "http://tts.local";
     process.env.TTS_DEVICE = "cuda";
+    process.env.RERANKER_SERVICE_URL = "http://reranker.local";
+    process.env.RERANKER_DEVICE = "cuda";
     process.env.REDPANDA_ADMIN_URL = "http://redpanda.local";
     const fetchMock = vi.fn(async () => {
       return new Response(JSON.stringify({ status: "ok" }), {
@@ -488,6 +552,7 @@ describe("QuestionnaireService", () => {
         asr: { mode: "live", ready: true, acceptanceEligible: true, computeBackend: "gpu", cpuOffload: false },
         llm: { mode: "live", model: "gemma4:e4b", ready: true, acceptanceEligible: true, computeBackend: "gpu", cpuOffload: false },
         tts: { mode: "live", ready: true, acceptanceEligible: true, computeBackend: "gpu", cpuOffload: false },
+        reranker: { mode: "live", ready: true, acceptanceEligible: true, computeBackend: "gpu", cpuOffload: false },
         redpanda: { mode: "live", ready: true, acceptanceEligible: true }
       },
       sprint5Acceptance: { allRequiredLive: true, eligible: true }
@@ -495,6 +560,7 @@ describe("QuestionnaireService", () => {
     expect(fetchMock).toHaveBeenCalledWith("http://asr.local/healthz", expect.any(Object));
     expect(fetchMock).toHaveBeenCalledWith("http://ollama.local/api/chat", expect.any(Object));
     expect(fetchMock).toHaveBeenCalledWith("http://tts.local/healthz", expect.any(Object));
+    expect(fetchMock).toHaveBeenCalledWith("http://reranker.local/healthz", expect.any(Object));
     expect(fetchMock).toHaveBeenCalledWith("http://redpanda.local/v1/status/ready", expect.any(Object));
   });
 
@@ -503,6 +569,7 @@ describe("QuestionnaireService", () => {
     process.env.ASR_DEVICE = "cuda";
     process.env.LLM_DEVICE = "cuda";
     process.env.TTS_DEVICE = "cuda";
+    process.env.RERANKER_DEVICE = "cuda";
     process.env.LLM_PROVIDER = "ollama_native";
     process.env.LLM_BASE_URL = "http://ollama.local";
     process.env.LLM_MODEL = "gemma4:e4b";
@@ -536,6 +603,7 @@ describe("QuestionnaireService", () => {
     process.env.ASR_DEVICE = "cuda";
     process.env.LLM_DEVICE = "cuda";
     process.env.TTS_DEVICE = "cuda";
+    process.env.RERANKER_DEVICE = "cuda";
     process.env.LLM_PROVIDER = "experimental_llm";
     process.env.LLM_BASE_URL = "http://experimental.local/v1";
     process.env.LLM_MODEL = "gemma-experimental";

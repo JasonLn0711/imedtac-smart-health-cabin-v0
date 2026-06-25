@@ -1,0 +1,69 @@
+{
+  "domainId": "phq9_zh_tw",
+  "version": "0.1.0",
+  "language": "zh-TW",
+  "moduleId": "questionnaire",
+  "questionnaireCode": "phq9",
+  "sourceFiles": [
+    "modules/questionnaire/source/phq9.zh-TW.agent-readable.md",
+    "modules/questionnaire/seed/phq9.zh-TW.surveyjs.json"
+  ],
+  "hotwords": [
+    "完全沒有",
+    "幾天",
+    "一半以上的天數",
+    "幾乎每天",
+    "提不起勁",
+    "沒有樂趣",
+    "心情低落",
+    "沮喪",
+    "絕望",
+    "睡不好",
+    "睡不安穩",
+    "睡眠過多",
+    "疲倦",
+    "沒有活力",
+    "食慾",
+    "專注困難",
+    "煩躁",
+    "坐立不安",
+    "動作變慢",
+    "說話變慢",
+    "不如死掉",
+    "傷害自己",
+    "輕生",
+    "自殺"
+  ],
+  "canonicalTerms": [
+    { "term": "心情低落", "category": "symptom", "aliases": ["情緒低落"], "commonAsrErrors": ["心情滴落"] },
+    { "term": "睡不好", "category": "symptom", "aliases": ["睡不安穩"], "commonAsrErrors": ["水不好"] },
+    { "term": "一半以上的天數", "category": "answer_option", "aliases": ["超過一半", "半數以上"], "commonAsrErrors": [] },
+    { "term": "幾天", "category": "answer_option", "aliases": ["有幾天", "偶爾"], "commonAsrErrors": ["機天", "集天"] },
+    { "term": "完全沒有", "category": "answer_option", "aliases": ["沒有", "都沒有"], "commonAsrErrors": ["完全美有"] },
+    { "term": "幾乎每天", "category": "answer_option", "aliases": ["每天", "幾乎天天"], "commonAsrErrors": [] },
+    { "term": "不如死掉", "category": "safety", "aliases": ["不想活了"], "commonAsrErrors": [] },
+    { "term": "傷害自己", "category": "safety", "aliases": ["自傷"], "commonAsrErrors": [] }
+  ],
+  "answerAliases": [
+    { "optionValue": 0, "optionText": "完全沒有", "aliases": ["完全沒有", "沒有", "都沒有", "零", "0"], "confirmationRequired": true },
+    { "optionValue": 1, "optionText": "幾天", "aliases": ["幾天", "有幾天", "偶爾", "機天", "集天", "一", "1"], "confirmationRequired": true },
+    { "optionValue": 2, "optionText": "一半以上的天數", "aliases": ["一半以上", "一半以上的天數", "超過一半", "半數以上", "二", "2"], "confirmationRequired": true },
+    { "optionValue": 3, "optionText": "幾乎每天", "aliases": ["幾乎每天", "每天", "幾乎天天", "三", "3"], "confirmationRequired": true }
+  ],
+  "semanticSlots": [
+    { "slot": "frequency", "examples": ["完全沒有", "幾天", "一半以上的天數", "幾乎每天"] },
+    { "slot": "lookback_period", "examples": ["過去兩週", "最近兩週"] }
+  ],
+  "safetyRules": [
+    { "flag": "self_harm", "triggerTerms": ["不如死掉", "傷害自己", "不想活了", "自殺", "輕生"], "route": "staff_review" }
+  ],
+  "retrievalTemplates": [
+    { "intent": "questionnaire_answer", "template": "PHQ-9 回答候選：{normalizedText}" }
+  ],
+  "confirmationTemplates": {
+    "singleCandidate": "你剛剛的回答是不是「{candidate}」？",
+    "multipleCandidates": "請問你剛剛想表達的是哪一個？",
+    "lowConfidence": "我不太確定剛剛的回答，請重新說一次，或直接用螢幕選擇。",
+    "touchFallback": "這題你也可以直接點選答案。"
+  }
+}

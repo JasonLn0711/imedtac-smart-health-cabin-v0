@@ -12,6 +12,7 @@
     "live:check": "node scripts/live-check.mjs",
     "smoke:api": "node scripts/smoke-api.mjs",
     "smoke:voice-agent": "node scripts/smoke-voice-agent.mjs",
+    "smoke:reranker": "node scripts/smoke-reranker.mjs",
     "smoke:wakeword": "node scripts/smoke-wakeword.mjs",
     "smoke:wakeword:live": "node scripts/smoke-wakeword-live.mjs",
     "smoke:sprint5-live-demo": "node scripts/smoke-sprint5-live-demo.mjs",

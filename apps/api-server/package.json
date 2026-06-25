@@ -17,6 +17,7 @@
     "@shc/contracts": "workspace:*",
     "@shc/questionnaire-core": "workspace:*",
     "@shc/report-core": "workspace:*",
+    "@shc/voice-safety-core": "workspace:*",
     "fastify": "^5.2.1",
     "pg": "^8.13.1"
   },

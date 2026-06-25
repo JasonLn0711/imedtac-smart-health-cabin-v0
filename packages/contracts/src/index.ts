@@ -162,7 +162,11 @@ export const AvatarStateSchema = z.enum([
   "recording_answer",
   "endpointing_wait",
   "transcribing",
+  "normalizing_asr",
+  "building_semantic_frame",
+  "ranking_candidates",
   "confirming_candidate",
+  "clarifying_ambiguous",
   "committed",
   "retry_or_touch",
   "voice_unavailable",
@@ -193,12 +197,14 @@ export const ProviderStatusResponseSchema = z.object({
   asr: ProviderRuntimeStatusSchema,
   llm: ProviderRuntimeStatusSchema,
   tts: ProviderRuntimeStatusSchema,
+  reranker: ProviderRuntimeStatusSchema.optional(),
   redpanda: ProviderRuntimeStatusSchema.optional(),
   providers: z
     .object({
       asr: ProviderRuntimeStatusSchema,
       llm: ProviderRuntimeStatusSchema,
       tts: ProviderRuntimeStatusSchema,
+      reranker: ProviderRuntimeStatusSchema.optional(),
       redpanda: ProviderRuntimeStatusSchema
     })
     .optional(),
@@ -215,6 +221,7 @@ export const ASRTranscribeRequestSchema = z.object({
   audio_base64: z.string().min(1),
   audio_format: z.string().default("wav"),
   language_hint: z.string().optional(),
+  hotwords: z.array(z.string()).optional(),
   session_id: z.string().optional()
 });
 export type ASRTranscribeRequest = z.infer<typeof ASRTranscribeRequestSchema>;
@@ -284,12 +291,234 @@ export interface VoiceAnswerCandidate {
   text: string;
   confidence: number;
   requires_confirmation: true;
+  evidence_text?: string;
 }
 
 export interface VoiceAnswerMappingResponse {
   candidate: VoiceAnswerCandidate | null;
   transcript: string;
+  normalized_transcript?: string;
+  routing_decision?: VoiceRoutingDecision;
+  confirmation_required?: boolean;
+  semantic_frame?: VoiceSemanticFrame;
+  voice_evidence_metadata?: VoiceEvidenceMetadata;
 }
+
+export const VoiceDomainTermCategorySchema = z.enum([
+  "answer_option",
+  "symptom",
+  "measurement",
+  "health_behavior",
+  "disease_history",
+  "module_command",
+  "report_access",
+  "safety"
+]);
+export type VoiceDomainTermCategory = z.infer<typeof VoiceDomainTermCategorySchema>;
+
+export const VoiceDomainPackTermSchema = z.object({
+  term: z.string(),
+  category: VoiceDomainTermCategorySchema,
+  aliases: z.array(z.string()).default([]),
+  commonAsrErrors: z.array(z.string()).default([])
+});
+export type VoiceDomainPackTerm = z.infer<typeof VoiceDomainPackTermSchema>;
+
+export const VoiceDomainAnswerAliasSchema = z.object({
+  questionPattern: z.string().optional(),
+  optionValue: z.union([z.string(), z.number(), z.boolean()]),
+  optionText: z.string(),
+  aliases: z.array(z.string()),
+  ambiguousWith: z.array(z.union([z.string(), z.number(), z.boolean()])).optional(),
+  confirmationRequired: z.literal(true)
+});
+export type VoiceDomainAnswerAlias = z.infer<typeof VoiceDomainAnswerAliasSchema>;
+
+export const VoiceSafetyFlagSchema = z.enum(["self_harm", "chest_pain", "breathing_difficulty", "fall_risk", "none"]);
+export type VoiceSafetyFlag = z.infer<typeof VoiceSafetyFlagSchema>;
+
+export const VoiceDomainPackSchema = z.object({
+  domainId: z.string(),
+  version: z.string(),
+  language: z.literal("zh-TW"),
+  moduleId: z.enum(["questionnaire", "vision", "hearing", "avatar", "report", "kiosk"]).optional(),
+  questionnaireCode: z.string().optional(),
+  sourceFiles: z.array(z.string()),
+  hotwords: z.array(z.string()),
+  canonicalTerms: z.array(VoiceDomainPackTermSchema),
+  answerAliases: z.array(VoiceDomainAnswerAliasSchema),
+  semanticSlots: z.array(z.object({ slot: z.string(), examples: z.array(z.string()) })),
+  safetyRules: z.array(
+    z.object({
+      flag: VoiceSafetyFlagSchema.exclude(["none"]),
+      triggerTerms: z.array(z.string()),
+      route: z.enum(["confirm", "staff_review"])
+    })
+  ),
+  retrievalTemplates: z.array(z.object({ intent: z.string(), template: z.string() })),
+  confirmationTemplates: z.object({
+    singleCandidate: z.string(),
+    multipleCandidates: z.string(),
+    lowConfidence: z.string(),
+    touchFallback: z.string()
+  })
+});
+export type VoiceDomainPack = z.infer<typeof VoiceDomainPackSchema>;
+
+export const AsrHypothesisSchema = z.object({
+  text: z.string(),
+  rank: z.number(),
+  confidence: z.number().optional(),
+  avgLogprob: z.number().optional(),
+  source: z.enum(["provider_n_best", "provider_top1"])
+});
+export type AsrHypothesis = z.infer<typeof AsrHypothesisSchema>;
+
+export const AsrHypothesisSetSchema = z.object({
+  primaryText: z.string(),
+  nBestAvailable: z.boolean(),
+  hypotheses: z.array(AsrHypothesisSchema),
+  hotwordsRequested: z.array(z.string()),
+  hotwordsApplied: z.boolean()
+});
+export type AsrHypothesisSet = z.infer<typeof AsrHypothesisSetSchema>;
+
+export const VoiceSemanticFrameSchema = z.object({
+  rawText: z.string(),
+  normalizedText: z.string(),
+  language: z.literal("zh-TW"),
+  intent: z.enum([
+    "questionnaire_answer",
+    "symptom_description",
+    "measurement_value",
+    "command_or_faq",
+    "confirmation_response",
+    "unclear",
+    "other"
+  ]),
+  symptoms: z.array(z.string()),
+  questionnaireAnswerCandidates: z.array(
+    z.object({
+      optionId: z.string().optional(),
+      optionText: z.string(),
+      confidence: z.number(),
+      evidenceText: z.string()
+    })
+  ),
+  temporalExpressions: z.array(z.string()),
+  negations: z.array(z.string()),
+  safetyFlags: z.array(VoiceSafetyFlagSchema),
+  retrievalQuery: z.string().optional()
+});
+export type VoiceSemanticFrame = z.infer<typeof VoiceSemanticFrameSchema>;
+
+export const VoiceRoutingDecisionSchema = z.enum([
+  "high_confidence_clear_answer",
+  "medium_confidence_needs_confirmation",
+  "ambiguous_multiple_candidates",
+  "low_confidence_retry",
+  "no_speech_retry",
+  "voice_unavailable_touch_fallback",
+  "safety_sensitive_staff_review"
+]);
+export type VoiceRoutingDecision = z.infer<typeof VoiceRoutingDecisionSchema>;
+
+export const VoiceEvidenceMetadataSchema = z.object({
+  audioId: z.string(),
+  rawAudioStored: z.literal(false),
+  asrProvider: z.string(),
+  asrModel: z.string(),
+  activeDomainPackIds: z.array(z.string()),
+  hotwordsRequested: z.array(z.string()),
+  hotwordsApplied: z.boolean(),
+  asrText: z.string(),
+  normalizedText: z.string(),
+  asrConfidence: z.number().optional(),
+  vadConfidence: z.number().optional(),
+  utteranceDurationMs: z.number(),
+  endpointingMode: z.enum(["standard", "elder"]),
+  segmentTimestamps: z.array(
+    z.object({
+      startMs: z.number(),
+      endMs: z.number(),
+      text: z.string(),
+      avgLogprob: z.number().optional(),
+      noSpeechProb: z.number().optional()
+    })
+  ),
+  nBestAvailable: z.boolean(),
+  nBestTranscripts: z.array(z.object({ text: z.string(), rank: z.number(), confidence: z.number().optional() })),
+  semanticFrame: VoiceSemanticFrameSchema,
+  routingDecision: VoiceRoutingDecisionSchema,
+  confirmationRequired: z.boolean(),
+  domainPackVersions: z.record(z.string(), z.string())
+});
+export type VoiceEvidenceMetadata = z.infer<typeof VoiceEvidenceMetadataSchema>;
+
+export const VoiceCandidateConfirmationSchema = z.object({
+  transcript: z.string(),
+  normalizedTranscript: z.string(),
+  candidate: z.object({
+    optionId: z.string().optional(),
+    optionText: z.string(),
+    confidence: z.number(),
+    evidenceText: z.string()
+  }),
+  routingDecision: VoiceRoutingDecisionSchema,
+  confirmationRequired: z.literal(true)
+});
+export type VoiceCandidateConfirmation = z.infer<typeof VoiceCandidateConfirmationSchema>;
+
+export const RerankDocumentSchema = z.object({
+  id: z.string(),
+  text: z.string(),
+  metadata: z.record(z.string(), z.unknown()).optional()
+});
+export type RerankDocument = z.infer<typeof RerankDocumentSchema>;
+
+export const RerankRequestSchema = z.object({
+  query: z.string(),
+  documents: z.array(RerankDocumentSchema),
+  topK: z.number().optional(),
+  instruction: z.string().optional()
+});
+export type RerankRequest = z.infer<typeof RerankRequestSchema>;
+
+export const RerankResultSchema = z.object({
+  id: z.string(),
+  score: z.number(),
+  rank: z.number(),
+  metadata: z.record(z.string(), z.unknown()).optional()
+});
+export type RerankResult = z.infer<typeof RerankResultSchema>;
+
+export const RerankResponseSchema = z.object({
+  provider: z.string(),
+  model: z.string(),
+  results: z.array(RerankResultSchema)
+});
+export type RerankResponse = z.infer<typeof RerankResponseSchema>;
+
+export const RerankOptionsRequestSchema = z.object({
+  query: z.string(),
+  questionId: z.string(),
+  options: z.array(z.object({ optionId: z.string(), text: z.string() })),
+  topK: z.number().optional()
+});
+export type RerankOptionsRequest = z.infer<typeof RerankOptionsRequestSchema>;
+
+export const RerankOptionsResponseSchema = z.object({
+  candidateOptions: z.array(
+    z.object({
+      optionId: z.string(),
+      text: z.string(),
+      score: z.number(),
+      rank: z.number()
+    })
+  ),
+  confirmationRequired: z.literal(true)
+});
+export type RerankOptionsResponse = z.infer<typeof RerankOptionsResponseSchema>;
 
 export type ShcEventType =
   | "shc.questionnaire.response.completed.v1"

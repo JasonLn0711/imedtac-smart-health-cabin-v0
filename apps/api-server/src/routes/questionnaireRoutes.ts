@@ -183,7 +183,15 @@ export async function registerQuestionnaireRoutes(
     }
   );
 
-  app.post<{ Body: { agent_session_id?: string; session_id?: string; question_name: string; transcript: string } }>(
+  app.post<{
+    Body: {
+      agent_session_id?: string;
+      session_id?: string;
+      question_name: string;
+      transcript: string;
+      asr_confidence?: number;
+    };
+  }>(
     "/api/v1/agent-turns/map-answer",
     async (request, reply) => {
       try {
