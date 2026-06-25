@@ -222,7 +222,9 @@ WAKE_WORD_LIVE_WAIT_MS=15000 corepack pnpm smoke:wakeword:live
 ```
 
 This live check does not call `/simulate-wake`; speak the selected wake phrase
-while it waits for a real `wake.detected` event.
+while it waits for a real `wake.detected` event. It rejects the default
+`custom_or_builtin` model unless `WAKE_WORD_LIVE_ALLOW_BUILTIN=true` is set for
+engineering-only bundled-model checks.
 
 Provider status:
 

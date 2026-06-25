@@ -1,5 +1,6 @@
 const wakeWordBaseUrl = process.env.WAKE_WORD_SERVICE_URL ?? "http://localhost:8013";
 const timeoutMs = Number(process.env.WAKE_WORD_LIVE_WAIT_MS ?? 15000);
+const allowBuiltinModel = process.env.WAKE_WORD_LIVE_ALLOW_BUILTIN === "true";
 
 function trimSlash(value) {
   return value.replace(/\/$/, "");
@@ -27,6 +28,7 @@ function assertLiveReady(status) {
   if (status.ready !== true) failures.push(`ready=${status.ready}`);
   if (status.listening !== true) failures.push(`listening=${status.listening}`);
   if (status.last_error !== null) failures.push(`last_error=${status.last_error}`);
+  if (!allowBuiltinModel && status.model === "custom_or_builtin") failures.push("model=custom_or_builtin");
   if (failures.length > 0) {
     throw new Error(`Wake word live readiness failed: ${failures.join(", ")}`);
   }

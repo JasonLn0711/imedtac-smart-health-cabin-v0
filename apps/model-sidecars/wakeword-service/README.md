@@ -73,7 +73,10 @@ WAKE_WORD_LIVE_WAIT_MS=15000 corepack pnpm smoke:wakeword:live
 
 This check does not call `/simulate-wake`. It requires `/status` to report
 `mode=live`, `ready=true`, `listening=true`, and `last_error=null`, then waits
-for a real `wake.detected` event while the selected wake phrase is spoken.
+for a real `wake.detected` event while the selected wake phrase is spoken. It
+also requires a configured model path by default; use
+`WAKE_WORD_LIVE_ALLOW_BUILTIN=true` only for engineering checks against
+openWakeWord bundled models.
 
 Event shape:
 
