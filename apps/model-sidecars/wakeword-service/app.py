@@ -67,7 +67,7 @@ def provider_status() -> dict:
     elif requested_mode == "live":
         mode = "live"
     else:
-      mode = "mock"
+        mode = "mock"
 
     return {
         "provider": provider(),
