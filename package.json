@@ -1,0 +1,22 @@
+{
+  "name": "imedtac-smart-health-cabin-v0",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "type": "module",
+  "scripts": {
+    "lint": "corepack pnpm -r lint",
+    "typecheck": "corepack pnpm -r typecheck",
+    "build": "corepack pnpm -r build",
+    "test": "vitest run",
+    "validate:json": "find modules apps packages -name '*.json' -print0 | xargs -0 -n1 jq empty"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@vitejs/plugin-react": "^4.3.4",
+    "playwright": "1.49.1",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3",
+    "vitest": "^2.1.8"
+  }
+}

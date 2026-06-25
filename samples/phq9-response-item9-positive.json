@@ -1,0 +1,16 @@
+{
+  "session_id": "sess_demo_item9_positive",
+  "questionnaire_code": "phq9",
+  "questionnaire_version": "0.1.0",
+  "raw_answers": {
+    "phq9_01": 0,
+    "phq9_02": 0,
+    "phq9_03": 0,
+    "phq9_04": 0,
+    "phq9_05": 0,
+    "phq9_06": 0,
+    "phq9_07": 0,
+    "phq9_08": 0,
+    "phq9_09": 1
+  }
+}
