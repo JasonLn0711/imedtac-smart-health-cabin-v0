@@ -28,15 +28,16 @@ questionnaire input:
 
 ```text
 wake word or tap -> visible recording state -> VAD / endpointing auto-stop
--> ASR -> candidate answer mapping -> user confirmation or staff review
+-> ASR -> candidate answer mapping -> clear option commit or staff review
 -> questionnaire answer
 ```
 
 The first release scope is staff-review intake support and questionnaire
 guidance for Traditional Chinese users in Taiwan enterprise settings. The voice
-Agent guides, reads questions/options, maps candidate answers, and asks for
-confirmation. It does not diagnose, recommend treatment, change PHQ-9 scoring,
-or write low-confidence answers without confirmation.
+Agent guides, reads questions/options, maps candidate answers, and supports
+manual confirmation. In continuous mode, only transcripts that map clearly to one
+displayed option write and advance. It does not diagnose, recommend treatment,
+change PHQ-9 scoring, or write low-confidence answers.
 
 ## Sprint 5.6 Product Decision
 
@@ -47,13 +48,14 @@ Voice Entry Decision:
 - No audio retention by default
 - Wake word only triggers recording state
 - Wake word never writes questionnaire answers
-- ASR result must still go through candidate mapping + user confirmation
+- ASR result must still go through candidate mapping; unmapped or low-confidence
+  speech never writes
 - Touch questionnaire remains complete path when voice stack fails
 ```
 
 Wake word is the entrance control layer. ASR is the understanding layer. LLM
 guidance and bounded mapping are the interaction layer. Questionnaire write is
-still a confirmation-gated state change.
+still a candidate-gated state change.
 
 ## Already Selected
 
@@ -80,13 +82,13 @@ configuration.
 | Avatar UI state | XState + `@xstate/react` | `apps/kiosk-web/src/features/avatar/` |
 | Browser capture | Web `MediaRecorder` | `docs/handoff/sprint-4.5-model-selection.md` |
 | Voice activation gate | Local wake word with tap-to-start fallback | Sprint 5.6 decision |
-| Wake word provider | Picovoice Porcupine first for Mandarin demo reliability; openWakeWord kept as engineering fallback | `apps/model-sidecars/wakeword-service/README.md` |
+| Wake word provider | sherpa-onnx KWS Zipformer zh-en 3M | `apps/model-sidecars/wakeword-service/README.md` |
 | Voice provider mode | `mock`, `live`, `unavailable` status model | `apps/voice-agent-server/README.md` |
 | ASR provider | `faster-whisper` + `Breeze-ASR-26` CTranslate2 int8 | `docs/handoff/sprint-4.5-model-selection.md` |
 | ASR sidecar | Python FastAPI sidecar on port `8011` | `apps/model-sidecars/asr-service/README.md` |
 | ASR acceptance | GPU-only live acceptance; no CPU fallback for live acceptance | `.env.example`, `apps/voice-agent-server/README.md` |
 | LLM provider | Local Gemma 4 E4B through Ollama native or OpenAI-compatible runtime | `.env.example`, `docs/handoff/sprint-4.5-model-selection.md` |
-| LLM behavior | Short flow guidance, temperature `0`, bounded answer mapping | `.env.example`, voice Agent routes |
+| LLM behavior | Short flow guidance, temperature `0.3`, bounded answer mapping | `.env.example`, voice Agent routes |
 | TTS provider | BreezyVoice default voice only | `docs/handoff/sprint-4.5-model-selection.md` |
 | TTS sidecar | Python FastAPI sidecar on port `8012` | `apps/model-sidecars/tts-service/README.md` |
 | TTS voice control | Reject reference audio, voice cloning, custom voice IDs | `apps/model-sidecars/tts-service/README.md` |
@@ -102,9 +104,9 @@ constraint changes them.
 | --- | --- | --- |
 | Start recording | Local wake word primary, tap-to-start fallback | Supports hands-free activation without making the system always write from speech |
 | Always-listening mode | Not enabled as an assistant behavior | Wake word listens only as a local activation gate |
-| Wake word | Enabled as local gate through Picovoice Porcupine | Fits Mandarin custom phrase support and reliability-first demo needs |
-| Wake phrase | `小慧你好` | Short, natural, project-aligned activation phrase for kiosk users |
-| Wake word engineering fallback | openWakeWord custom model path | Keep only if Porcupine licensing or model packaging blocks deployment |
+| Wake word | Enabled as local gate through sherpa-onnx KWS | Keeps activation offline, local, and free of external AccessKey / `.ppn` packaging |
+| Wake phrase | `你好小慧` | Short, natural, project-aligned activation phrase for kiosk users |
+| Wake word engineering fallback | Tap-to-start | Keep hands-free optional until onsite false-trigger / miss-rate checks pass |
 | VAD primary | Silero VAD | Better modern VAD baseline for speech gating |
 | VAD fallback | WebRTC VAD only if Silero cannot run | Lightweight fallback for constrained devices |
 | VAD runtime | Prefer local runtime near capture path | Keeps noise gating before ASR cost and privacy exposure |
@@ -143,6 +145,19 @@ State rules:
 - `voice_unavailable`: voice stack is down; touch questionnaire still works.
 - `staff_review`: system preserves evidence and asks staff to assist.
 
+Continuous voice loop:
+
+- `wake.detected` starts continuous voice mode for hands-free interaction.
+- Each captured turn runs ASR. A clear option match writes the current answer and
+  advances the UI to the next question; an unmapped answer stays on the current
+  question.
+- The TTS reply says the recognized answer, gives one supportive sentence, then
+  asks the next displayed question through the LLM guidance path.
+- After TTS playback, the internal `LOOP_READY` transition returns directly to
+  `recording_answer` for the next VAD-bounded utterance.
+- The user-visible stop control cancels the active capture and returns to
+  `idle_touch_ready`.
+
 ## Suggested VAD And Endpoint Parameters
 
 These are starting values for onsite tuning, not final clinical validation.
@@ -163,7 +178,7 @@ text alone.
 
 | Condition | Action |
 | --- | --- |
-| Clear transcript maps to one option | Ask confirmation, then write |
+| Clear transcript maps to one option | Continuous mode writes and advances; manual path can ask confirmation |
 | Transcript maps to two likely options | Show both options and ask user to choose |
 | Empty, noise, or no speech | Do not write; ask user to try again or use touch |
 | Mixed Mandarin/Taigi or unclear phrase | Ask confirmation or switch to touch fallback |
@@ -187,7 +202,7 @@ into the main system design.
 | Multi-speaker policy | Staff review on ambiguity | Reject and retry; diarization; staff-assisted mode |
 | Audio retention | Do not retain audio by default | No audio retention; short debug retention; full retention with consent |
 | Cloud ASR fallback | Not enabled by default | OpenAI; Google Cloud; Azure; none |
-| Formal wake phrase | Frozen as `小慧你好` | Custom Picovoice Porcupine Mandarin `.ppn`; tap-to-start remains fallback |
+| Formal wake phrase | Frozen as `你好小慧` | sherpa-onnx generated keyword token file; tap-to-start remains fallback |
 | Diarization | Not in Phase 1 | None; OpenAI diarize; pyannote; vendor diarization |
 | Hardware mic | To be selected onsite | USB directional mic; kiosk array mic; headset; built-in mic |
 | Taigi support | Confirmation-first support | Mandarin only; mixed Mandarin/Taigi support; separate Taigi validation |

@@ -176,8 +176,8 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
 WAKE_WORD_ENABLED=true \
 WAKE_WORD_MODE=mock \
-WAKE_WORD_PROVIDER=porcupine \
-WAKE_WORD_PHRASE=小慧你好 \
+WAKE_WORD_PROVIDER=sherpa-onnx \
+WAKE_WORD_PHRASE=你好小慧 \
 WAKE_WORD_SERVICE_URL=http://localhost:8013 \
 WAKE_WORD_THRESHOLD=0.65 \
 WAKE_WORD_COOLDOWN_MS=2000 \
@@ -185,25 +185,47 @@ WAKE_WORD_LOCAL_ONLY=true \
 .venv/bin/python -m uvicorn app:app --host 0.0.0.0 --port 8013
 ```
 
-Run the sidecar in live microphone mode after a wake phrase model and
-microphone device are selected:
+Install the sherpa-onnx KWS model and generate the `你好小慧` keyword file:
+
+```bash
+cd /home/jnclaw/every_on_git_jnclaw/phd-life-system/imedtac-smart-health-cabin-v0
+mkdir -p .local/models .local/models/wakeword .local/tmp
+cd .local/tmp
+wget https://github.com/k2-fsa/sherpa-onnx/releases/download/kws-models/sherpa-onnx-kws-zipformer-zh-en-3M-2025-12-20.tar.bz2
+tar xf sherpa-onnx-kws-zipformer-zh-en-3M-2025-12-20.tar.bz2
+rm sherpa-onnx-kws-zipformer-zh-en-3M-2025-12-20.tar.bz2
+mv sherpa-onnx-kws-zipformer-zh-en-3M-2025-12-20 ../models/
+cd ../..
+python3 -m venv .local/wakeword-venv
+.local/wakeword-venv/bin/python -m pip install -r apps/model-sidecars/wakeword-service/requirements.txt
+printf '你好小慧 @你好小慧\n' > .local/models/wakeword/ni-hao-xiao-hui.raw.txt
+.local/wakeword-venv/bin/sherpa-onnx-cli text2token \
+  --tokens .local/models/sherpa-onnx-kws-zipformer-zh-en-3M-2025-12-20/tokens.txt \
+  --tokens-type phone+ppinyin \
+  --lexicon .local/models/sherpa-onnx-kws-zipformer-zh-en-3M-2025-12-20/en.phone \
+  .local/models/wakeword/ni-hao-xiao-hui.raw.txt \
+  .local/models/wakeword/ni-hao-xiao-hui.keywords.txt
+```
+
+Run the sidecar in live microphone mode after the model is installed and a
+microphone device is selected:
 
 ```bash
 cd apps/model-sidecars/wakeword-service
 WAKE_WORD_ENABLED=true \
 WAKE_WORD_MODE=live \
-WAKE_WORD_PROVIDER=porcupine \
-WAKE_WORD_PHRASE=小慧你好 \
+WAKE_WORD_PROVIDER=sherpa-onnx \
+WAKE_WORD_PHRASE=你好小慧 \
 WAKE_WORD_SERVICE_URL=http://localhost:8013 \
-PICOVOICE_ACCESS_KEY="$PICOVOICE_ACCESS_KEY" \
-PORCUPINE_KEYWORD_PATH=.local/models/wakeword/xiao-hui-ni-hao_linux.ppn \
-PORCUPINE_MODEL_PATH=.local/models/picovoice/porcupine_params_zh.pv \
-PORCUPINE_SENSITIVITY=0.65 \
+SHERPA_ONNX_KWS_MODEL_DIR=.local/models/sherpa-onnx-kws-zipformer-zh-en-3M-2025-12-20 \
+SHERPA_ONNX_KWS_KEYWORDS=.local/models/wakeword/ni-hao-xiao-hui.keywords.txt \
+SHERPA_ONNX_KWS_NUM_THREADS=2 \
+SHERPA_ONNX_KWS_PROVIDER=cpu \
 WAKE_WORD_THRESHOLD=0.65 \
 WAKE_WORD_COOLDOWN_MS=2000 \
 WAKE_WORD_DEVICE_INDEX=0 \
 WAKE_WORD_LOCAL_ONLY=true \
-.venv/bin/python -m uvicorn app:app --host 0.0.0.0 --port 8013
+../../../.local/wakeword-venv/bin/python -m uvicorn app:app --host 0.0.0.0 --port 8013
 ```
 
 Check:
@@ -224,9 +246,25 @@ WAKE_WORD_LIVE_WAIT_MS=15000 corepack pnpm smoke:wakeword:live
 ```
 
 This live check does not call `/simulate-wake`; speak the selected wake phrase
-`小慧你好` while it waits for a real `wake.detected` event. It requires
-`provider=porcupine`, the selected phrase, a Picovoice AccessKey, the Mandarin
-`.pv` model, and the custom Linux `.ppn` keyword file.
+`你好小慧` while it waits for a real `wake.detected` event. It requires
+`provider=sherpa-onnx`, the selected phrase, the local Zipformer zh-en 3M ONNX
+files, and the generated keyword token file.
+
+Kiosk continuous voice loop:
+
+- After `wake.detected`, kiosk-web enters continuous voice mode.
+- Each turn captures microphone audio with `MediaRecorder`, closes the utterance
+  with browser endpointing, and calls `/api/v1/agent-turns/asr`.
+- When the transcript maps clearly to the current displayed option set,
+  kiosk-web writes that answer, advances the SurveyJS UI to the next question,
+  calls `/api/v1/agent-turns/respond` for that next question, then sends the
+  summary, feedback, and next prompt to `/api/v1/agent-turns/tts`.
+- When the transcript does not map to a displayed option, kiosk-web does not
+  write or advance; it uses TTS to ask the user to repeat or use touch input.
+- The stop button cancels the current capture and returns the Avatar to
+  touch-ready idle.
+- `VITE_VOICE_MAX_UTTERANCE_MS` is also a hard recording timeout, so the voice
+  loop has a deterministic upper bound even when browser audio frames are slow.
 
 Provider status:
 
@@ -240,6 +278,7 @@ Sprint 5 live checks:
 corepack pnpm smoke:redpanda
 corepack pnpm smoke:api
 corepack pnpm smoke:voice-agent
+corepack pnpm smoke:reranker
 corepack pnpm live:check
 corepack pnpm smoke:sprint5-live-demo
 ```
