@@ -37,10 +37,17 @@ VOICE_PROVIDER_MODE=live \
 ASR_SERVICE_URL=http://localhost:8011 \
 ASR_PROVIDER=faster_whisper_breeze_asr_26 \
 ASR_MODEL=Breeze-ASR-26-CT2-int8 \
+ASR_DEVICE=cuda \
+ASR_CPU_OFFLOAD=false \
 LLM_PROVIDER=vllm_openai_compatible \
+LLM_DEVICE=cuda \
+LLM_CPU_OFFLOAD=false \
+VLLM_CPU_OFFLOAD_GB=0 \
 LLM_BASE_URL=http://localhost:8000/v1 \
 LLM_MODEL=gemma-4-e4b \
 TTS_PROVIDER=breezyvoice_default \
+TTS_DEVICE=cuda \
+TTS_CPU_OFFLOAD=false \
 TTS_SERVICE_URL=http://localhost:8012 \
 TTS_VOICE_ID=default \
 corepack pnpm --filter @shc/api-server dev
@@ -51,6 +58,9 @@ Model service contracts:
 - ASR: `POST {ASR_SERVICE_URL}/v1/asr/transcribe`.
 - LLM: `POST {LLM_BASE_URL}/chat/completions`, model `gemma-4-e4b`.
 - TTS: `POST {TTS_SERVICE_URL}/v1/tts/synthesize`, voice `default`.
+
+Sprint 5 acceptance is GPU-only for AI model inference. CPU backend, CPU
+fallback, or CPU offload is not eligible for live acceptance.
 
 Voice control: do not start BreezyVoice with Jason's later customized prompt
 audio/text for this lane. The API rejects reference audio, speaker embeddings,

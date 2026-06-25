@@ -136,12 +136,26 @@ afterEach(() => {
   delete process.env.ASR_SERVICE_URL;
   delete process.env.ASR_PROVIDER;
   delete process.env.ASR_MODEL;
+  delete process.env.ASR_COMPUTE_BACKEND;
+  delete process.env.ASR_DEVICE;
+  delete process.env.ASR_CPU_OFFLOAD;
+  delete process.env.ASR_CPU_OFFLOAD_GB;
+  delete process.env.ASR_ALLOW_CPU_FALLBACK;
   delete process.env.ASR_LANGUAGE;
   delete process.env.ASR_TRANSCRIBE_PATH;
   delete process.env.ASR_HEALTH_PATH;
   delete process.env.LLM_PROVIDER;
+  delete process.env.LLM_COMPUTE_BACKEND;
+  delete process.env.LLM_DEVICE;
+  delete process.env.LLM_CPU_OFFLOAD;
+  delete process.env.LLM_CPU_OFFLOAD_GB;
+  delete process.env.LLM_ALLOW_CPU_FALLBACK;
   delete process.env.VLLM_BASE_URL;
   delete process.env.VLLM_MODEL;
+  delete process.env.VLLM_DEVICE;
+  delete process.env.VLLM_CPU_OFFLOAD;
+  delete process.env.VLLM_CPU_OFFLOAD_GB;
+  delete process.env.VLLM_ALLOW_CPU_FALLBACK;
   delete process.env.LLM_BASE_URL;
   delete process.env.LLM_MODEL;
   delete process.env.LLM_MODELS_PATH;
@@ -150,6 +164,11 @@ afterEach(() => {
   delete process.env.OLLAMA_BASE_URL;
   delete process.env.OLLAMA_MODEL;
   delete process.env.TTS_PROVIDER;
+  delete process.env.TTS_COMPUTE_BACKEND;
+  delete process.env.TTS_DEVICE;
+  delete process.env.TTS_CPU_OFFLOAD;
+  delete process.env.TTS_CPU_OFFLOAD_GB;
+  delete process.env.TTS_ALLOW_CPU_FALLBACK;
   delete process.env.TTS_SERVICE_URL;
   delete process.env.TTS_MODEL_PATH;
   delete process.env.TTS_VOICE;
@@ -160,6 +179,10 @@ afterEach(() => {
   delete process.env.BREEZYVOICE_BASE_URL;
   delete process.env.BREEZYVOICE_MODEL;
   delete process.env.BREEZYVOICE_VOICE_ID;
+  delete process.env.BREEZYVOICE_DEVICE;
+  delete process.env.BREEZYVOICE_CPU_OFFLOAD;
+  delete process.env.BREEZYVOICE_CPU_OFFLOAD_GB;
+  delete process.env.BREEZYVOICE_ALLOW_CPU_FALLBACK;
   delete process.env.REDPANDA_ADMIN_URL;
   delete process.env.REDPANDA_READY_PATH;
   delete process.env.SPRINT5_REQUIRE_VLLM;
@@ -315,6 +338,28 @@ describe("QuestionnaireService", () => {
     );
   });
 
+  it("falls back to deterministic guidance when live LLM guidance is unusable", async () => {
+    process.env.VOICE_MODEL_MODE = "real";
+    process.env.VLLM_BASE_URL = "http://llm.local/v1";
+    process.env.VLLM_MODEL = "gemma-4-e4b";
+    const fetchMock = vi.fn(async () => {
+      return new Response(JSON.stringify({ choices: [{ message: { content: "ering ering ering" } }] }), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const service = new QuestionnaireService(new InMemoryQuestionnaireRepository());
+    const response = await service.buildGuidance({ question_name: "phq9_01" });
+
+    expect(response.guidance).toContain("做事時提不起勁或沒有樂趣");
+    expect(response).toMatchObject({
+      provider: "vllm_openai_compatible",
+      model: "gemma-4-e4b"
+    });
+  });
+
   it("calls BreezyVoice without a customized voice in real mode", async () => {
     process.env.VOICE_MODEL_MODE = "real";
     process.env.BREEZYVOICE_BASE_URL = "http://breezy.local/v1";
@@ -388,9 +433,12 @@ describe("QuestionnaireService", () => {
   it("reports Sprint 5 eligible provider status only when all live probes pass", async () => {
     process.env.VOICE_MODEL_MODE = "real";
     process.env.ASR_SERVICE_URL = "http://asr.local";
+    process.env.ASR_DEVICE = "cuda";
     process.env.VLLM_BASE_URL = "http://llm.local/v1";
     process.env.VLLM_MODEL = "gemma-4-e4b";
+    process.env.LLM_DEVICE = "cuda";
     process.env.TTS_SERVICE_URL = "http://tts.local";
+    process.env.TTS_DEVICE = "cuda";
     process.env.REDPANDA_ADMIN_URL = "http://redpanda.local";
     const fetchMock = vi.fn(async () => {
       return new Response(JSON.stringify({ status: "ok" }), {
@@ -404,9 +452,9 @@ describe("QuestionnaireService", () => {
 
     await expect(service.getProviderStatus()).resolves.toMatchObject({
       providers: {
-        asr: { mode: "live", ready: true, acceptanceEligible: true },
-        llm: { mode: "live", model: "gemma-4-e4b", ready: true, acceptanceEligible: true },
-        tts: { mode: "live", ready: true, acceptanceEligible: true },
+        asr: { mode: "live", ready: true, acceptanceEligible: true, computeBackend: "gpu", cpuOffload: false },
+        llm: { mode: "live", model: "gemma-4-e4b", ready: true, acceptanceEligible: true, computeBackend: "gpu", cpuOffload: false },
+        tts: { mode: "live", ready: true, acceptanceEligible: true, computeBackend: "gpu", cpuOffload: false },
         redpanda: { mode: "live", ready: true, acceptanceEligible: true }
       },
       sprint5Acceptance: { allRequiredLive: true, eligible: true }
@@ -419,6 +467,9 @@ describe("QuestionnaireService", () => {
 
   it("keeps an Ollama-compatible Gemma endpoint live but not strict Sprint 5 eligible", async () => {
     process.env.VOICE_MODEL_MODE = "real";
+    process.env.ASR_DEVICE = "cuda";
+    process.env.LLM_DEVICE = "cuda";
+    process.env.TTS_DEVICE = "cuda";
     process.env.LLM_PROVIDER = "ollama_openai_compatible";
     process.env.LLM_BASE_URL = "http://ollama.local/v1";
     process.env.LLM_MODEL = "gemma4:e4b";
@@ -441,6 +492,51 @@ describe("QuestionnaireService", () => {
           ready: true,
           acceptanceEligible: false,
           error_code: "LLM_PROVIDER_NOT_VLLM"
+        }
+      },
+      sprint5Acceptance: { allRequiredLive: true, eligible: false }
+    });
+  });
+
+  it("requires GPU-only AI model runtime for Sprint 5 eligibility", async () => {
+    process.env.VOICE_MODEL_MODE = "real";
+    process.env.ASR_DEVICE = "cpu";
+    process.env.LLM_DEVICE = "cuda";
+    process.env.VLLM_CPU_OFFLOAD_GB = "3";
+    process.env.TTS_COMPUTE_BACKEND = "mixed";
+    const fetchMock = vi.fn(async () => {
+      return new Response(JSON.stringify({ status: "ok" }), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const service = new QuestionnaireService(new InMemoryQuestionnaireRepository());
+
+    await expect(service.getProviderStatus()).resolves.toMatchObject({
+      providers: {
+        asr: {
+          mode: "live",
+          ready: true,
+          acceptanceEligible: false,
+          computeBackend: "cpu",
+          error_code: "GPU_ONLY_REQUIRED"
+        },
+        llm: {
+          mode: "live",
+          ready: true,
+          acceptanceEligible: false,
+          computeBackend: "gpu",
+          cpuOffload: true,
+          error_code: "GPU_ONLY_REQUIRED"
+        },
+        tts: {
+          mode: "live",
+          ready: true,
+          acceptanceEligible: false,
+          computeBackend: "mixed",
+          error_code: "GPU_ONLY_REQUIRED"
         }
       },
       sprint5Acceptance: { allRequiredLive: true, eligible: false }

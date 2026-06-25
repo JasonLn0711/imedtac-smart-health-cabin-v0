@@ -44,6 +44,7 @@ const forbiddenTtsFields = [
   "voice_clone",
   "customized_voice"
 ];
+type ComputeBackend = "gpu" | "cpu" | "mixed" | "unknown";
 
 function voiceModelMode(): "mock" | "live" {
   return process.env.VOICE_MODEL_MODE === "real" || process.env.VOICE_PROVIDER_MODE === "live" ? "live" : "mock";
@@ -102,6 +103,61 @@ function ttsVoiceId(): string {
 
 function sprint5RequiresVllm(): boolean {
   return process.env.SPRINT5_REQUIRE_VLLM !== "false";
+}
+
+function firstEnv(names: string[]): string | undefined {
+  return names.map((name) => process.env[name]).find((value): value is string => value !== undefined && value !== "");
+}
+
+function booleanEnv(names: string[]): boolean {
+  const value = firstEnv(names)?.toLowerCase();
+  return value === "1" || value === "true" || value === "yes" || value === "on";
+}
+
+function positiveNumberEnv(names: string[]): boolean {
+  return names.some((name) => Number(process.env[name] ?? 0) > 0);
+}
+
+function normalizeComputeBackend(value?: string): ComputeBackend {
+  const normalized = value?.trim().toLowerCase();
+  if (!normalized) {
+    return "unknown";
+  }
+  if (["cuda", "gpu", "nvidia", "cuda:0"].includes(normalized)) {
+    return "gpu";
+  }
+  if (["cpu"].includes(normalized)) {
+    return "cpu";
+  }
+  if (["mixed", "hybrid", "gpu+cpu", "cuda+cpu"].includes(normalized)) {
+    return "mixed";
+  }
+  return "unknown";
+}
+
+function modelRuntimeScope(input: {
+  backendEnv: string[];
+  cpuOffloadEnv: string[];
+  cpuFallbackEnv: string[];
+}) {
+  return {
+    computeBackend: normalizeComputeBackend(firstEnv(input.backendEnv)),
+    gpuRequired: true,
+    cpuOffload: booleanEnv(input.cpuOffloadEnv) || positiveNumberEnv(input.cpuOffloadEnv),
+    cpuFallbackAllowed: booleanEnv(input.cpuFallbackEnv)
+  };
+}
+
+function gpuOnlyEligible(input: {
+  gpuRequired?: boolean;
+  computeBackend?: ComputeBackend;
+  cpuOffload?: boolean;
+  cpuFallbackAllowed?: boolean;
+}) {
+  return (
+    input.gpuRequired !== true ||
+    (input.computeBackend === "gpu" && input.cpuOffload === false && input.cpuFallbackAllowed === false)
+  );
 }
 
 async function postJson<T>(url: string, body: unknown): Promise<T> {
@@ -201,13 +257,19 @@ function withAcceptance(input: {
   fallback: string;
   error_code?: string;
   acceptanceEligible?: boolean;
+  computeBackend?: ComputeBackend;
+  gpuRequired?: boolean;
+  cpuOffload?: boolean;
+  cpuFallbackAllowed?: boolean;
 }) {
   const runtimeEligible = input.mode === "live" && input.ready && (input.healthy ?? input.ready);
+  const gpuControlError = input.mode === "live" && !gpuOnlyEligible(input) ? "GPU_ONLY_REQUIRED" : undefined;
   return {
     ...input,
     healthy: input.healthy ?? input.ready,
-    acceptanceEligible: input.acceptanceEligible ?? runtimeEligible,
-    lastError: input.lastError ?? null
+    acceptanceEligible: (input.acceptanceEligible ?? runtimeEligible) && !gpuControlError,
+    lastError: gpuControlError ?? input.lastError ?? null,
+    error_code: gpuControlError ?? input.error_code
   };
 }
 
@@ -239,6 +301,10 @@ function buildQuestionGuidance(surveyjsJson: unknown, questionName?: string): st
     : "請依照畫面上的問卷題目作答，也可以隨時改用觸控填答。";
 }
 
+function isUsableGuidance(value: string): boolean {
+  return /[\u4e00-\u9fff]/.test(value);
+}
+
 export interface ASRAdapter {
   transcribe(input: {
     audioBase64: string;
@@ -257,6 +323,22 @@ export interface TTSAdapter {
 
 export class ProviderStatusService {
   async getStatus(): Promise<ProviderStatusResponse> {
+    const asrRuntimeScope = modelRuntimeScope({
+      backendEnv: ["ASR_COMPUTE_BACKEND", "ASR_DEVICE"],
+      cpuOffloadEnv: ["ASR_CPU_OFFLOAD", "ASR_CPU_OFFLOAD_GB"],
+      cpuFallbackEnv: ["ASR_ALLOW_CPU_FALLBACK"]
+    });
+    const llmRuntimeScope = modelRuntimeScope({
+      backendEnv: ["LLM_COMPUTE_BACKEND", "LLM_DEVICE", "VLLM_DEVICE"],
+      cpuOffloadEnv: ["LLM_CPU_OFFLOAD", "LLM_CPU_OFFLOAD_GB", "VLLM_CPU_OFFLOAD", "VLLM_CPU_OFFLOAD_GB"],
+      cpuFallbackEnv: ["LLM_ALLOW_CPU_FALLBACK", "VLLM_ALLOW_CPU_FALLBACK"]
+    });
+    const ttsRuntimeScope = modelRuntimeScope({
+      backendEnv: ["TTS_COMPUTE_BACKEND", "TTS_DEVICE", "BREEZYVOICE_DEVICE"],
+      cpuOffloadEnv: ["TTS_CPU_OFFLOAD", "TTS_CPU_OFFLOAD_GB", "BREEZYVOICE_CPU_OFFLOAD", "BREEZYVOICE_CPU_OFFLOAD_GB"],
+      cpuFallbackEnv: ["TTS_ALLOW_CPU_FALLBACK", "BREEZYVOICE_ALLOW_CPU_FALLBACK"]
+    });
+
     if (voiceModelMode() === "mock") {
       const asr = withAcceptance({
         provider: env("ASR_PROVIDER", defaultAsrProvider),
@@ -264,7 +346,8 @@ export class ProviderStatusService {
         mode: "mock",
         ready: true,
         endpoint: env("ASR_SERVICE_URL", "http://localhost:8011"),
-        fallback: "touch input"
+        fallback: "touch input",
+        ...asrRuntimeScope
       });
       const llm = withAcceptance({
         provider: env("LLM_PROVIDER", defaultLlmProvider),
@@ -272,7 +355,8 @@ export class ProviderStatusService {
         mode: "mock",
         ready: true,
         endpoint: llmBaseUrl(),
-        fallback: "deterministic rejection / touch input"
+        fallback: "deterministic rejection / touch input",
+        ...llmRuntimeScope
       });
       const tts = withAcceptance({
         provider: env("TTS_PROVIDER", defaultTtsProvider),
@@ -280,7 +364,8 @@ export class ProviderStatusService {
         mode: "mock",
         ready: true,
         endpoint: env("TTS_SERVICE_URL", "http://localhost:8012"),
-        fallback: "text-only question display"
+        fallback: "text-only question display",
+        ...ttsRuntimeScope
       });
       const redpanda = withAcceptance({
         provider: "redpanda",
@@ -321,7 +406,8 @@ export class ProviderStatusService {
       mode: asrProbe.ready ? "live" : "unavailable",
       endpoint: asrEndpoint,
       fallback: "touch input",
-      ...asrProbe
+      ...asrProbe,
+      ...asrRuntimeScope
     });
     const llm = withAcceptance({
       provider: env("LLM_PROVIDER", defaultLlmProvider),
@@ -330,6 +416,7 @@ export class ProviderStatusService {
       endpoint: llmEndpoint,
       fallback: "deterministic rejection / touch input",
       ...llmProbe,
+      ...llmRuntimeScope,
       acceptanceEligible:
         llmProbe.ready &&
         llmProbe.healthy &&
@@ -349,7 +436,8 @@ export class ProviderStatusService {
       mode: ttsProbe.ready ? "live" : "unavailable",
       endpoint: ttsBaseUrl,
       fallback: "text-only question display",
-      ...ttsProbe
+      ...ttsProbe,
+      ...ttsRuntimeScope
     });
     const redpanda = withAcceptance({
       provider: "redpanda",
@@ -416,7 +504,8 @@ const liveLlmAdapter: LLMAdapter = {
         max_tokens: 80
       }
     );
-    const guidance = llm.choices?.[0]?.message?.content?.trim() || llm.message?.content?.trim() || fallbackGuidance;
+    const generatedGuidance = llm.choices?.[0]?.message?.content?.trim() || llm.message?.content?.trim() || "";
+    const guidance = isUsableGuidance(generatedGuidance) ? generatedGuidance : fallbackGuidance;
     const provider = env("LLM_PROVIDER", defaultLlmProvider);
     const model = llmModel();
     return { provider, model, guidance, payload: { provider, model, guidance } };
