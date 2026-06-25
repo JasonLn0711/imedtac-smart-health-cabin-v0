@@ -21,7 +21,8 @@ export interface HealthzResponse {
 
 export interface ActiveQuestionnaireResponse {
   questionnaire_code: "phq9";
-  questionnaire_version: "0.1.0";
+  questionnaire_version: string;
+  questionnaire_version_id?: string;
   title: string;
   surveyjs_json: unknown;
   surveyjs_json_path: string;
@@ -70,11 +71,146 @@ export interface CompletedQuestionnaireResponse {
   response_id: string;
   session_id: string;
   questionnaire_code: "phq9";
-  questionnaire_version: "0.1.0";
+  questionnaire_version: string;
   internal_score: InternalScore;
   safety_flags: SafetyFlags;
   public_summary: PublicSummary;
+  public_report_token?: string;
+  public_report_url?: string;
+  qr_payload?: string;
 }
+
+export type QuestionnaireVersionStatus = "draft" | "published" | "archived";
+
+export interface QuestionnaireTemplateSummary {
+  id: string;
+  code: "phq9";
+  title: string;
+  description: string;
+  active_version_id: string | null;
+  active_version: string | null;
+  status: QuestionnaireVersionStatus | "none";
+  updated_at: string;
+}
+
+export interface QuestionnaireVersionSummary {
+  id: string;
+  template_id: string;
+  questionnaire_code: "phq9";
+  version: string;
+  status: QuestionnaireVersionStatus;
+  is_active: boolean;
+}
+
+export interface AdminQuestionnaireTemplatesResponse {
+  templates: QuestionnaireTemplateSummary[];
+}
+
+export interface CreateQuestionnaireTemplateRequest {
+  code: "phq9";
+  title: string;
+  description: string;
+}
+
+export interface CreateQuestionnaireVersionRequest {
+  template_id: string;
+  version: string;
+  surveyjs_json: unknown;
+  scoring_config_code: "phq9_public_v1";
+  status?: QuestionnaireVersionStatus;
+}
+
+export interface AdminQuestionnaireResponseSummary {
+  response_id: string;
+  session_id: string;
+  questionnaire_code: "phq9";
+  questionnaire_version: string;
+  public_status_code: PublicSummary["public_status_code"];
+  requires_human_review: boolean;
+  public_report_token: string | null;
+  public_report_url: string | null;
+  created_at: string;
+}
+
+export interface AdminQuestionnaireResponsesResponse {
+  responses: AdminQuestionnaireResponseSummary[];
+}
+
+export interface PublicReportSection {
+  module_id: "questionnaire";
+  title: PublicSummary["title"];
+  public_status_code: PublicSummary["public_status_code"];
+  summary: string;
+  disclaimer: string;
+}
+
+export interface PublicReportResponse {
+  report_id: string;
+  token: string;
+  sections: PublicReportSection[];
+}
+
+export interface SurveyChoice {
+  value: number;
+  text: string;
+}
+
+export interface SurveyQuestionContext {
+  name: Phq9ItemKey;
+  title: string;
+  choices: SurveyChoice[];
+}
+
+export interface AgentSessionResponse {
+  agent_session_id: string;
+  status: "created";
+}
+
+export interface AgentTurnResponse {
+  agent_turn_id: string;
+  provider: "mock";
+  transcript?: string;
+  guidance?: string;
+  audio_data_url?: string;
+}
+
+export interface VoiceAnswerCandidate {
+  value: number;
+  text: string;
+  confidence: number;
+  requires_confirmation: true;
+}
+
+export interface VoiceAnswerMappingResponse {
+  candidate: VoiceAnswerCandidate | null;
+  transcript: string;
+}
+
+export type ShcEventType =
+  | "shc.questionnaire.response.completed.v1"
+  | "shc.agent.turn.created.v1"
+  | "shc.report.created.v1"
+  | "shc.audit.event.created.v1";
+
+export interface ShcEventEnvelope {
+  specversion: "1.0";
+  id: string;
+  source: string;
+  type: ShcEventType;
+  subject: string;
+  time: string;
+  tenant_id: "tenant_demo";
+  kiosk_id: "kiosk_demo";
+  session_id?: string;
+  data: Record<string, unknown>;
+}
+
+export const SHC_EVENT_TOPICS: Record<ShcEventType, string> = {
+  "shc.questionnaire.response.completed.v1": "shc.questionnaire.responses.v1",
+  "shc.agent.turn.created.v1": "shc.agent.turns.v1",
+  "shc.report.created.v1": "shc.report.events.v1",
+  "shc.audit.event.created.v1": "shc.audit.events.v1"
+};
 
 export interface ErrorResponse {
   error: {

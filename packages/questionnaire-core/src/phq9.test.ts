@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { scorePhq9, validatePhq9Answers } from "./phq9";
+import phq9Seed from "../../../modules/questionnaire/seed/phq9.zh-TW.surveyjs.json";
+import {
+  getSurveyQuestionContexts,
+  mapTranscriptToSurveyChoice,
+  scorePhq9,
+  validatePhq9Answers,
+  validateSurveyJsQuestionnaire
+} from "./phq9";
 
 const lowRiskAnswers = {
   phq9_01: 0,
@@ -38,5 +45,24 @@ describe("PHQ-9 scoring", () => {
 
   it("rejects values outside 0..3", () => {
     expect(() => validatePhq9Answers({ ...lowRiskAnswers, phq9_01: 4 })).toThrow("phq9_01");
+  });
+
+  it("validates the PHQ-9 SurveyJS seed", () => {
+    expect(() => validateSurveyJsQuestionnaire(phq9Seed)).not.toThrow();
+    expect(getSurveyQuestionContexts(phq9Seed)).toHaveLength(9);
+  });
+
+  it("rejects SurveyJS JSON missing PHQ-9 keys", () => {
+    expect(() => validateSurveyJsQuestionnaire({ title: "bad", pages: [{ elements: [] }] })).toThrow("phq9_01");
+  });
+
+  it("maps deterministic voice answers to available choices", () => {
+    const choices = getSurveyQuestionContexts(phq9Seed)[0]!.choices;
+
+    expect(mapTranscriptToSurveyChoice("完全沒有", choices)?.value).toBe(0);
+    expect(mapTranscriptToSurveyChoice("幾天", choices)?.value).toBe(1);
+    expect(mapTranscriptToSurveyChoice("一半以上", choices)?.value).toBe(2);
+    expect(mapTranscriptToSurveyChoice("幾乎每天", choices)?.value).toBe(3);
+    expect(mapTranscriptToSurveyChoice("不知道", choices)).toBeNull();
   });
 });

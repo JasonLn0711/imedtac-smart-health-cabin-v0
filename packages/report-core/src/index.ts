@@ -1,6 +1,8 @@
-import type { InternalScore, PublicSummary, SafetyFlags } from "@shc/contracts";
+import type { InternalScore, PublicReportSection, PublicSummary, SafetyFlags } from "@shc/contracts";
 
 export const DIAGNOSTIC_PUBLIC_WORDS = ["憂鬱症", "中度憂鬱", "重度憂鬱", "診斷", "治療建議"];
+export const PUBLIC_REPORT_DISCLAIMER =
+  "本結果僅供健康自我檢測與現場人員參考，不能替代醫護人員評估。";
 
 export function buildPhq9PublicSummary(
   internalScore: InternalScore,
@@ -35,4 +37,19 @@ export function assertPublicSummaryIsNonDiagnostic(summary: PublicSummary): void
       throw new Error(`Public summary contains disallowed diagnostic wording: ${word}`);
     }
   }
+}
+
+export function buildPublicReportSection(summary: PublicSummary): PublicReportSection {
+  assertPublicSummaryIsNonDiagnostic(summary);
+  if (DIAGNOSTIC_PUBLIC_WORDS.some((word) => PUBLIC_REPORT_DISCLAIMER.includes(word))) {
+    throw new Error("Public report disclaimer contains disallowed diagnostic wording");
+  }
+
+  return {
+    module_id: "questionnaire",
+    title: summary.title,
+    public_status_code: summary.public_status_code,
+    summary: summary.message,
+    disclaimer: PUBLIC_REPORT_DISCLAIMER
+  };
 }

@@ -21,3 +21,6 @@ export const databaseUrl =
   "postgres://smart_health_cabin:smart_health_cabin_dev@localhost:5432/smart_health_cabin";
 
 export const apiPort = Number(process.env.PORT ?? 3000);
+
+export const publicReportBaseUrl =
+  process.env.PUBLIC_REPORT_BASE_URL ?? "http://localhost:3000/api/v1/reports";

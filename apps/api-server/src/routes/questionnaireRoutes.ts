@@ -1,15 +1,20 @@
 import type { FastifyInstance } from "fastify";
 import { QuestionnaireValidationError } from "@shc/questionnaire-core";
-import type { CompletedQuestionnaireRequest } from "@shc/contracts";
+import type {
+  CompletedQuestionnaireRequest,
+  CreateQuestionnaireTemplateRequest,
+  CreateQuestionnaireVersionRequest
+} from "@shc/contracts";
 import type { QuestionnaireService } from "../services/questionnaireService";
 
 function toErrorResponse(error: unknown) {
   if (error instanceof QuestionnaireValidationError) {
+    const code = error.message.includes("SurveyJS") ? "INVALID_SURVEYJS_JSON" : "INVALID_QUESTIONNAIRE_RESPONSE";
     return {
       statusCode: 400,
       body: {
         error: {
-          code: "INVALID_QUESTIONNAIRE_RESPONSE",
+          code,
           message: error.message
         }
       }
@@ -46,6 +51,132 @@ export async function registerQuestionnaireRoutes(
       try {
         const response = await questionnaireService.submitResponse(request.body);
         return reply.status(201).send(response);
+      } catch (error) {
+        const response = toErrorResponse(error);
+        return reply.status(response.statusCode).send(response.body);
+      }
+    }
+  );
+
+  app.get("/api/v1/admin/questionnaire-templates", async (_request, reply) => {
+    try {
+      return await questionnaireService.listTemplates();
+    } catch (error) {
+      const response = toErrorResponse(error);
+      return reply.status(response.statusCode).send(response.body);
+    }
+  });
+
+  app.post<{ Body: CreateQuestionnaireTemplateRequest }>(
+    "/api/v1/admin/questionnaire-templates",
+    async (request, reply) => {
+      try {
+        return await questionnaireService.createTemplate(request.body);
+      } catch (error) {
+        const response = toErrorResponse(error);
+        return reply.status(response.statusCode).send(response.body);
+      }
+    }
+  );
+
+  app.post<{ Body: CreateQuestionnaireVersionRequest }>(
+    "/api/v1/admin/questionnaire-versions",
+    async (request, reply) => {
+      try {
+        return await questionnaireService.createVersion(request.body);
+      } catch (error) {
+        const response = toErrorResponse(error);
+        return reply.status(response.statusCode).send(response.body);
+      }
+    }
+  );
+
+  app.post<{ Params: { id: string } }>("/api/v1/admin/questionnaire-versions/:id/publish", async (request, reply) => {
+    try {
+      return await questionnaireService.publishVersion(request.params.id);
+    } catch (error) {
+      const response = toErrorResponse(error);
+      return reply.status(response.statusCode).send(response.body);
+    }
+  });
+
+  app.get("/api/v1/admin/questionnaire-responses", async (_request, reply) => {
+    try {
+      return await questionnaireService.listResponses();
+    } catch (error) {
+      const response = toErrorResponse(error);
+      return reply.status(response.statusCode).send(response.body);
+    }
+  });
+
+  app.get<{ Params: { token: string } }>("/api/v1/reports/:token/public", async (request, reply) => {
+    try {
+      const report = await questionnaireService.getPublicReport(request.params.token);
+      if (!report) {
+        return reply.status(404).send({ error: { code: "PUBLIC_REPORT_NOT_FOUND", message: "Report not found" } });
+      }
+      return report;
+    } catch (error) {
+      const response = toErrorResponse(error);
+      return reply.status(response.statusCode).send(response.body);
+    }
+  });
+
+  app.post<{ Body: { session_id?: string } }>("/api/v1/agent-sessions", async (request, reply) => {
+    try {
+      return await questionnaireService.createAgentSession(request.body?.session_id);
+    } catch (error) {
+      const response = toErrorResponse(error);
+      return reply.status(response.statusCode).send(response.body);
+    }
+  });
+
+  app.post<{
+    Body: {
+      agent_session_id?: string;
+      session_id?: string;
+      question_name?: string;
+      audio_text?: string;
+      transcript?: string;
+    };
+  }>("/api/v1/agent-turns/asr", async (request, reply) => {
+    try {
+      return await questionnaireService.runMockAsr(request.body);
+    } catch (error) {
+      const response = toErrorResponse(error);
+      return reply.status(response.statusCode).send(response.body);
+    }
+  });
+
+  app.post<{ Body: { agent_session_id?: string; session_id?: string; question_name?: string } }>(
+    "/api/v1/agent-turns/respond",
+    async (request, reply) => {
+      try {
+        return await questionnaireService.buildMockGuidance(request.body);
+      } catch (error) {
+        const response = toErrorResponse(error);
+        return reply.status(response.statusCode).send(response.body);
+      }
+    }
+  );
+
+  app.post<{ Body: { agent_session_id?: string; session_id?: string; question_name?: string; text?: string } }>(
+    "/api/v1/agent-turns/tts",
+    async (request, reply) => {
+      try {
+        return await questionnaireService.runMockTts(request.body);
+      } catch (error) {
+        const response = toErrorResponse(error);
+        return reply.status(response.statusCode).send(response.body);
+      }
+    }
+  );
+
+  app.post<{ Body: { agent_session_id?: string; session_id?: string; question_name: string; transcript: string } }>(
+    "/api/v1/agent-turns/map-answer",
+    async (request, reply) => {
+      try {
+        return await questionnaireService.mapVoiceAnswer(request.body);
       } catch (error) {
         const response = toErrorResponse(error);
         return reply.status(response.statusCode).send(response.body);
