@@ -1,6 +1,7 @@
 const wakeWordBaseUrl = process.env.WAKE_WORD_SERVICE_URL ?? "http://localhost:8013";
 const timeoutMs = Number(process.env.WAKE_WORD_LIVE_WAIT_MS ?? 15000);
 const allowBuiltinModel = process.env.WAKE_WORD_LIVE_ALLOW_BUILTIN === "true";
+const expectedPhrase = process.env.WAKE_WORD_PHRASE ?? "小慧你好";
 
 function trimSlash(value) {
   return value.replace(/\/$/, "");
@@ -24,11 +25,15 @@ async function readJson(path) {
 
 function assertLiveReady(status) {
   const failures = [];
+  if (status.provider !== "porcupine") failures.push(`provider=${status.provider}`);
+  if (status.phrase !== expectedPhrase) failures.push(`phrase=${status.phrase}`);
   if (status.mode !== "live") failures.push(`mode=${status.mode}`);
   if (status.ready !== true) failures.push(`ready=${status.ready}`);
   if (status.listening !== true) failures.push(`listening=${status.listening}`);
   if (status.last_error !== null) failures.push(`last_error=${status.last_error}`);
   if (!allowBuiltinModel && status.model === "custom_or_builtin") failures.push("model=custom_or_builtin");
+  if (!allowBuiltinModel && !status.porcupine_keyword_path) failures.push("porcupine_keyword_path=missing");
+  if (!allowBuiltinModel && !status.porcupine_model_path) failures.push("porcupine_model_path=missing");
   if (failures.length > 0) {
     throw new Error(`Wake word live readiness failed: ${failures.join(", ")}`);
   }
