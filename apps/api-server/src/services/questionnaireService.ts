@@ -28,8 +28,8 @@ const mockWav =
   "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=";
 const defaultAsrProvider = "faster_whisper_breeze_asr_26";
 const defaultAsrModel = "Breeze-ASR-26-CT2-int8";
-const defaultLlmProvider = "vllm_openai_compatible";
-const defaultLlmModel = "gemma-4-e4b";
+const defaultLlmProvider = "ollama_native";
+const defaultLlmModel = "gemma4:e4b";
 const defaultTtsProvider = "breezyvoice_default";
 const defaultTtsModel = "/models/breezyvoice";
 const defaultTtsVoice = "default";
@@ -73,24 +73,42 @@ function joinUrl(baseUrl: string, path: string): string {
 }
 
 function llmBaseUrl(): string {
-  if (process.env.VLLM_BASE_URL) {
-    return process.env.VLLM_BASE_URL;
-  }
+  const provider = env("LLM_PROVIDER", defaultLlmProvider);
   if (process.env.LLM_BASE_URL) {
     return process.env.LLM_BASE_URL;
   }
-  if (process.env.OLLAMA_BASE_URL) {
+  if (provider === "ollama_native") {
+    return process.env.OLLAMA_BASE_URL ?? "http://localhost:11434";
+  }
+  if (provider === "ollama_openai_compatible" && process.env.OLLAMA_BASE_URL) {
     return `${trimSlash(process.env.OLLAMA_BASE_URL)}/v1`;
   }
-  return "http://localhost:8000/v1";
+  if (provider === "vllm_openai_compatible" && process.env.VLLM_BASE_URL) {
+    return process.env.VLLM_BASE_URL;
+  }
+  return provider === "vllm_openai_compatible" ? "http://localhost:8000/v1" : "http://localhost:11434/v1";
 }
 
 function llmModel(): string {
-  return process.env.VLLM_MODEL ?? process.env.LLM_MODEL ?? process.env.OLLAMA_MODEL ?? defaultLlmModel;
+  const provider = env("LLM_PROVIDER", defaultLlmProvider);
+  return (
+    process.env.LLM_MODEL ??
+    (provider === "vllm_openai_compatible" ? process.env.VLLM_MODEL : process.env.OLLAMA_MODEL) ??
+    (provider === "vllm_openai_compatible" ? "gemma-4-e4b" : defaultLlmModel)
+  );
 }
 
 function llmTemperature(): number {
   return Number(process.env.LLM_TEMPERATURE ?? 0.2);
+}
+
+function llmMaxTokens(): number {
+  return Number(process.env.LLM_MAX_TOKENS ?? process.env.LLM_NUM_PREDICT ?? 80);
+}
+
+function ollamaThink(): boolean {
+  const value = (process.env.OLLAMA_THINK ?? process.env.LLM_THINKING_MODE ?? "false").toLowerCase();
+  return value === "1" || value === "true" || value === "yes" || value === "on";
 }
 
 function asrLanguageHint(): string {
@@ -101,8 +119,15 @@ function ttsVoiceId(): string {
   return process.env.TTS_VOICE ?? process.env.BREEZYVOICE_VOICE_ID ?? defaultTtsVoice;
 }
 
-function sprint5RequiresVllm(): boolean {
-  return process.env.SPRINT5_REQUIRE_VLLM !== "false";
+function allowedLlmProviders(): string[] {
+  return (process.env.SPRINT5_ALLOWED_LLM_PROVIDERS ?? "ollama_native,ollama_openai_compatible,vllm_openai_compatible")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+function llmProviderAllowed(provider: string): boolean {
+  return allowedLlmProviders().includes(provider);
 }
 
 function firstEnv(names: string[]): string | undefined {
@@ -388,12 +413,22 @@ export class ProviderStatusService {
     const asrEndpoint = env("ASR_SERVICE_URL", "http://localhost:8011");
     const asrProbe = await getProviderReady(joinUrl(asrEndpoint, env("ASR_HEALTH_PATH", "/healthz")));
     const llmEndpoint = llmBaseUrl();
-    const llmProbe = await postProviderReady(joinUrl(llmEndpoint, "/chat/completions"), {
-      model: llmModel(),
-      messages: [{ role: "user", content: "Reply OK only." }],
-      max_tokens: 4,
-      temperature: 0
-    });
+    const llmProvider = env("LLM_PROVIDER", defaultLlmProvider);
+    const llmProbe =
+      llmProvider === "ollama_native"
+        ? await postProviderReady(joinUrl(llmEndpoint, "/api/chat"), {
+            model: llmModel(),
+            messages: [{ role: "user", content: "Reply OK only." }],
+            stream: false,
+            think: false,
+            options: { num_predict: 4, temperature: 0 }
+          })
+        : await postProviderReady(joinUrl(llmEndpoint, "/chat/completions"), {
+            model: llmModel(),
+            messages: [{ role: "user", content: "Reply OK only." }],
+            max_tokens: 4,
+            temperature: 0
+          });
     const ttsBaseUrl = process.env.BREEZYVOICE_BASE_URL ?? env("TTS_SERVICE_URL", "http://localhost:8012");
     const ttsHealthPath = process.env.BREEZYVOICE_BASE_URL ? "/models" : env("TTS_HEALTH_PATH", "/healthz");
     const ttsProbe = await getProviderReady(joinUrl(ttsBaseUrl, ttsHealthPath));
@@ -418,17 +453,9 @@ export class ProviderStatusService {
       ...llmProbe,
       ...llmRuntimeScope,
       acceptanceEligible:
-        llmProbe.ready &&
-        llmProbe.healthy &&
-        (!sprint5RequiresVllm() || env("LLM_PROVIDER", defaultLlmProvider) === defaultLlmProvider),
-      lastError:
-        llmProbe.ready && sprint5RequiresVllm() && env("LLM_PROVIDER", defaultLlmProvider) !== defaultLlmProvider
-          ? "LLM_PROVIDER_NOT_VLLM"
-          : llmProbe.lastError,
-      error_code:
-        llmProbe.ready && sprint5RequiresVllm() && env("LLM_PROVIDER", defaultLlmProvider) !== defaultLlmProvider
-          ? "LLM_PROVIDER_NOT_VLLM"
-          : llmProbe.error_code
+        llmProbe.ready && llmProbe.healthy && llmProviderAllowed(env("LLM_PROVIDER", defaultLlmProvider)),
+      lastError: llmProbe.ready && !llmProviderAllowed(env("LLM_PROVIDER", defaultLlmProvider)) ? "LLM_PROVIDER_NOT_ALLOWED" : llmProbe.lastError,
+      error_code: llmProbe.ready && !llmProviderAllowed(env("LLM_PROVIDER", defaultLlmProvider)) ? "LLM_PROVIDER_NOT_ALLOWED" : llmProbe.error_code
     });
     const tts = withAcceptance({
       provider: env("TTS_PROVIDER", defaultTtsProvider),
@@ -484,30 +511,40 @@ const liveAsrAdapter: ASRAdapter = {
 
 const liveLlmAdapter: LLMAdapter = {
   async guide(fallbackGuidance) {
-    const llm = await postJson<{ choices?: Array<{ message?: { content?: string } }>; message?: { content?: string } }>(
-      joinUrl(llmBaseUrl(), "/chat/completions"),
-      {
-        model: llmModel(),
-        messages: [
-          {
-            role: "system",
-            content:
-              "你是 Smart Health Cabin 的問卷語音導引。只用繁體中文，回答一句，協助使用者理解題目與選項。不得診斷、不得改變問卷分數、不得替使用者作答。"
-          },
-          {
-            role: "user",
-            content: fallbackGuidance
-          }
-        ],
-        stream: false,
-        temperature: llmTemperature(),
-        max_tokens: 80
-      }
-    );
-    const generatedGuidance = llm.choices?.[0]?.message?.content?.trim() || llm.message?.content?.trim() || "";
-    const guidance = isUsableGuidance(generatedGuidance) ? generatedGuidance : fallbackGuidance;
     const provider = env("LLM_PROVIDER", defaultLlmProvider);
     const model = llmModel();
+    const messages = [
+      {
+        role: "system",
+        content:
+          "你是 Smart Health Cabin 的問卷語音導引。只用繁體中文，回答一句，協助使用者理解題目與選項。不得診斷、不得改變問卷分數、不得替使用者作答。"
+      },
+      {
+        role: "user",
+        content: fallbackGuidance
+      }
+    ];
+    const llm: { choices?: Array<{ message?: { content?: string } }>; message?: { content?: string } } =
+      provider === "ollama_native"
+        ? await postJson(joinUrl(llmBaseUrl(), "/api/chat"), {
+            model,
+            messages,
+            stream: false,
+            think: ollamaThink(),
+            options: { temperature: llmTemperature(), num_predict: llmMaxTokens() }
+          })
+        : await postJson<{ choices?: Array<{ message?: { content?: string } }>; message?: { content?: string } }>(
+            joinUrl(llmBaseUrl(), "/chat/completions"),
+            {
+              model,
+              messages,
+              stream: false,
+              temperature: llmTemperature(),
+              max_tokens: llmMaxTokens()
+            }
+          );
+    const generatedGuidance = llm.choices?.[0]?.message?.content?.trim() || llm.message?.content?.trim() || "";
+    const guidance = isUsableGuidance(generatedGuidance) ? generatedGuidance : fallbackGuidance;
     return { provider, model, guidance, payload: { provider, model, guidance } };
   }
 };

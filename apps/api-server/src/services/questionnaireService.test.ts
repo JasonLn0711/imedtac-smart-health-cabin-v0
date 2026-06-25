@@ -161,6 +161,10 @@ afterEach(() => {
   delete process.env.LLM_MODELS_PATH;
   delete process.env.LLM_REQUEST_TIMEOUT_MS;
   delete process.env.LLM_TEMPERATURE;
+  delete process.env.LLM_MAX_TOKENS;
+  delete process.env.LLM_NUM_PREDICT;
+  delete process.env.LLM_THINKING_MODE;
+  delete process.env.OLLAMA_THINK;
   delete process.env.OLLAMA_BASE_URL;
   delete process.env.OLLAMA_MODEL;
   delete process.env.TTS_PROVIDER;
@@ -185,7 +189,7 @@ afterEach(() => {
   delete process.env.BREEZYVOICE_ALLOW_CPU_FALLBACK;
   delete process.env.REDPANDA_ADMIN_URL;
   delete process.env.REDPANDA_READY_PATH;
-  delete process.env.SPRINT5_REQUIRE_VLLM;
+  delete process.env.SPRINT5_ALLOWED_LLM_PROVIDERS;
 });
 
 describe("QuestionnaireService", () => {
@@ -309,12 +313,12 @@ describe("QuestionnaireService", () => {
     );
   });
 
-  it("calls local Gemma 4 E4B through an OpenAI-compatible endpoint in real mode", async () => {
+  it("calls local Gemma 4 E4B through native Ollama with thinking disabled in real mode", async () => {
     process.env.VOICE_MODEL_MODE = "real";
-    process.env.VLLM_BASE_URL = "http://llm.local/v1";
-    process.env.VLLM_MODEL = "gemma-4-e4b";
+    process.env.LLM_BASE_URL = "http://ollama.local";
+    process.env.LLM_MODEL = "gemma4:e4b";
     const fetchMock = vi.fn(async () => {
-      return new Response(JSON.stringify({ choices: [{ message: { content: "請依照題目選一個最接近的頻率。" } }] }), {
+      return new Response(JSON.stringify({ message: { content: "請依照題目選一個最接近的頻率。" } }), {
         status: 200,
         headers: { "content-type": "application/json" }
       });
@@ -325,25 +329,25 @@ describe("QuestionnaireService", () => {
     const response = await service.buildGuidance({ question_name: "phq9_01" });
 
     expect(response).toMatchObject({
-      provider: "vllm_openai_compatible",
-      model: "gemma-4-e4b",
+      provider: "ollama_native",
+      model: "gemma4:e4b",
       guidance: "請依照題目選一個最接近的頻率。"
     });
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://llm.local/v1/chat/completions",
+      "http://ollama.local/api/chat",
       expect.objectContaining({
         method: "POST",
-        body: expect.stringContaining('"model":"gemma-4-e4b"')
+        body: expect.stringContaining('"think":false')
       })
     );
   });
 
   it("falls back to deterministic guidance when live LLM guidance is unusable", async () => {
     process.env.VOICE_MODEL_MODE = "real";
-    process.env.VLLM_BASE_URL = "http://llm.local/v1";
-    process.env.VLLM_MODEL = "gemma-4-e4b";
+    process.env.LLM_BASE_URL = "http://ollama.local";
+    process.env.LLM_MODEL = "gemma4:e4b";
     const fetchMock = vi.fn(async () => {
-      return new Response(JSON.stringify({ choices: [{ message: { content: "ering ering ering" } }] }), {
+      return new Response(JSON.stringify({ message: { content: "ering ering ering" } }), {
         status: 200,
         headers: { "content-type": "application/json" }
       });
@@ -355,8 +359,32 @@ describe("QuestionnaireService", () => {
 
     expect(response.guidance).toContain("做事時提不起勁或沒有樂趣");
     expect(response).toMatchObject({
-      provider: "vllm_openai_compatible",
-      model: "gemma-4-e4b"
+      provider: "ollama_native",
+      model: "gemma4:e4b"
+    });
+  });
+
+  it("can raise native Ollama output budget when thinking mode is explicitly enabled", async () => {
+    process.env.VOICE_MODEL_MODE = "real";
+    process.env.LLM_BASE_URL = "http://ollama.local";
+    process.env.LLM_MODEL = "gemma4:e4b";
+    process.env.OLLAMA_THINK = "true";
+    process.env.LLM_MAX_TOKENS = "768";
+    const fetchMock = vi.fn<typeof fetch>(async () => {
+      return new Response(JSON.stringify({ message: { content: "請依照題目選擇最符合的頻率。" } }), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const service = new QuestionnaireService(new InMemoryQuestionnaireRepository());
+    await service.buildGuidance({ question_name: "phq9_01" });
+
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+    expect(body).toMatchObject({
+      think: true,
+      options: { num_predict: 768 }
     });
   });
 
@@ -423,7 +451,7 @@ describe("QuestionnaireService", () => {
 
     await expect(service.getProviderStatus()).resolves.toMatchObject({
       asr: { provider: "faster_whisper_breeze_asr_26", mode: "mock", ready: true, acceptanceEligible: false },
-      llm: { provider: "vllm_openai_compatible", model: "gemma-4-e4b", mode: "mock", ready: true, acceptanceEligible: false },
+      llm: { provider: "ollama_native", model: "gemma4:e4b", mode: "mock", ready: true, acceptanceEligible: false },
       tts: { provider: "breezyvoice_default", mode: "mock", ready: true, acceptanceEligible: false },
       redpanda: { provider: "redpanda", mode: "mock", ready: true, acceptanceEligible: false },
       sprint5Acceptance: { allRequiredLive: false, eligible: false }
@@ -434,8 +462,8 @@ describe("QuestionnaireService", () => {
     process.env.VOICE_MODEL_MODE = "real";
     process.env.ASR_SERVICE_URL = "http://asr.local";
     process.env.ASR_DEVICE = "cuda";
-    process.env.VLLM_BASE_URL = "http://llm.local/v1";
-    process.env.VLLM_MODEL = "gemma-4-e4b";
+    process.env.LLM_BASE_URL = "http://ollama.local";
+    process.env.LLM_MODEL = "gemma4:e4b";
     process.env.LLM_DEVICE = "cuda";
     process.env.TTS_SERVICE_URL = "http://tts.local";
     process.env.TTS_DEVICE = "cuda";
@@ -453,25 +481,25 @@ describe("QuestionnaireService", () => {
     await expect(service.getProviderStatus()).resolves.toMatchObject({
       providers: {
         asr: { mode: "live", ready: true, acceptanceEligible: true, computeBackend: "gpu", cpuOffload: false },
-        llm: { mode: "live", model: "gemma-4-e4b", ready: true, acceptanceEligible: true, computeBackend: "gpu", cpuOffload: false },
+        llm: { mode: "live", model: "gemma4:e4b", ready: true, acceptanceEligible: true, computeBackend: "gpu", cpuOffload: false },
         tts: { mode: "live", ready: true, acceptanceEligible: true, computeBackend: "gpu", cpuOffload: false },
         redpanda: { mode: "live", ready: true, acceptanceEligible: true }
       },
       sprint5Acceptance: { allRequiredLive: true, eligible: true }
     });
     expect(fetchMock).toHaveBeenCalledWith("http://asr.local/healthz", expect.any(Object));
-    expect(fetchMock).toHaveBeenCalledWith("http://llm.local/v1/chat/completions", expect.any(Object));
+    expect(fetchMock).toHaveBeenCalledWith("http://ollama.local/api/chat", expect.any(Object));
     expect(fetchMock).toHaveBeenCalledWith("http://tts.local/healthz", expect.any(Object));
     expect(fetchMock).toHaveBeenCalledWith("http://redpanda.local/v1/status/ready", expect.any(Object));
   });
 
-  it("keeps an Ollama-compatible Gemma endpoint live but not strict Sprint 5 eligible", async () => {
+  it("accepts native Ollama Gemma endpoint for strict Sprint 5 eligibility", async () => {
     process.env.VOICE_MODEL_MODE = "real";
     process.env.ASR_DEVICE = "cuda";
     process.env.LLM_DEVICE = "cuda";
     process.env.TTS_DEVICE = "cuda";
-    process.env.LLM_PROVIDER = "ollama_openai_compatible";
-    process.env.LLM_BASE_URL = "http://ollama.local/v1";
+    process.env.LLM_PROVIDER = "ollama_native";
+    process.env.LLM_BASE_URL = "http://ollama.local";
     process.env.LLM_MODEL = "gemma4:e4b";
     const fetchMock = vi.fn(async () => {
       return new Response(JSON.stringify({ status: "ok" }), {
@@ -486,12 +514,44 @@ describe("QuestionnaireService", () => {
     await expect(service.getProviderStatus()).resolves.toMatchObject({
       providers: {
         llm: {
-          provider: "ollama_openai_compatible",
+          provider: "ollama_native",
           model: "gemma4:e4b",
           mode: "live",
           ready: true,
+          acceptanceEligible: true,
+          error_code: undefined
+        }
+      },
+      sprint5Acceptance: { allRequiredLive: true, eligible: true }
+    });
+  });
+
+  it("rejects an LLM provider outside the strict Sprint 5 allowlist", async () => {
+    process.env.VOICE_MODEL_MODE = "real";
+    process.env.ASR_DEVICE = "cuda";
+    process.env.LLM_DEVICE = "cuda";
+    process.env.TTS_DEVICE = "cuda";
+    process.env.LLM_PROVIDER = "experimental_llm";
+    process.env.LLM_BASE_URL = "http://experimental.local/v1";
+    process.env.LLM_MODEL = "gemma-experimental";
+    const fetchMock = vi.fn(async () => {
+      return new Response(JSON.stringify({ status: "ok" }), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const service = new QuestionnaireService(new InMemoryQuestionnaireRepository());
+
+    await expect(service.getProviderStatus()).resolves.toMatchObject({
+      providers: {
+        llm: {
+          provider: "experimental_llm",
+          mode: "live",
+          ready: true,
           acceptanceEligible: false,
-          error_code: "LLM_PROVIDER_NOT_VLLM"
+          error_code: "LLM_PROVIDER_NOT_ALLOWED"
         }
       },
       sprint5Acceptance: { allRequiredLive: true, eligible: false }

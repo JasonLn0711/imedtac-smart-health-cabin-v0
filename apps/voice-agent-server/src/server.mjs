@@ -110,31 +110,52 @@ async function getReady(url, timeoutMs) {
 }
 
 async function llmReady(env) {
-  const baseUrl = env.VLLM_BASE_URL ?? env.LLM_BASE_URL ?? "http://localhost:8000/v1";
-  const model = env.VLLM_MODEL ?? env.LLM_MODEL ?? "gemma-4-e4b";
-  const provider = env.LLM_PROVIDER ?? "vllm_openai_compatible";
+  const provider = env.LLM_PROVIDER ?? "ollama_native";
+  const baseUrl =
+    env.LLM_BASE_URL ??
+    (provider === "ollama_native"
+      ? env.OLLAMA_BASE_URL ?? "http://localhost:11434"
+      : provider === "vllm_openai_compatible"
+      ? env.VLLM_BASE_URL ?? "http://localhost:8000/v1"
+      : env.OLLAMA_BASE_URL
+        ? `${trimSlash(env.OLLAMA_BASE_URL)}/v1`
+        : "http://localhost:11434/v1");
+  const model =
+    env.LLM_MODEL ??
+    (provider === "vllm_openai_compatible" ? env.VLLM_MODEL ?? "gemma-4-e4b" : env.OLLAMA_MODEL ?? "gemma4:e4b");
   const timeoutMs = Number(env.LLM_REQUEST_TIMEOUT_MS ?? env.VOICE_MODEL_TIMEOUT_MS ?? 30000);
   const response = await postJson(
-    joinUrl(baseUrl, "/chat/completions"),
-    {
-      model,
-      messages: [{ role: "user", content: "Reply OK only." }],
-      max_tokens: 4,
-      temperature: 0
-    },
+    joinUrl(baseUrl, provider === "ollama_native" ? "/api/chat" : "/chat/completions"),
+    provider === "ollama_native"
+      ? {
+          model,
+          messages: [{ role: "user", content: "Reply OK only." }],
+          stream: false,
+          think: false,
+          options: { num_predict: 4, temperature: 0 }
+        }
+      : {
+          model,
+          messages: [{ role: "user", content: "Reply OK only." }],
+          max_tokens: 4,
+          temperature: 0
+        },
     timeoutMs
   ).catch((error) => ({
     ok: false,
     status: 0,
     text: error instanceof Error ? error.name : "PROVIDER_UNAVAILABLE"
   }));
-  const strictVllm = env.SPRINT5_REQUIRE_VLLM !== "false";
-  const providerEligible = !strictVllm || provider === "vllm_openai_compatible";
+  const allowedProviders = (env.SPRINT5_ALLOWED_LLM_PROVIDERS ?? "ollama_native,ollama_openai_compatible,vllm_openai_compatible")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const providerEligible = allowedProviders.includes(provider);
   const runtimeScope = llmRuntimeScope(env);
   const gpuEligible = gpuOnlyEligible(runtimeScope);
   const errorCode = response.ok
     ? !providerEligible
-      ? "LLM_PROVIDER_NOT_VLLM"
+      ? "LLM_PROVIDER_NOT_ALLOWED"
       : !gpuEligible
         ? "GPU_ONLY_REQUIRED"
         : null

@@ -11,7 +11,7 @@ async function listen(server) {
   return `http://127.0.0.1:${address.port}`;
 }
 
-test("reports strict vLLM readiness and proxies agent turns", async () => {
+test("reports strict LLM readiness and proxies agent turns", async () => {
   const api = createServer((request, response) => {
     if (request.url === "/healthz") {
       response.writeHead(200, { "content-type": "application/json" });
@@ -20,15 +20,15 @@ test("reports strict vLLM readiness and proxies agent turns", async () => {
     }
     if (request.url === "/api/v1/agent-turns/respond") {
       response.writeHead(200, { "content-type": "application/json" });
-      response.end(JSON.stringify({ provider: "vllm_openai_compatible", guidance: "請依照題目回答。" }));
+      response.end(JSON.stringify({ provider: "ollama_native", guidance: "請依照題目回答。" }));
       return;
     }
     response.writeHead(404).end();
   });
   const llm = createServer((request, response) => {
-    if (request.url === "/v1/chat/completions") {
+    if (request.url === "/api/chat") {
       response.writeHead(200, { "content-type": "application/json" });
-      response.end(JSON.stringify({ choices: [{ message: { content: "OK" } }] }));
+      response.end(JSON.stringify({ message: { content: "OK" } }));
       return;
     }
     response.writeHead(404).end();
@@ -37,9 +37,9 @@ test("reports strict vLLM readiness and proxies agent turns", async () => {
   const llmBaseUrl = await listen(llm);
   const server = createVoiceAgentServer({
     API_BASE_URL: apiBaseUrl,
-    VLLM_BASE_URL: `${llmBaseUrl}/v1`,
-    VLLM_MODEL: "gemma-4-e4b",
-    LLM_PROVIDER: "vllm_openai_compatible",
+    OLLAMA_BASE_URL: llmBaseUrl,
+    OLLAMA_MODEL: "gemma4:e4b",
+    LLM_PROVIDER: "ollama_native",
     LLM_DEVICE: "cuda"
   });
   const serverBaseUrl = await listen(server);
@@ -54,7 +54,7 @@ test("reports strict vLLM readiness and proxies agent turns", async () => {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ question_name: "phq9_01" })
     }).then((response) => response.json());
-    assert.equal(proxied.provider, "vllm_openai_compatible");
+    assert.equal(proxied.provider, "ollama_native");
   } finally {
     server.close();
     api.close();
