@@ -113,6 +113,27 @@ function buildEventEnvelope(input: {
   };
 }
 
+function voiceSafetyEventType(input: SaveAgentTurnInput): ShcEventType | null {
+  if (input.turnType === "asr") {
+    return "voice.asr.completed.v1";
+  }
+  if (input.turnType !== "map_answer") {
+    return null;
+  }
+
+  const rerankerTrace = input.payload.reranker_trace as { mode?: string } | undefined;
+  if (rerankerTrace?.mode === "unavailable") {
+    return "reranker.unavailable.v1";
+  }
+  if (rerankerTrace) {
+    return "reranker.rerank.completed.v1";
+  }
+  if ((input.payload.voice_evidence_metadata as { confirmationRequired?: boolean } | undefined)?.confirmationRequired) {
+    return "voice.confirmation_required.v1";
+  }
+  return "voice.routing_decided.v1";
+}
+
 export class PostgresQuestionnaireRepository implements QuestionnaireRepository {
   private readonly pool = new Pool({ connectionString: databaseUrl });
 
@@ -699,6 +720,27 @@ export class PostgresQuestionnaireRepository implements QuestionnaireRepository 
           question_name: input.questionName
         }
       });
+      const safetyEventType = voiceSafetyEventType(input);
+      if (safetyEventType) {
+        await this.insertOutboxEventWithClient(client, {
+          aggregateType: "agent_turn",
+          aggregateId: turnId,
+          eventType: safetyEventType,
+          sessionId: input.sessionId,
+          source: "shc/kiosk/kiosk_demo/voice-safety",
+          subject: `agent_turn/${turnId}`,
+          data: {
+            turn_id: turnId,
+            turn_type: input.turnType,
+            question_name: input.questionName,
+            transcript: input.transcript,
+            routing_decision: input.payload.routing_decision,
+            confirmation_required: (input.payload.voice_evidence_metadata as { confirmationRequired?: boolean } | undefined)
+              ?.confirmationRequired,
+            reranker_mode: (input.payload.reranker_trace as { mode?: string } | undefined)?.mode
+          }
+        });
+      }
 
       await client.query("commit");
       return turnId;

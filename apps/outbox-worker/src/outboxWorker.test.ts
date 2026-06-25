@@ -84,6 +84,10 @@ describe("outbox worker", () => {
     expect(topicForEventType("shc.agent.turn.created.v1")).toBe("shc.agent.turns.v1");
     expect(topicForEventType("shc.report.created.v1")).toBe("shc.report.events.v1");
     expect(topicForEventType("shc.audit.event.created.v1")).toBe("shc.audit.events.v1");
+    expect(topicForEventType("voice.asr.completed.v1")).toBe("shc.voice.safety.v1");
+    expect(topicForEventType("voice.confirmation_required.v1")).toBe("shc.voice.safety.v1");
+    expect(topicForEventType("reranker.rerank.completed.v1")).toBe("shc.reranker.events.v1");
+    expect(topicForEventType("reranker.unavailable.v1")).toBe("shc.reranker.events.v1");
     expect(topicForEventType("questionnaire_response.completed.v1")).toBe("shc.questionnaire.responses.v1");
   });
 

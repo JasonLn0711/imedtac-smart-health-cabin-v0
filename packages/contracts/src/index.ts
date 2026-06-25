@@ -540,7 +540,16 @@ export type ShcEventType =
   | "shc.questionnaire.response.completed.v1"
   | "shc.agent.turn.created.v1"
   | "shc.report.created.v1"
-  | "shc.audit.event.created.v1";
+  | "shc.audit.event.created.v1"
+  | "voice.asr.completed.v1"
+  | "voice.normalized.v1"
+  | "voice.routing_decided.v1"
+  | "voice.confirmation_required.v1"
+  | "voice.answer_confirmed.v1"
+  | "voice.answer_rejected.v1"
+  | "voice.touch_fallback_selected.v1"
+  | "reranker.rerank.completed.v1"
+  | "reranker.unavailable.v1";
 
 export interface ShcEventEnvelope {
   specversion: "1.0";
@@ -559,7 +568,16 @@ export const SHC_EVENT_TOPICS: Record<ShcEventType, string> = {
   "shc.questionnaire.response.completed.v1": "shc.questionnaire.responses.v1",
   "shc.agent.turn.created.v1": "shc.agent.turns.v1",
   "shc.report.created.v1": "shc.report.events.v1",
-  "shc.audit.event.created.v1": "shc.audit.events.v1"
+  "shc.audit.event.created.v1": "shc.audit.events.v1",
+  "voice.asr.completed.v1": "shc.voice.safety.v1",
+  "voice.normalized.v1": "shc.voice.safety.v1",
+  "voice.routing_decided.v1": "shc.voice.safety.v1",
+  "voice.confirmation_required.v1": "shc.voice.safety.v1",
+  "voice.answer_confirmed.v1": "shc.voice.safety.v1",
+  "voice.answer_rejected.v1": "shc.voice.safety.v1",
+  "voice.touch_fallback_selected.v1": "shc.voice.safety.v1",
+  "reranker.rerank.completed.v1": "shc.reranker.events.v1",
+  "reranker.unavailable.v1": "shc.reranker.events.v1"
 };
 
 export interface ErrorResponse {

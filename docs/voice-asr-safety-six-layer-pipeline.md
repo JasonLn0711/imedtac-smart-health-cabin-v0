@@ -94,3 +94,21 @@ vocabulary and confirmation language.
 - Safety-sensitive speech routes to confirmation or staff review.
 - Touch questionnaire remains a complete path across ASR, LLM, TTS, reranker,
   and Redpanda service states.
+
+## Operational Events
+
+The voice-safety path now emits retryable outbox evidence for the same
+confirmation-controlled workflow:
+
+- `voice.asr.completed.v1` records completed ASR turns.
+- `voice.routing_decided.v1` records deterministic routing when the reranker is
+  not part of the turn.
+- `voice.confirmation_required.v1` records turns that need explicit user or
+  staff confirmation before questionnaire state is written.
+- `reranker.rerank.completed.v1` records bounded option-ranking evidence.
+- `reranker.unavailable.v1` records the deterministic fallback path when the
+  reranker boundary is unavailable.
+
+These events publish to `shc.voice.safety.v1` and `shc.reranker.events.v1`
+through the Redpanda outbox worker. The questionnaire write remains governed by
+the active SurveyJS option, mapped candidate, and confirmation layer.
