@@ -1,15 +1,18 @@
 import { useEffect, useMemo } from "react";
+import type { ReactNode } from "react";
 import { Model } from "survey-core";
 import { Survey } from "survey-react-ui";
 
 interface SurveyJsQuestionnaireRendererProps {
   surveyJson: unknown;
   onComplete: (rawAnswers: Record<string, unknown>) => void;
+  renderSidecar?: (model: Model) => ReactNode;
 }
 
 export function SurveyJsQuestionnaireRenderer({
   surveyJson,
-  onComplete
+  onComplete,
+  renderSidecar
 }: SurveyJsQuestionnaireRendererProps) {
   const model = useMemo(() => {
     const survey = new Model(surveyJson);
@@ -30,5 +33,10 @@ export function SurveyJsQuestionnaireRenderer({
     };
   }, [model, onComplete]);
 
-  return <Survey model={model} />;
+  return (
+    <>
+      {renderSidecar?.(model)}
+      <Survey model={model} />
+    </>
+  );
 }

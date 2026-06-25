@@ -48,12 +48,13 @@ export async function fetchActiveQuestionnaire(): Promise<ActiveQuestionnaireRes
 }
 
 export async function submitQuestionnaireResponse(
+  questionnaire: ActiveQuestionnaireResponse,
   rawAnswers: Record<string, unknown>
 ): Promise<CompletedQuestionnaireResponse> {
   const payload: CompletedQuestionnaireRequest = {
     session_id: "sess_demo_001",
-    questionnaire_code: "phq9",
-    questionnaire_version: "0.1.0",
+    questionnaire_code: questionnaire.questionnaire_code,
+    questionnaire_version: questionnaire.questionnaire_version,
     raw_answers: rawAnswers
   };
 

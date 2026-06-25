@@ -96,6 +96,112 @@ textarea {
   --sjs-corner-radius: 8px;
 }
 
+.avatar-panel {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 16px;
+  min-height: 220px;
+  margin-bottom: 20px;
+  padding: 16px;
+  border: 1px solid #cbd8cf;
+  border-radius: 8px;
+  background: #f8fbf8;
+}
+
+.avatar-figure {
+  display: grid;
+  width: 96px;
+  height: 96px;
+  place-items: center;
+  border: 2px solid #244f40;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #244f40;
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.avatar-content,
+.answer-confirmation {
+  display: grid;
+  gap: 10px;
+}
+
+.avatar-content p {
+  margin: 0;
+}
+
+.avatar-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.avatar-state {
+  min-width: 112px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #244f40;
+  color: #ffffff;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.avatar-state-error_fallback {
+  background: #9a2f2f;
+}
+
+.avatar-question,
+.touch-fallback {
+  color: #526057;
+}
+
+.voice-input {
+  display: grid;
+  gap: 4px;
+}
+
+.voice-input input {
+  min-height: 42px;
+  padding: 0 10px;
+  border: 1px solid #c5d0c8;
+  border-radius: 6px;
+}
+
+.voice-shortcuts,
+.voice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.voice-shortcuts button,
+.voice-actions button,
+.answer-confirmation button {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid #244f40;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #244f40;
+  cursor: pointer;
+}
+
+.voice-actions button,
+.answer-confirmation button {
+  background: #244f40;
+  color: #ffffff;
+}
+
+.answer-confirmation {
+  padding: 12px;
+  border: 1px solid #b9dbc5;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
 .sd-question {
   border-radius: 8px;
 }
@@ -119,6 +225,11 @@ textarea {
   border: 1px solid #b9dbc5;
 }
 
+.report-url {
+  overflow-wrap: anywhere;
+  font-family: "SFMono-Regular", Consolas, monospace;
+}
+
 .error-panel {
   padding: 24px;
   border-radius: 8px;
@@ -134,5 +245,9 @@ textarea {
 
   .status-block {
     min-width: auto;
+  }
+
+  .avatar-panel {
+    grid-template-columns: 1fr;
   }
 }

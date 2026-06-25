@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import type { ActiveQuestionnaireResponse, PublicSummary } from "@shc/contracts";
+import type { ActiveQuestionnaireResponse, CompletedQuestionnaireResponse, PublicSummary } from "@shc/contracts";
+import { AvatarPanel } from "../avatar/AvatarPanel";
 import { fetchActiveQuestionnaire, submitQuestionnaireResponse } from "./questionnaireApi";
 import { SurveyJsQuestionnaireRenderer } from "./SurveyJsQuestionnaireRenderer";
 
@@ -9,6 +10,7 @@ export function QuestionnairePage() {
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [questionnaire, setQuestionnaire] = useState<ActiveQuestionnaireResponse | null>(null);
   const [publicSummary, setPublicSummary] = useState<PublicSummary | null>(null);
+  const [completedResponse, setCompletedResponse] = useState<CompletedQuestionnaireResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -40,14 +42,18 @@ export function QuestionnairePage() {
     setErrorMessage(null);
 
     try {
-      const response = await submitQuestionnaireResponse(rawAnswers);
+      if (!questionnaire) {
+        throw new Error("問卷尚未載入");
+      }
+      const response = await submitQuestionnaireResponse(questionnaire, rawAnswers);
       setPublicSummary(response.public_summary);
+      setCompletedResponse(response);
       setLoadState("complete");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "問卷送出失敗");
       setLoadState("error");
     }
-  }, []);
+  }, [questionnaire]);
 
   return (
     <main className="kiosk-shell">
@@ -69,11 +75,12 @@ export function QuestionnairePage() {
           <>
             <div className="questionnaire-title">
               <h2>{questionnaire.title}</h2>
-              <p>請依照過去兩個星期的狀況填答。完成後只會顯示非診斷式公共摘要。</p>
+              <p>請依照過去兩個星期的狀況填答。完成後只會顯示安全公共摘要。</p>
             </div>
             <SurveyJsQuestionnaireRenderer
               surveyJson={questionnaire.surveyjs_json}
               onComplete={handleComplete}
+              renderSidecar={(model) => <AvatarPanel model={model} />}
             />
           </>
         )}
@@ -84,6 +91,9 @@ export function QuestionnairePage() {
           <div className="public-summary">
             <h2>{publicSummary.title}</h2>
             <p>{publicSummary.message}</p>
+            {completedResponse?.public_report_url && (
+              <p className="report-url">QR URL：{completedResponse.public_report_url}</p>
+            )}
           </div>
         )}
 
