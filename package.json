@@ -12,6 +12,7 @@
     "live:check": "node scripts/live-check.mjs",
     "smoke:api": "node scripts/smoke-api.mjs",
     "smoke:voice-agent": "node scripts/smoke-voice-agent.mjs",
+    "smoke:wakeword": "node scripts/smoke-wakeword.mjs",
     "smoke:sprint5-live-demo": "node scripts/smoke-sprint5-live-demo.mjs",
     "smoke:redpanda": "node scripts/smoke-redpanda.mjs",
     "validate:json": "find modules apps packages -name '*.json' -print0 | xargs -0 -n1 jq empty"

@@ -168,17 +168,38 @@ Sprint 5.6 adds a local wake word gate. It activates the recording state only;
 ASR candidate mapping and user confirmation still control questionnaire writes.
 Tap-to-start and touch questionnaire remain complete fallback paths.
 
-Run the sidecar:
+Run the sidecar in mock/simulated mode:
 
 ```bash
 cd apps/model-sidecars/wakeword-service
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
 WAKE_WORD_ENABLED=true \
+WAKE_WORD_MODE=mock \
 WAKE_WORD_PROVIDER=openwakeword \
 WAKE_WORD_SERVICE_URL=http://localhost:8013 \
 WAKE_WORD_THRESHOLD=0.65 \
 WAKE_WORD_COOLDOWN_MS=2000 \
+WAKE_WORD_LOCAL_ONLY=true \
+.venv/bin/python -m uvicorn app:app --host 0.0.0.0 --port 8013
+```
+
+Run the sidecar in live microphone mode after a wake phrase model and
+microphone device are selected:
+
+```bash
+cd apps/model-sidecars/wakeword-service
+WAKE_WORD_ENABLED=true \
+WAKE_WORD_MODE=live \
+WAKE_WORD_PROVIDER=openwakeword \
+WAKE_WORD_SERVICE_URL=http://localhost:8013 \
+WAKE_WORD_MODEL_PATH=/models/wakeword/smart-health-cabin.tflite \
+WAKE_WORD_INFERENCE_FRAMEWORK=tflite \
+WAKE_WORD_THRESHOLD=0.65 \
+WAKE_WORD_COOLDOWN_MS=2000 \
+WAKE_WORD_SAMPLE_RATE=16000 \
+WAKE_WORD_CHUNK_SIZE=1280 \
+WAKE_WORD_DEVICE_INDEX=0 \
 WAKE_WORD_LOCAL_ONLY=true \
 .venv/bin/python -m uvicorn app:app --host 0.0.0.0 --port 8013
 ```
@@ -191,6 +212,7 @@ curl -fsS http://localhost:8013/status
 curl -fsS -X POST http://localhost:8013/simulate-wake \
   -H 'content-type: application/json' \
   -d '{"score":0.82}'
+corepack pnpm smoke:wakeword
 ```
 
 Provider status:

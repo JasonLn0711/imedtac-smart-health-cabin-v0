@@ -146,20 +146,39 @@ Wake word activation gate:
 
 ```bash
 WAKE_WORD_ENABLED=true \
+WAKE_WORD_MODE=live \
 WAKE_WORD_PROVIDER=openwakeword \
 WAKE_WORD_SERVICE_URL=http://localhost:8013 \
+WAKE_WORD_MODEL_PATH=/models/wakeword/smart-health-cabin.tflite \
+WAKE_WORD_INFERENCE_FRAMEWORK=tflite \
 WAKE_WORD_THRESHOLD=0.65 \
 WAKE_WORD_COOLDOWN_MS=2000 \
+WAKE_WORD_SAMPLE_RATE=16000 \
+WAKE_WORD_CHUNK_SIZE=1280 \
+WAKE_WORD_DEVICE_INDEX=0 \
 WAKE_WORD_LOCAL_ONLY=true \
 VOICE_AUDIO_RETENTION=none \
 uvicorn app:app --host 0.0.0.0 --port 8013
 ```
 
-The wake word sidecar owns activation only. It emits `wake.detected`, after
-which kiosk-web shows the recording state and still requires VAD / endpointing,
-ASR candidate mapping, and user confirmation before any questionnaire write.
+The wake word sidecar owns activation only. In live mode it opens the selected
+local microphone, feeds 16kHz mono int16 PCM frames into openWakeWord, and emits
+`wake.detected` only after threshold and cooldown pass. After that event,
+kiosk-web shows the recording state and still requires VAD / endpointing, ASR
+candidate mapping, and user confirmation before any questionnaire write.
 `POST /simulate-wake` is for local e2e testing and must not become production
 UI.
+
+Live readiness check:
+
+```bash
+curl -fsS http://localhost:8013/status
+```
+
+Acceptance requires `mode=live`, `ready=true`, `listening=true`, and
+`last_error=null`. If the selected microphone cannot be opened, keep
+tap-to-start active and tune `WAKE_WORD_DEVICE_INDEX`, threshold, and the formal
+Mandarin wake phrase model before claiming live wake-word completion.
 
 ## Current Local Compatibility Set
 
