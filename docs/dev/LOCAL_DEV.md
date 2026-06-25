@@ -215,6 +215,15 @@ curl -fsS -X POST http://localhost:8013/simulate-wake \
 corepack pnpm smoke:wakeword
 ```
 
+Live microphone acceptance check:
+
+```bash
+WAKE_WORD_LIVE_WAIT_MS=15000 corepack pnpm smoke:wakeword:live
+```
+
+This live check does not call `/simulate-wake`; speak the selected wake phrase
+while it waits for a real `wake.detected` event.
+
 Provider status:
 
 ```bash

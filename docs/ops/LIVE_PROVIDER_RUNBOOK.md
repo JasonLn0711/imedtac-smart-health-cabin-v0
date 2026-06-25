@@ -180,6 +180,15 @@ Acceptance requires `mode=live`, `ready=true`, `listening=true`, and
 tap-to-start active and tune `WAKE_WORD_DEVICE_INDEX`, threshold, and the formal
 Mandarin wake phrase model before claiming live wake-word completion.
 
+Run the live wake phrase check:
+
+```bash
+WAKE_WORD_LIVE_WAIT_MS=15000 corepack pnpm smoke:wakeword:live
+```
+
+This command verifies live readiness, then waits for a real `wake.detected`
+event. It intentionally does not call `/simulate-wake`.
+
 ## Current Local Compatibility Set
 
 The current workstation also has a direct-port live-provider set already
