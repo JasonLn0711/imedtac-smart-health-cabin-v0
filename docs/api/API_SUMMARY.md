@@ -31,4 +31,12 @@ The API server owns the Phase 1 questionnaire spine and voice-provider boundary.
 | `GET /api/v1/providers/status` | Provider runtime status and Sprint 5 acceptance eligibility. |
 
 Provider status keeps legacy top-level `asr`, `llm`, and `tts` keys while also
-returning nested `providers` and `sprint5Acceptance`.
+returning nested `providers` and `sprint5Acceptance`. ASR, LLM, and TTS status
+also expose GPU-only controls: `computeBackend=gpu`, `gpuRequired=true`,
+`cpuOffload=false`, and `cpuFallbackAllowed=false` are required for strict
+Sprint 5 acceptance.
+
+`@shc/voice-agent-server` runs as a thin live-service boundary on port `3004`.
+It exposes `GET /healthz`, `GET /readyz`, and proxies
+`POST /api/v1/agent-turns/*` to the API server while checking strict vLLM
+readiness for Sprint 5.

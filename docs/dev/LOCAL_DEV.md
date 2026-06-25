@@ -127,11 +127,24 @@ VOICE_PROVIDER_MODE=live \
 ASR_SERVICE_URL=http://localhost:8011 \
 ASR_PROVIDER=faster_whisper_breeze_asr_26 \
 ASR_MODEL=Breeze-ASR-26-CT2-int8 \
+ASR_COMPUTE_BACKEND=gpu \
+ASR_DEVICE=cuda \
+ASR_CPU_OFFLOAD=false \
+ASR_ALLOW_CPU_FALLBACK=false \
 ASR_TRANSCRIBE_PATH=/v1/asr/transcribe \
 LLM_PROVIDER=vllm_openai_compatible \
+LLM_COMPUTE_BACKEND=gpu \
+LLM_DEVICE=cuda \
+LLM_CPU_OFFLOAD=false \
+LLM_ALLOW_CPU_FALLBACK=false \
+VLLM_CPU_OFFLOAD_GB=0 \
 LLM_BASE_URL=http://localhost:8000/v1 \
 LLM_MODEL=gemma-4-e4b \
 TTS_PROVIDER=breezyvoice_default \
+TTS_COMPUTE_BACKEND=gpu \
+TTS_DEVICE=cuda \
+TTS_CPU_OFFLOAD=false \
+TTS_ALLOW_CPU_FALLBACK=false \
 TTS_SERVICE_URL=http://localhost:8012 \
 TTS_SYNTHESIZE_PATH=/v1/tts/synthesize \
 TTS_VOICE_ID=default \
@@ -158,8 +171,14 @@ Sprint 5 live checks:
 ```bash
 corepack pnpm smoke:redpanda
 corepack pnpm smoke:api
+corepack pnpm smoke:voice-agent
 corepack pnpm live:check
+corepack pnpm smoke:sprint5-live-demo
 ```
+
+Strict acceptance is GPU-only for AI model inference. `live:check` rejects ASR,
+LLM, or TTS provider status that reports `computeBackend` other than `gpu`,
+`cpuOffload=true`, `cpuFallbackAllowed=true`, or missing GPU-only controls.
 
 Compatibility: if the local machine only has Ollama or BreezyVoice's upstream
 OpenAI-compatible server running, set `LLM_BASE_URL=http://localhost:11434/v1`
@@ -173,16 +192,45 @@ ASR_SERVICE_URL=http://localhost:8001 \
 ASR_HEALTH_PATH=/health \
 ASR_TRANSCRIBE_PATH=/asr \
 ASR_MODEL=Breeze-ASR-26-CT2-int8 \
+ASR_COMPUTE_BACKEND=gpu \
+ASR_DEVICE=cuda \
+ASR_CPU_OFFLOAD=false \
+ASR_ALLOW_CPU_FALLBACK=false \
 ASR_LANGUAGE=zh \
 LLM_PROVIDER=ollama_openai_compatible \
+LLM_COMPUTE_BACKEND=gpu \
+LLM_DEVICE=cuda \
+LLM_CPU_OFFLOAD=false \
+LLM_ALLOW_CPU_FALLBACK=false \
+VLLM_CPU_OFFLOAD_GB=0 \
 LLM_BASE_URL=http://localhost:11434/v1 \
 LLM_MODEL=gemma4:e4b \
+TTS_COMPUTE_BACKEND=gpu \
+TTS_DEVICE=cuda \
+TTS_CPU_OFFLOAD=false \
+TTS_ALLOW_CPU_FALLBACK=false \
 BREEZYVOICE_BASE_URL=http://localhost:9003/v1 \
 BREEZYVOICE_MODEL=MediaTek-Research/BreezyVoice \
 TTS_VOICE=default \
 BREEZYVOICE_VOICE_ID=default \
 corepack pnpm --filter @shc/api-server start
 ```
+
+Voice Agent server:
+
+```bash
+API_BASE_URL=http://localhost:3000 \
+VLLM_BASE_URL=http://localhost:8000/v1 \
+VLLM_MODEL=gemma-4-e4b \
+LLM_PROVIDER=vllm_openai_compatible \
+LLM_DEVICE=cuda \
+VLLM_CPU_OFFLOAD_GB=0 \
+corepack pnpm --filter @shc/voice-agent-server start
+```
+
+For the current Ollama-compatible local Gemma path, set
+`SPRINT5_REQUIRE_VLLM=false` only for compatibility smoke. Leave it unset for
+strict Sprint 5 acceptance.
 
 For this Smart Health Cabin lane, do not start BreezyVoice with Jason's later
 customized prompt audio/text. The TTS API rejects reference audio, speaker
