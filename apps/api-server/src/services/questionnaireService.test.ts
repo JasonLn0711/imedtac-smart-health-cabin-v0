@@ -185,6 +185,7 @@ afterEach(() => {
   delete process.env.RERANKER_ENABLED;
   delete process.env.RERANKER_SERVICE_URL;
   delete process.env.RERANKER_HEALTH_PATH;
+  delete process.env.RERANKER_STATUS_PATH;
   delete process.env.RERANKER_COMPUTE_BACKEND;
   delete process.env.RERANKER_DEVICE;
   delete process.env.RERANKER_CPU_OFFLOAD;
@@ -192,6 +193,7 @@ afterEach(() => {
   delete process.env.RERANKER_ALLOW_CPU_FALLBACK;
   delete process.env.RERANKER_TOP_K;
   delete process.env.RERANKER_TIMEOUT_MS;
+  delete process.env.RERANKER_REQUIRED_FOR_LIVE_ACCEPTANCE;
   delete process.env.BREEZYVOICE_BASE_URL;
   delete process.env.BREEZYVOICE_MODEL;
   delete process.env.BREEZYVOICE_VOICE_ID;
@@ -467,6 +469,15 @@ describe("QuestionnaireService", () => {
     expect(body.options.num_predict).toBe(80);
   });
 
+  it("builds a wake greeting guidance turn before question recording", async () => {
+    const service = new QuestionnaireService(new InMemoryQuestionnaireRepository());
+    const response = await service.buildGuidance({ purpose: "wake_greeting" });
+
+    const guidance = response.guidance ?? "";
+    expect(guidance).toContain("慧誠智醫健康互動助理");
+    expect(guidance.split("。").filter(Boolean).length).toBeLessThanOrEqual(3);
+  });
+
   it("falls back to deterministic guidance when live LLM guidance is unusable", async () => {
     process.env.VOICE_MODEL_MODE = "real";
     process.env.LLM_BASE_URL = "http://ollama.local";
@@ -482,7 +493,7 @@ describe("QuestionnaireService", () => {
     const service = new QuestionnaireService(new InMemoryQuestionnaireRepository());
     const response = await service.buildGuidance({ question_name: "phq9_01" });
 
-    expect(response.guidance).toContain("做事時提不起勁或沒有樂趣");
+    expect(response.guidance ?? "").toContain("做事時提不起勁或沒有樂趣");
     expect(response).toMatchObject({
       provider: "ollama_native",
       model: "gemma4:e4b"
@@ -618,8 +629,36 @@ describe("QuestionnaireService", () => {
     expect(fetchMock).toHaveBeenCalledWith("http://asr.local/healthz", expect.any(Object));
     expect(fetchMock).toHaveBeenCalledWith("http://ollama.local/api/chat", expect.any(Object));
     expect(fetchMock).toHaveBeenCalledWith("http://tts.local/healthz", expect.any(Object));
-    expect(fetchMock).toHaveBeenCalledWith("http://reranker.local/healthz", expect.any(Object));
+    expect(fetchMock).toHaveBeenCalledWith("http://reranker.local/status", expect.any(Object));
     expect(fetchMock).toHaveBeenCalledWith("http://redpanda.local/v1/status/ready", expect.any(Object));
+  });
+
+  it("does not count mock reranker as live when reranker is required", async () => {
+    process.env.VOICE_MODEL_MODE = "real";
+    process.env.ASR_DEVICE = "cuda";
+    process.env.LLM_DEVICE = "cuda";
+    process.env.TTS_DEVICE = "cuda";
+    process.env.RERANKER_DEVICE = "cuda";
+    process.env.RERANKER_REQUIRED_FOR_LIVE_ACCEPTANCE = "true";
+    process.env.RERANKER_SERVICE_URL = "http://reranker.local";
+    const fetchMock = vi.fn(async (url: string | URL | Request) => {
+      const requestUrl = String(url);
+      const body = requestUrl === "http://reranker.local/status" ? { mode: "mock" } : { status: "ok" };
+      return new Response(JSON.stringify(body), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const service = new QuestionnaireService(new InMemoryQuestionnaireRepository());
+
+    await expect(service.getProviderStatus()).resolves.toMatchObject({
+      providers: {
+        reranker: { mode: "mock", ready: true, acceptanceEligible: false }
+      },
+      sprint5Acceptance: { allRequiredLive: false, eligible: false }
+    });
   });
 
   it("accepts native Ollama Gemma endpoint for strict Sprint 5 eligibility", async () => {

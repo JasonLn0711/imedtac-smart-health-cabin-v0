@@ -57,4 +57,7 @@ corepack pnpm smoke:reranker
 Provider status exposes reranker readiness. Sprint 5 live acceptance remains
 gated by ASR, LLM, TTS, Redpanda, and voice-agent readiness until a local live
 reranker model is installed and promoted. Set
-`RERANKER_REQUIRED_FOR_LIVE_ACCEPTANCE=true` only for that promotion gate.
+`RERANKER_REQUIRED_FOR_LIVE_ACCEPTANCE=true` only for that promotion gate. The
+API checks reranker `/status` through `RERANKER_STATUS_PATH=/status`; a mock
+reranker sidecar stays visible in provider status and does not count as live
+acceptance.

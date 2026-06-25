@@ -315,6 +315,56 @@ async function getProviderReady(url: string): Promise<{ ready: boolean; healthy:
   }
 }
 
+function providerMode(value: unknown): "live" | "mock" | "unavailable" {
+  return value === "live" || value === "mock" || value === "unavailable" ? value : "live";
+}
+
+async function getRerankerStatus(url: string): Promise<{
+  provider?: string;
+  model?: string;
+  mode: "live" | "mock" | "unavailable";
+  ready: boolean;
+  healthy: boolean;
+  latencyMs: number;
+  lastError: string | null;
+  error_code?: string;
+}> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), voiceModelTimeoutMs());
+  const startedAt = Date.now();
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    const latencyMs = Date.now() - startedAt;
+    const text = await response.text();
+    const payload = text ? (JSON.parse(text) as { provider?: string; model?: string; mode?: unknown }) : {};
+    const mode = response.ok ? providerMode(payload.mode) : "unavailable";
+    const ready = response.ok && mode !== "unavailable";
+    const errorCode = response.ok && mode === "unavailable" ? "RERANKER_UNAVAILABLE" : `HTTP_${response.status}`;
+    return {
+      provider: payload.provider,
+      model: payload.model,
+      mode,
+      ready,
+      healthy: ready,
+      latencyMs,
+      lastError: ready ? null : errorCode,
+      error_code: ready ? undefined : errorCode
+    };
+  } catch (error) {
+    const errorCode = error instanceof Error ? error.name : "PROVIDER_UNAVAILABLE";
+    return {
+      mode: "unavailable",
+      ready: false,
+      healthy: false,
+      latencyMs: Date.now() - startedAt,
+      lastError: errorCode,
+      error_code: errorCode
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function postProviderReady(url: string, body: unknown): Promise<{ ready: boolean; healthy: boolean; latencyMs: number; lastError: string | null; error_code?: string }> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), voiceModelTimeoutMs());
@@ -404,6 +454,10 @@ function buildQuestionGuidance(surveyjsJson: unknown, questionName?: string): st
         .map((choice) => choice.text)
         .join("、")}。`
     : "請依照畫面上的問卷題目作答，也可以隨時改用觸控填答。";
+}
+
+function buildWakeGreetingGuidance(): string {
+  return "您好，我是慧誠智醫健康互動助理。接下來我會用語音帶您完成問卷，也可以隨時改用觸控填答。";
 }
 
 function isUsableGuidance(value: string): boolean {
@@ -531,7 +585,13 @@ export class ProviderStatusService {
     const redpandaEndpoint = env("REDPANDA_ADMIN_URL", "http://localhost:9644");
     const redpandaProbe = await getProviderReady(joinUrl(redpandaEndpoint, env("REDPANDA_READY_PATH", "/v1/status/ready")));
     const rerankerEndpoint = env("RERANKER_SERVICE_URL", "http://localhost:8014");
-    const rerankerProbe = await getProviderReady(joinUrl(rerankerEndpoint, env("RERANKER_HEALTH_PATH", "/healthz")));
+    const rerankerProbe = await getRerankerStatus(joinUrl(rerankerEndpoint, env("RERANKER_STATUS_PATH", "/status")));
+    const {
+      provider: rerankerProbeProvider,
+      model: rerankerProbeModel,
+      mode: rerankerProbeMode,
+      ...rerankerProbeStatus
+    } = rerankerProbe;
 
     const asr = withAcceptance({
       provider: env("ASR_PROVIDER", defaultAsrProvider),
@@ -558,10 +618,10 @@ export class ProviderStatusService {
     const tts = withAcceptance({
       provider: env("TTS_PROVIDER", defaultTtsProvider),
       model: process.env.BREEZYVOICE_MODEL ?? env("TTS_MODEL_PATH", defaultTtsModel),
+      ...ttsProbe,
       mode: ttsProbe.ready ? "live" : "unavailable",
       endpoint: ttsBaseUrl,
       fallback: "text-only question display",
-      ...ttsProbe,
       ...ttsRuntimeScope
     });
     const redpanda = withAcceptance({
@@ -572,12 +632,12 @@ export class ProviderStatusService {
       ...redpandaProbe
     });
     const reranker = withAcceptance({
-      provider: env("RERANKER_PROVIDER", defaultRerankerProvider),
-      model: env("RERANKER_MODEL", defaultRerankerModel),
-      mode: rerankerProbe.ready ? "live" : "unavailable",
+      provider: rerankerProbeProvider ?? env("RERANKER_PROVIDER", defaultRerankerProvider),
+      model: rerankerProbeModel ?? env("RERANKER_MODEL", defaultRerankerModel),
+      mode: rerankerProbeMode,
       endpoint: rerankerEndpoint,
       fallback: "deterministic mapping + confirmation / touch fallback",
-      ...rerankerProbe,
+      ...rerankerProbeStatus,
       ...rerankerRuntimeScope
     });
     const requiredProviders = [asr, llm, tts, redpanda];
@@ -631,7 +691,7 @@ const liveLlmAdapter: LLMAdapter = {
       {
         role: "system",
         content:
-          "你是 Smart Health Cabin 的問卷語音導引。只用繁體中文，回答 1 到 5 句話。你要協助使用者理解題目、回想時間範圍、知道如何在畫面選項中作答，不得診斷、不得改變問卷分數、不得替使用者作答。若題目提到「不如死掉」或「傷害自己」，第一句要說：這題需要現場人員關心與協助，您可以請現場人員一起完成。接著再提醒使用者依照過去兩週的頻率從畫面選項作答。"
+          "你是 Smart Health Cabin 的問卷語音導引。只用繁體中文，回答 1 到 5 句話；若使用者要求更少句數，必須遵守較少的句數上限。不要使用 emoji、表情符號或 Markdown。你要協助使用者理解題目、回想時間範圍、知道如何在畫面選項中作答，不得診斷、不得改變問卷分數、不得替使用者作答。若內容是問候，請自然、親切、不超過 3 句。若題目提到「不如死掉」或「傷害自己」，第一句要說：這題需要現場人員關心與協助，您可以請現場人員一起完成。接著再提醒使用者依照過去兩週的頻率從畫面選項作答。"
       },
       {
         role: "user",
@@ -871,9 +931,11 @@ export class QuestionnaireService {
     agent_session_id?: string;
     session_id?: string;
     question_name?: string;
+    purpose?: string;
   }): Promise<AgentTurnResponse> {
     const active = await this.repository.getActiveQuestionnaire();
-    const fallbackGuidance = buildQuestionGuidance(active.surveyjsJson, input.question_name);
+    const fallbackGuidance =
+      input.purpose === "wake_greeting" ? buildWakeGreetingGuidance() : buildQuestionGuidance(active.surveyjsJson, input.question_name);
     let provider = "mock";
     let model = "mock";
     let guidance = fallbackGuidance;
