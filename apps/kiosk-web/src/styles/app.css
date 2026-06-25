@@ -121,6 +121,16 @@ textarea {
   font-weight: 800;
 }
 
+.avatar-image {
+  display: block;
+  width: 88px;
+  height: 88px;
+}
+
+.avatar-image-error_fallback {
+  filter: grayscale(1);
+}
+
 .avatar-content,
 .answer-confirmation {
   display: grid;

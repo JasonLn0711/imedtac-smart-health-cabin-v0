@@ -19,9 +19,39 @@ scoring.
 Routes:
 
 ```text
+GET  /api/v1/providers/status
 POST /api/v1/agent-sessions
 POST /api/v1/agent-turns/asr
 POST /api/v1/agent-turns/respond
 POST /api/v1/agent-turns/tts
 POST /api/v1/agent-turns/map-answer
 ```
+
+## Local Model Mode
+
+Set `VOICE_PROVIDER_MODE=live` or `VOICE_MODEL_MODE=real` on
+`apps/api-server` to use local model services:
+
+```bash
+VOICE_PROVIDER_MODE=live \
+ASR_SERVICE_URL=http://localhost:8011 \
+ASR_PROVIDER=faster_whisper_breeze_asr_26 \
+ASR_MODEL=Breeze-ASR-26-CT2-int8 \
+LLM_PROVIDER=vllm_openai_compatible \
+LLM_BASE_URL=http://localhost:8000/v1 \
+LLM_MODEL=gemma-4-e4b \
+TTS_PROVIDER=breezyvoice_default \
+TTS_SERVICE_URL=http://localhost:8012 \
+TTS_VOICE_ID=default \
+corepack pnpm --filter @shc/api-server dev
+```
+
+Model service contracts:
+
+- ASR: `POST {ASR_SERVICE_URL}/v1/asr/transcribe`.
+- LLM: `POST {LLM_BASE_URL}/chat/completions`, model `gemma-4-e4b`.
+- TTS: `POST {TTS_SERVICE_URL}/v1/tts/synthesize`, voice `default`.
+
+Voice control: do not start BreezyVoice with Jason's later customized prompt
+audio/text for this lane. The API rejects reference audio, speaker embeddings,
+custom voice IDs, and voice-cloning fields.

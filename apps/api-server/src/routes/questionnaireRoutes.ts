@@ -36,6 +36,15 @@ export async function registerQuestionnaireRoutes(
   app: FastifyInstance,
   questionnaireService: QuestionnaireService
 ): Promise<void> {
+  app.get("/api/v1/providers/status", async (_request, reply) => {
+    try {
+      return await questionnaireService.getProviderStatus();
+    } catch (error) {
+      const response = toErrorResponse(error);
+      return reply.status(response.statusCode).send(response.body);
+    }
+  });
+
   app.get("/api/v1/questionnaires/active", async (_request, reply) => {
     try {
       return await questionnaireService.getActiveQuestionnaire();
@@ -137,11 +146,13 @@ export async function registerQuestionnaireRoutes(
       session_id?: string;
       question_name?: string;
       audio_text?: string;
+      audio_base64?: string;
+      audio_format?: string;
       transcript?: string;
     };
   }>("/api/v1/agent-turns/asr", async (request, reply) => {
     try {
-      return await questionnaireService.runMockAsr(request.body);
+      return await questionnaireService.runAsr(request.body);
     } catch (error) {
       const response = toErrorResponse(error);
       return reply.status(response.statusCode).send(response.body);
@@ -152,7 +163,7 @@ export async function registerQuestionnaireRoutes(
     "/api/v1/agent-turns/respond",
     async (request, reply) => {
       try {
-        return await questionnaireService.buildMockGuidance(request.body);
+        return await questionnaireService.buildGuidance(request.body);
       } catch (error) {
         const response = toErrorResponse(error);
         return reply.status(response.statusCode).send(response.body);
@@ -164,7 +175,7 @@ export async function registerQuestionnaireRoutes(
     "/api/v1/agent-turns/tts",
     async (request, reply) => {
       try {
-        return await questionnaireService.runMockTts(request.body);
+        return await questionnaireService.runTts(request.body);
       } catch (error) {
         const response = toErrorResponse(error);
         return reply.status(response.statusCode).send(response.body);

@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 export type ModuleStatus = "phase_1_core" | "phase_2_planned";
 
 export interface ModuleManifest {
@@ -150,6 +152,80 @@ export interface PublicReportResponse {
   sections: PublicReportSection[];
 }
 
+export const VoiceProviderModeSchema = z.enum(["mock", "live", "unavailable"]);
+export type VoiceProviderMode = z.infer<typeof VoiceProviderModeSchema>;
+
+export const AvatarStateSchema = z.enum([
+  "idle",
+  "speaking",
+  "listening",
+  "recording",
+  "transcribing",
+  "thinking",
+  "confirming_answer",
+  "writing_answer",
+  "error_fallback"
+]);
+export type AvatarState = z.infer<typeof AvatarStateSchema>;
+
+export const ProviderRuntimeStatusSchema = z.object({
+  provider: z.string(),
+  model: z.string().optional(),
+  mode: VoiceProviderModeSchema,
+  ready: z.boolean(),
+  error_code: z.string().optional()
+});
+export type ProviderRuntimeStatus = z.infer<typeof ProviderRuntimeStatusSchema>;
+
+export const ProviderStatusResponseSchema = z.object({
+  asr: ProviderRuntimeStatusSchema,
+  llm: ProviderRuntimeStatusSchema,
+  tts: ProviderRuntimeStatusSchema
+});
+export type ProviderStatusResponse = z.infer<typeof ProviderStatusResponseSchema>;
+
+export const ASRTranscribeRequestSchema = z.object({
+  audio_base64: z.string().min(1),
+  audio_format: z.string().default("wav"),
+  language_hint: z.string().optional(),
+  session_id: z.string().optional()
+});
+export type ASRTranscribeRequest = z.infer<typeof ASRTranscribeRequestSchema>;
+
+export const ASRTranscribeResponseSchema = z.object({
+  transcript: z.string(),
+  confidence: z.number().optional(),
+  language: z.string().optional(),
+  duration_ms: z.number().optional()
+});
+export type ASRTranscribeResponse = z.infer<typeof ASRTranscribeResponseSchema>;
+
+export const LLMGuidanceRequestSchema = z.object({
+  question_name: z.string().optional(),
+  prompt: z.string().min(1)
+});
+export type LLMGuidanceRequest = z.infer<typeof LLMGuidanceRequestSchema>;
+
+export const LLMGuidanceResponseSchema = z.object({
+  guidance: z.string()
+});
+export type LLMGuidanceResponse = z.infer<typeof LLMGuidanceResponseSchema>;
+
+export const TTSSynthesizeRequestSchema = z
+  .object({
+    text: z.string().min(1),
+    voice_id: z.literal("default").optional(),
+    response_format: z.literal("wav").default("wav")
+  })
+  .strict();
+export type TTSSynthesizeRequest = z.infer<typeof TTSSynthesizeRequestSchema>;
+
+export const TTSSynthesizeResponseSchema = z.object({
+  audio_base64: z.string(),
+  mime_type: z.literal("audio/wav").default("audio/wav")
+});
+export type TTSSynthesizeResponse = z.infer<typeof TTSSynthesizeResponseSchema>;
+
 export interface SurveyChoice {
   value: number;
   text: string;
@@ -168,10 +244,12 @@ export interface AgentSessionResponse {
 
 export interface AgentTurnResponse {
   agent_turn_id: string;
-  provider: "mock";
+  provider: string;
+  model?: string;
   transcript?: string;
   guidance?: string;
   audio_data_url?: string;
+  audio_url?: string;
 }
 
 export interface VoiceAnswerCandidate {

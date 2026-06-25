@@ -1,6 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { Model, Question } from "survey-core";
-import { avatarStateLabel, nextAvatarState } from "./avatarStateMachine";
+import { useMachine } from "@xstate/react";
+import { AvatarImage } from "./AvatarImage";
+import { avatarStateLabel, avatarStateMachine } from "./avatarStateMachine";
 import type { AvatarState, VoiceAnswerDraft } from "./avatarTypes";
 import { candidateFromTranscript, confirmVoiceAnswer } from "./voiceQuestionnaireController";
 
@@ -13,15 +15,45 @@ function getCurrentQuestion(model: Model): Question | null {
 }
 
 export function AvatarPanel({ model }: AvatarPanelProps) {
-  const [state, setState] = useState<AvatarState>("idle");
+  const [snapshot, send] = useMachine(avatarStateMachine);
   const [transcript, setTranscript] = useState("完全沒有");
   const [draft, setDraft] = useState<VoiceAnswerDraft | null>(null);
   const [confirmedCount, setConfirmedCount] = useState(0);
   const [message, setMessage] = useState("可使用語音模擬填答，也可直接觸控問卷。");
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaChunksRef = useRef<Blob[]>([]);
+  const state = snapshot.value as AvatarState;
   const currentQuestion = useMemo(() => getCurrentQuestion(model), [model, confirmedCount]);
 
-  function move(next: AvatarState) {
-    setState((current) => nextAvatarState(current, next));
+  async function startRecording() {
+    if (!navigator.mediaDevices || typeof MediaRecorder === "undefined") {
+      send({ type: "FAIL" });
+      setMessage("此瀏覽器目前無法使用 MediaRecorder，可改用觸控或文字模擬填答。");
+      return;
+    }
+
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const recorder = new MediaRecorder(stream);
+    mediaChunksRef.current = [];
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        mediaChunksRef.current.push(event.data);
+      }
+    };
+    recorder.onstop = () => {
+      stream.getTracks().forEach((track) => track.stop());
+      send({ type: "TRANSCRIBE" });
+      setMessage(`錄音已完成（${mediaChunksRef.current.length} 個片段）。請送出 ASR 或使用文字模擬。`);
+    };
+    mediaRecorderRef.current = recorder;
+    send({ type: "LISTEN" });
+    send({ type: "RECORD" });
+    recorder.start();
+  }
+
+  function stopRecording() {
+    mediaRecorderRef.current?.stop();
+    mediaRecorderRef.current = null;
   }
 
   function readQuestion() {
@@ -29,9 +61,9 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
       setMessage("問卷已全部填答，可以送出。");
       return;
     }
-    move("speaking");
+    send({ type: "SPEAK" });
     setMessage(`Avatar：${currentQuestion.title}`);
-    move("listening");
+    send({ type: "LISTEN" });
   }
 
   function mapAnswer() {
@@ -40,12 +72,12 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
       return;
     }
     try {
-      move("transcribing");
-      move("thinking");
+      send({ type: "TRANSCRIBE" });
+      send({ type: "THINK" });
       const candidate = candidateFromTranscript(currentQuestion, transcript);
       if (!candidate) {
         setMessage("沒有找到可確認的候選答案，請重錄或使用觸控填答。");
-        setState("error_fallback");
+        send({ type: "FAIL" });
         return;
       }
       setDraft({
@@ -54,10 +86,10 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
         transcript,
         candidate
       });
-      move("confirming_answer");
+      send({ type: "CONFIRM" });
       setMessage("請確認候選答案後再寫入問卷。");
     } catch (error) {
-      setState("error_fallback");
+      send({ type: "FAIL" });
       setMessage(error instanceof Error ? error.message : "語音流程失敗，可改用觸控填答。");
     }
   }
@@ -67,22 +99,23 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
       return;
     }
     confirmVoiceAnswer(currentQuestion, draft.candidate);
+    send({ type: "WRITE" });
     setDraft(null);
     setConfirmedCount((count) => count + 1);
     setMessage("已確認並寫入問卷。");
-    setState("idle");
+    send({ type: "RESET" });
   }
 
   function retry() {
     setDraft(null);
     setMessage("請重新輸入語音文字，或改用觸控填答。");
-    setState("listening");
+    send({ type: "LISTEN" });
   }
 
   return (
     <aside className="avatar-panel" aria-label="Avatar voice guide">
-      <div className="avatar-figure" aria-hidden="true">
-        <span>{state === "error_fallback" ? "!" : "A"}</span>
+      <div className="avatar-figure">
+        <AvatarImage state={state} />
       </div>
       <div className="avatar-content">
         <div className="avatar-status-row">
@@ -107,6 +140,12 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
           ))}
         </div>
         <div className="voice-actions">
+          <button type="button" onClick={() => startRecording().catch(() => send({ type: "FAIL" }))}>
+            Start recording
+          </button>
+          <button type="button" onClick={stopRecording}>
+            Stop recording
+          </button>
           <button type="button" onClick={readQuestion}>
             Read
           </button>
@@ -135,4 +174,3 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
     </aside>
   );
 }
-

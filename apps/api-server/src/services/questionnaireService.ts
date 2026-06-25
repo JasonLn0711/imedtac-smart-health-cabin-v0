@@ -8,6 +8,7 @@ import type {
   CompletedQuestionnaireResponse,
   CreateQuestionnaireTemplateRequest,
   CreateQuestionnaireVersionRequest,
+  ProviderStatusResponse,
   PublicReportResponse,
   VoiceAnswerMappingResponse
 } from "@shc/contracts";
@@ -25,6 +26,274 @@ const seedPath = "modules/questionnaire/seed/phq9.zh-TW.surveyjs.json";
 const scoringConfigPath = "modules/questionnaire/scoring/phq9.public-scoring-config.json";
 const mockWav =
   "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=";
+const defaultAsrProvider = "faster_whisper_breeze_asr_26";
+const defaultAsrModel = "Breeze-ASR-26-CT2-int8";
+const defaultLlmProvider = "vllm_openai_compatible";
+const defaultLlmModel = "gemma-4-e4b";
+const defaultTtsProvider = "breezyvoice_default";
+const defaultTtsModel = "/models/breezyvoice";
+const defaultTtsVoice = "default";
+const forbiddenTtsFields = [
+  "reference_audio",
+  "reference_audio_base64",
+  "speaker_embedding",
+  "speaker_sample",
+  "speaker_prompt_audio",
+  "speaker_prompt_text",
+  "custom_voice_id",
+  "voice_clone",
+  "customized_voice"
+];
+
+function voiceModelMode(): "mock" | "live" {
+  return process.env.VOICE_MODEL_MODE === "real" || process.env.VOICE_PROVIDER_MODE === "live" ? "live" : "mock";
+}
+
+function voiceModelTimeoutMs(): number {
+  return Number(process.env.VOICE_MODEL_TIMEOUT_MS ?? 30000);
+}
+
+function env(name: string, fallback: string): string {
+  return process.env[name] ?? fallback;
+}
+
+function trimSlash(value: string): string {
+  return value.replace(/\/$/, "");
+}
+
+function joinUrl(baseUrl: string, path: string): string {
+  return `${trimSlash(baseUrl)}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+function llmBaseUrl(): string {
+  if (process.env.LLM_BASE_URL) {
+    return process.env.LLM_BASE_URL;
+  }
+  if (process.env.OLLAMA_BASE_URL) {
+    return `${trimSlash(process.env.OLLAMA_BASE_URL)}/v1`;
+  }
+  return "http://localhost:8000/v1";
+}
+
+function llmModel(): string {
+  return process.env.LLM_MODEL ?? process.env.OLLAMA_MODEL ?? defaultLlmModel;
+}
+
+async function postJson<T>(url: string, body: unknown): Promise<T> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), voiceModelTimeoutMs());
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+      signal: controller.signal
+    });
+    const text = await response.text();
+    if (!response.ok) {
+      throw new Error(`${url} returned ${response.status}: ${text.slice(0, 240)}`);
+    }
+    return JSON.parse(text) as T;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function getProviderReady(url: string): Promise<{ ready: boolean; error_code?: string }> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), voiceModelTimeoutMs());
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    return response.ok ? { ready: true } : { ready: false, error_code: `HTTP_${response.status}` };
+  } catch (error) {
+    return { ready: false, error_code: error instanceof Error ? error.name : "PROVIDER_UNAVAILABLE" };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function postAudio(url: string, body: unknown): Promise<string> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), voiceModelTimeoutMs());
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+      signal: controller.signal
+    });
+    if (!response.ok) {
+      throw new Error(`${url} returned ${response.status}: ${(await response.text()).slice(0, 240)}`);
+    }
+    return Buffer.from(await response.arrayBuffer()).toString("base64");
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function buildQuestionGuidance(surveyjsJson: unknown, questionName?: string): string {
+  const question = getSurveyQuestionContexts(surveyjsJson).find((item) => item.name === questionName);
+  return question
+    ? `請依照過去兩週的狀況回答：「${question.title}」。選項是：${question.choices
+        .map((choice) => choice.text)
+        .join("、")}。`
+    : "請依照畫面上的問卷題目作答，也可以隨時改用觸控填答。";
+}
+
+export interface ASRAdapter {
+  transcribe(input: {
+    audioBase64: string;
+    audioFormat: string;
+    agentSessionId?: string;
+  }): Promise<{ provider: string; model: string; transcript: string; payload: Record<string, unknown> }>;
+}
+
+export interface LLMAdapter {
+  guide(fallbackGuidance: string): Promise<{ provider: string; model: string; guidance: string; payload: Record<string, unknown> }>;
+}
+
+export interface TTSAdapter {
+  synthesize(text: string): Promise<{ provider: string; model: string; audioDataUrl: string; payload: Record<string, unknown> }>;
+}
+
+export class ProviderStatusService {
+  async getStatus(): Promise<ProviderStatusResponse> {
+    if (voiceModelMode() === "mock") {
+      return {
+        asr: { provider: env("ASR_PROVIDER", defaultAsrProvider), model: env("ASR_MODEL", defaultAsrModel), mode: "mock", ready: true },
+        llm: { provider: env("LLM_PROVIDER", defaultLlmProvider), model: llmModel(), mode: "mock", ready: true },
+        tts: { provider: env("TTS_PROVIDER", defaultTtsProvider), model: env("TTS_MODEL_PATH", defaultTtsModel), mode: "mock", ready: true }
+      };
+    }
+
+    const asr = await getProviderReady(
+      joinUrl(env("ASR_SERVICE_URL", "http://localhost:8011"), env("ASR_HEALTH_PATH", "/healthz"))
+    );
+    const llm = await getProviderReady(joinUrl(llmBaseUrl(), env("LLM_MODELS_PATH", "/models")));
+    const ttsBaseUrl = process.env.BREEZYVOICE_BASE_URL ?? env("TTS_SERVICE_URL", "http://localhost:8012");
+    const ttsHealthPath = process.env.BREEZYVOICE_BASE_URL ? "/models" : env("TTS_HEALTH_PATH", "/healthz");
+    const tts = await getProviderReady(joinUrl(ttsBaseUrl, ttsHealthPath));
+
+    return {
+      asr: {
+        provider: env("ASR_PROVIDER", defaultAsrProvider),
+        model: env("ASR_MODEL", defaultAsrModel),
+        mode: asr.ready ? "live" : "unavailable",
+        ...asr
+      },
+      llm: {
+        provider: env("LLM_PROVIDER", defaultLlmProvider),
+        model: llmModel(),
+        mode: llm.ready ? "live" : "unavailable",
+        ...llm
+      },
+      tts: {
+        provider: env("TTS_PROVIDER", defaultTtsProvider),
+        model: process.env.BREEZYVOICE_MODEL ?? env("TTS_MODEL_PATH", defaultTtsModel),
+        mode: tts.ready ? "live" : "unavailable",
+        ...tts
+      }
+    };
+  }
+}
+
+const liveAsrAdapter: ASRAdapter = {
+  async transcribe(input) {
+    const asr = await postJson<{
+      transcript?: string;
+      text?: string;
+      confidence?: number;
+      duration_ms?: number;
+      durationMs?: number;
+      segments?: unknown[];
+    }>(joinUrl(env("ASR_SERVICE_URL", "http://localhost:8011"), env("ASR_TRANSCRIBE_PATH", "/v1/asr/transcribe")), {
+      audio_format: input.audioFormat,
+      audio_base64: input.audioBase64,
+      language_hint: env("ASR_LANGUAGE_HINT", "zh"),
+      turn_id: input.agentSessionId
+    });
+    const transcript = asr.transcript ?? asr.text ?? "";
+    const provider = env("ASR_PROVIDER", defaultAsrProvider);
+    const model = env("ASR_MODEL", defaultAsrModel);
+    return { provider, model, transcript, payload: { provider, model, transcript, ...asr } };
+  }
+};
+
+const liveLlmAdapter: LLMAdapter = {
+  async guide(fallbackGuidance) {
+    const llm = await postJson<{ choices?: Array<{ message?: { content?: string } }>; message?: { content?: string } }>(
+      joinUrl(llmBaseUrl(), "/chat/completions"),
+      {
+        model: llmModel(),
+        messages: [
+          {
+            role: "system",
+            content:
+              "你是 Smart Health Cabin 的問卷語音導引。只用繁體中文，回答一句，協助使用者理解題目與選項。不得診斷、不得改變問卷分數、不得替使用者作答。"
+          },
+          {
+            role: "user",
+            content: fallbackGuidance
+          }
+        ],
+        stream: false,
+        temperature: 0.2,
+        max_tokens: 80
+      }
+    );
+    const guidance = llm.choices?.[0]?.message?.content?.trim() || llm.message?.content?.trim() || fallbackGuidance;
+    const provider = env("LLM_PROVIDER", defaultLlmProvider);
+    const model = llmModel();
+    return { provider, model, guidance, payload: { provider, model, guidance } };
+  }
+};
+
+const liveTtsAdapter: TTSAdapter = {
+  async synthesize(text) {
+    const provider = env("TTS_PROVIDER", defaultTtsProvider);
+    const model = process.env.BREEZYVOICE_MODEL ?? env("TTS_MODEL_PATH", defaultTtsModel);
+    let audioBase64: string;
+    let voice = defaultTtsVoice;
+
+    if (process.env.BREEZYVOICE_BASE_URL || process.env.TTS_REQUEST_STYLE === "openai") {
+      voice = env("BREEZYVOICE_VOICE_ID", defaultTtsVoice);
+      audioBase64 = await postAudio(joinUrl(env("BREEZYVOICE_BASE_URL", "http://localhost:9003/v1"), "/audio/speech"), {
+        model,
+        voice,
+        input: text,
+        response_format: "wav",
+        speed: 1
+      });
+    } else {
+      const tts = await postJson<{ audio_base64: string; mime_type?: string }>(
+        joinUrl(env("TTS_SERVICE_URL", "http://localhost:8012"), env("TTS_SYNTHESIZE_PATH", "/v1/tts/synthesize")),
+        {
+          text,
+          voice_id: defaultTtsVoice,
+          response_format: "wav"
+        }
+      );
+      audioBase64 = tts.audio_base64;
+    }
+
+    const audioDataUrl = `data:audio/wav;base64,${audioBase64}`;
+    return {
+      provider,
+      model,
+      audioDataUrl,
+      payload: {
+        provider,
+        model,
+        voice,
+        customized_voice: false,
+        text,
+        audio_data_url: audioDataUrl
+      }
+    };
+  }
+};
+
+const providerStatusService = new ProviderStatusService();
 
 export class QuestionnaireService {
   constructor(private readonly repository: QuestionnaireRepository) {}
@@ -132,64 +401,109 @@ export class QuestionnaireService {
     };
   }
 
-  async runMockAsr(input: {
+  async getProviderStatus(): Promise<ProviderStatusResponse> {
+    return providerStatusService.getStatus();
+  }
+
+  async runAsr(input: {
     agent_session_id?: string;
     session_id?: string;
     question_name?: string;
     audio_text?: string;
+    audio_base64?: string;
+    audio_format?: string;
     transcript?: string;
   }): Promise<AgentTurnResponse> {
-    const transcript = input.transcript ?? input.audio_text ?? "";
+    let provider = "mock";
+    let model = "mock";
+    let transcript = input.transcript ?? input.audio_text ?? "";
+    let payload: Record<string, unknown> = { provider, transcript };
+
+    if (voiceModelMode() === "live") {
+      const audioBase64 = input.audio_base64 ?? (transcript ? `text:${transcript}` : "");
+      if (!audioBase64) {
+        throw new QuestionnaireValidationError("audio_base64 or transcript/audio_text is required for ASR");
+      }
+      const asr = await liveAsrAdapter.transcribe({
+        audioBase64,
+        audioFormat: input.audio_format ?? (audioBase64.startsWith("text:") ? "mock" : "wav"),
+        agentSessionId: input.agent_session_id
+      });
+      ({ provider, model, transcript, payload } = asr);
+    }
+
     const turnId = await this.repository.saveAgentTurn({
       agentSessionId: input.agent_session_id,
       sessionId: input.session_id,
       turnType: "asr",
       questionName: input.question_name,
       transcript,
-      payload: { provider: "mock", transcript }
+      payload
     });
-    return { agent_turn_id: turnId, provider: "mock", transcript };
+    return { agent_turn_id: turnId, provider, model, transcript };
   }
 
-  async buildMockGuidance(input: {
+  async buildGuidance(input: {
     agent_session_id?: string;
     session_id?: string;
     question_name?: string;
   }): Promise<AgentTurnResponse> {
     const active = await this.repository.getActiveQuestionnaire();
-    const question = getSurveyQuestionContexts(active.surveyjsJson).find(
-      (item) => item.name === input.question_name
-    );
-    const guidance = question
-      ? `請依照過去兩週的狀況回答：「${question.title}」。選項是：${question.choices
-          .map((choice) => choice.text)
-          .join("、")}。`
-      : "請依照畫面上的問卷題目作答，也可以隨時改用觸控填答。";
+    const fallbackGuidance = buildQuestionGuidance(active.surveyjsJson, input.question_name);
+    let provider = "mock";
+    let model = "mock";
+    let guidance = fallbackGuidance;
+    let payload: Record<string, unknown> = { provider, guidance };
+
+    if (voiceModelMode() === "live") {
+      const llm = await liveLlmAdapter.guide(fallbackGuidance);
+      ({ provider, model, guidance, payload } = llm);
+    }
 
     const turnId = await this.repository.saveAgentTurn({
       agentSessionId: input.agent_session_id,
       sessionId: input.session_id,
       turnType: "respond",
       questionName: input.question_name,
-      payload: { provider: "mock", guidance }
+      payload
     });
-    return { agent_turn_id: turnId, provider: "mock", guidance };
+    return { agent_turn_id: turnId, provider, model, guidance };
   }
 
-  async runMockTts(input: {
+  async runTts(input: {
     agent_session_id?: string;
     session_id?: string;
     question_name?: string;
     text?: string;
+    [key: string]: unknown;
   }): Promise<AgentTurnResponse> {
+    for (const field of forbiddenTtsFields) {
+      if (Object.hasOwn(input, field)) {
+        throw new QuestionnaireValidationError(`Custom TTS voice field is not accepted: ${field}`);
+      }
+    }
+
+    let provider = "mock";
+    let model = "mock";
+    let audioDataUrl = mockWav;
+    let payload: Record<string, unknown> = { provider, text: input.text ?? "", audio_data_url: audioDataUrl };
+
+    if (voiceModelMode() === "live") {
+      const tts = await liveTtsAdapter.synthesize(input.text ?? "");
+      provider = tts.provider;
+      model = tts.model;
+      audioDataUrl = tts.audioDataUrl;
+      payload = tts.payload;
+    }
+
     const turnId = await this.repository.saveAgentTurn({
       agentSessionId: input.agent_session_id,
       sessionId: input.session_id,
       turnType: "tts",
       questionName: input.question_name,
-      payload: { provider: "mock", text: input.text ?? "", audio_data_url: mockWav }
+      payload
     });
-    return { agent_turn_id: turnId, provider: "mock", audio_data_url: mockWav };
+    return { agent_turn_id: turnId, provider, model, audio_data_url: audioDataUrl };
   }
 
   async mapVoiceAnswer(input: {

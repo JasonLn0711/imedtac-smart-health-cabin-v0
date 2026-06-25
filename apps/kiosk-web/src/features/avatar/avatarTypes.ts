@@ -1,13 +1,6 @@
-import type { VoiceAnswerCandidate } from "@shc/contracts";
+import type { AvatarState, VoiceAnswerCandidate } from "@shc/contracts";
 
-export type AvatarState =
-  | "idle"
-  | "speaking"
-  | "listening"
-  | "transcribing"
-  | "thinking"
-  | "confirming_answer"
-  | "error_fallback";
+export type { AvatarState };
 
 export interface VoiceAnswerDraft {
   questionName: string;
@@ -15,4 +8,3 @@ export interface VoiceAnswerDraft {
   transcript: string;
   candidate: VoiceAnswerCandidate;
 }
-

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CompletedQuestionnaireResponse } from "@shc/contracts";
 import phq9Seed from "../../../../modules/questionnaire/seed/phq9.zh-TW.surveyjs.json";
 import type {
@@ -13,6 +13,7 @@ import { QuestionnaireService } from "./questionnaireService";
 
 class InMemoryQuestionnaireRepository implements QuestionnaireRepository {
   saved?: SaveQuestionnaireResponseInput;
+  savedTurns: SaveAgentTurnInput[] = [];
 
   async ensurePhq9Seed(): Promise<void> {}
 
@@ -108,7 +109,8 @@ class InMemoryQuestionnaireRepository implements QuestionnaireRepository {
     return "agent_sess_demo";
   }
 
-  async saveAgentTurn(_input: SaveAgentTurnInput) {
+  async saveAgentTurn(input: SaveAgentTurnInput) {
+    this.savedTurns.push(input);
     return "turn_demo";
   }
 
@@ -126,6 +128,32 @@ const validAnswers = {
   phq9_08: 0,
   phq9_09: 0
 };
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  delete process.env.VOICE_MODEL_MODE;
+  delete process.env.VOICE_PROVIDER_MODE;
+  delete process.env.ASR_SERVICE_URL;
+  delete process.env.ASR_PROVIDER;
+  delete process.env.ASR_MODEL;
+  delete process.env.ASR_TRANSCRIBE_PATH;
+  delete process.env.ASR_HEALTH_PATH;
+  delete process.env.LLM_PROVIDER;
+  delete process.env.LLM_BASE_URL;
+  delete process.env.LLM_MODEL;
+  delete process.env.LLM_MODELS_PATH;
+  delete process.env.OLLAMA_BASE_URL;
+  delete process.env.OLLAMA_MODEL;
+  delete process.env.TTS_PROVIDER;
+  delete process.env.TTS_SERVICE_URL;
+  delete process.env.TTS_MODEL_PATH;
+  delete process.env.TTS_SYNTHESIZE_PATH;
+  delete process.env.TTS_HEALTH_PATH;
+  delete process.env.TTS_REQUEST_STYLE;
+  delete process.env.BREEZYVOICE_BASE_URL;
+  delete process.env.BREEZYVOICE_MODEL;
+  delete process.env.BREEZYVOICE_VOICE_ID;
+});
 
 describe("QuestionnaireService", () => {
   it("submits a low-risk PHQ-9 response", async () => {
@@ -213,6 +241,137 @@ describe("QuestionnaireService", () => {
     expect(mapped.candidate).toMatchObject({
       value: 3,
       requires_confirmation: true
+    });
+  });
+
+  it("calls the configured faster-whisper Breeze ASR adapter in real mode", async () => {
+    process.env.VOICE_MODEL_MODE = "real";
+    process.env.ASR_SERVICE_URL = "http://asr.local";
+    const fetchMock = vi.fn(async () => {
+      return new Response(JSON.stringify({ text: "幾乎每天", confidence: 0.91, durationMs: 42 }), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const service = new QuestionnaireService(new InMemoryQuestionnaireRepository());
+    const response = await service.runAsr({
+      audio_base64: "UklGRg==",
+      audio_format: "wav",
+      question_name: "phq9_01"
+    });
+
+    expect(response).toMatchObject({
+      provider: "faster_whisper_breeze_asr_26",
+      model: "Breeze-ASR-26-CT2-int8",
+      transcript: "幾乎每天"
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://asr.local/v1/asr/transcribe",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.stringContaining('"audio_format":"wav"')
+      })
+    );
+  });
+
+  it("calls local Gemma 4 E4B through an OpenAI-compatible endpoint in real mode", async () => {
+    process.env.VOICE_MODEL_MODE = "real";
+    process.env.LLM_BASE_URL = "http://llm.local/v1";
+    process.env.LLM_MODEL = "gemma-4-e4b";
+    const fetchMock = vi.fn(async () => {
+      return new Response(JSON.stringify({ choices: [{ message: { content: "請依照題目選一個最接近的頻率。" } }] }), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const service = new QuestionnaireService(new InMemoryQuestionnaireRepository());
+    const response = await service.buildGuidance({ question_name: "phq9_01" });
+
+    expect(response).toMatchObject({
+      provider: "vllm_openai_compatible",
+      model: "gemma-4-e4b",
+      guidance: "請依照題目選一個最接近的頻率。"
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://llm.local/v1/chat/completions",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.stringContaining('"model":"gemma-4-e4b"')
+      })
+    );
+  });
+
+  it("calls BreezyVoice without a customized voice in real mode", async () => {
+    process.env.VOICE_MODEL_MODE = "real";
+    process.env.BREEZYVOICE_BASE_URL = "http://breezy.local/v1";
+    process.env.BREEZYVOICE_MODEL = "MediaTek-Research/BreezyVoice";
+    process.env.BREEZYVOICE_VOICE_ID = "default";
+    const fetchMock = vi.fn(async () => {
+      return new Response(new Uint8Array([1, 2, 3]), {
+        status: 200,
+        headers: { "content-type": "audio/wav" }
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const repository = new InMemoryQuestionnaireRepository();
+    const service = new QuestionnaireService(repository);
+    const response = await service.runTts({ text: "請依照題目回答。" });
+
+    expect(response).toMatchObject({
+      provider: "breezyvoice_default",
+      model: "MediaTek-Research/BreezyVoice",
+      audio_data_url: "data:audio/wav;base64,AQID"
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://breezy.local/v1/audio/speech",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.stringContaining('"voice":"default"')
+      })
+    );
+    expect(repository.savedTurns[0]?.payload).toMatchObject({
+      voice: "default",
+      customized_voice: false
+    });
+  });
+
+  it("rejects customized TTS voice request fields", async () => {
+    const service = new QuestionnaireService(new InMemoryQuestionnaireRepository());
+
+    await expect(
+      service.runTts({
+        text: "請依照題目回答。",
+        reference_audio_base64: "custom"
+      })
+    ).rejects.toThrow("Custom TTS voice field is not accepted");
+  });
+
+  it("reports mock provider status without probing live services", async () => {
+    const service = new QuestionnaireService(new InMemoryQuestionnaireRepository());
+
+    await expect(service.getProviderStatus()).resolves.toMatchObject({
+      asr: { provider: "faster_whisper_breeze_asr_26", mode: "mock", ready: true },
+      llm: { provider: "vllm_openai_compatible", model: "gemma-4-e4b", mode: "mock", ready: true },
+      tts: { provider: "breezyvoice_default", mode: "mock", ready: true }
+    });
+  });
+
+  it("reports unavailable provider status when live probes fail", async () => {
+    process.env.VOICE_MODEL_MODE = "real";
+    const fetchMock = vi.fn(async () => new Response("down", { status: 503 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const service = new QuestionnaireService(new InMemoryQuestionnaireRepository());
+
+    await expect(service.getProviderStatus()).resolves.toMatchObject({
+      asr: { mode: "unavailable", ready: false, error_code: "HTTP_503" },
+      llm: { mode: "unavailable", ready: false, error_code: "HTTP_503" },
+      tts: { mode: "unavailable", ready: false, error_code: "HTTP_503" }
     });
   });
 });
