@@ -518,6 +518,554 @@ Relevant implementation surfaces:
 | `apps/kiosk-web/src/features/avatar/voiceAgentApi.ts` | Kiosk calls to agent session, ASR, respond, and TTS routes |
 | `apps/kiosk-web/src/features/avatar/voiceQuestionnaireController.ts` | Shared answer-write-and-next-question helper |
 | `apps/kiosk-web/src/features/avatar/avatarStateMachine.ts` | `LOOP_READY` transition for returning to recording |
+
+## Experiment Run: Wake Greeting Then First Question TTS
+
+Experiment purpose:
+
+```text
+Validate the local test project after adding the wake-greeting step:
+wake event -> LLM-generated greeting within 3 sentences -> BreezyVoice TTS
+-> first PHQ-9 question guidance -> BreezyVoice TTS.
+```
+
+Time record:
+
+| Field | Value |
+| --- | --- |
+| Local environment snapshot time | `2026-06-25T23:46:50+08:00` |
+| UTC environment snapshot time | `2026-06-25T15:46:50Z` |
+| Direct API smoke started | `2026-06-25T23:47:23.477+08:00` / `2026-06-25T15:47:23.477Z` |
+| Direct API smoke ended | `2026-06-25T23:47:32.791+08:00` / `2026-06-25T15:47:32.791Z` |
+| Live acceptance check started | `2026-06-25T23:50:04.856+08:00` / `2026-06-25T15:50:04.856Z` |
+| Live acceptance check ended | `2026-06-25T23:50:05.769+08:00` / `2026-06-25T15:50:05.769Z` |
+| Browser request-level smoke started | `2026-06-25T23:50:17.951+08:00` / `2026-06-25T15:50:17.951Z` |
+| Browser request-level smoke ended | `2026-06-25T23:50:46.882+08:00` / `2026-06-25T15:50:46.882Z` |
+
+Code state:
+
+| Field | Value |
+| --- | --- |
+| Repo | `/home/jnclaw/every_on_git_jnclaw/phd-life-system/imedtac-smart-health-cabin-v0` |
+| Branch | `main` |
+| Base commit | `2b80859dbfb64f761ffd592f9a869aadf335c55f` |
+| Worktree state | Local modified files were present for the current wake-greeting implementation and adjacent docs. |
+
+Modified files visible during this run:
+
+```text
+.env.example
+apps/api-server/src/routes/questionnaireRoutes.ts
+apps/api-server/src/services/questionnaireService.test.ts
+apps/api-server/src/services/questionnaireService.ts
+apps/kiosk-web/src/features/avatar/AvatarPanel.tsx
+apps/kiosk-web/src/features/avatar/voiceAgentApi.ts
+docs/reranker-qwen3-0.6b-integration.md
+```
+
+### Hardware And OS Snapshot
+
+```text
+OS: Ubuntu 24.04.4 LTS noble
+Kernel: Linux 6.17.0-35-generic x86_64
+CPU: Intel(R) Core(TM) i9-14900HX
+CPU topology: 24 cores / 32 logical CPUs
+RAM: 62 GiB total, 39 GiB available at capture
+Swap: 8.0 GiB total
+GPU: NVIDIA GeForce RTX 4090 Laptop GPU
+NVIDIA driver: 580.159.03
+CUDA runtime shown by nvidia-smi: 13.0
+GPU memory: 16,376 MiB total, 9,433 MiB used at capture
+GPU temperature: 49 C
+GPU power draw: 8.04 W at capture
+GPU utilization: 0% at capture
+```
+
+GPU compute processes at capture:
+
+```text
+PID 86692  ../../.venv-asr/bin/python                                           2234 MiB
+PID 388803 /home/jnclaw/every_on_git_jnclaw/BreezyVoice/.venv/bin/python        3840 MiB
+PID 444785 /home/jnclaw/.../jarvis-voice-sight/.local/ollama/.../llama-server   3326 MiB
+```
+
+Tool versions:
+
+```text
+node: v22.23.1
+pnpm: 9.15.0
+system python3: Python 3.12.3
+Docker: 29.1.3
+Docker Compose: v2.30.3
+Ollama API: 0.30.7
+```
+
+### Runtime Services
+
+| Port | Service | PID / container | Role |
+| ---: | --- | --- | --- |
+| `3010` | `@shc/api-server` live server | PID `455020` | API with live ASR / LLM / TTS / Redpanda env |
+| `3011` | `@shc/voice-agent-server` live server | PID `450942` | Voice-agent readiness and LLM gate |
+| `5176` | `kiosk-web` Vite server | PID `451093` | User test browser at `http://localhost:5176/` |
+| `8001` | Breeze ASR sidecar | PID `86692` | Live ASR endpoint |
+| `8013` | sherpa-onnx wakeword sidecar | PID `358195` | Live wakeword event stream |
+| `9003` | BreezyVoice upstream | PID `388803` | Live TTS upstream |
+| `9092` | Redpanda broker | Docker `smart-health-cabin-redpanda` | Event broker |
+| `9644` | Redpanda admin | Docker `smart-health-cabin-redpanda` | Provider readiness |
+| `11434` | Ollama | PID `86744` / llama-server PID `444785` | Local Gemma 4 E4B LLM |
+
+Local run logs:
+
+```text
+.local/run/api-3010.log
+.local/run/voice-agent-3011.log
+.local/run/kiosk-5176.log
+```
+
+Docker state:
+
+```text
+smart-health-cabin-redpanda-console docker.redpanda.com/redpandadata/console:v2.7.2, Up 6 hours
+smart-health-cabin-redpanda         docker.redpanda.com/redpandadata/redpanda:v24.2.7, Up 6 hours, ports 9092 and 9644
+smart-health-cabin-postgres         postgres:16-alpine, Up 6 hours, healthy
+```
+
+### Provider Configuration And Readiness
+
+Wakeword status endpoint: `http://localhost:8013/status`
+
+```json
+{
+  "provider": "sherpa-onnx",
+  "phrase": "你好小慧",
+  "model": "sherpa-onnx-kws-zipformer-zh-en-3M-2025-12-20",
+  "mode": "live",
+  "ready": true,
+  "healthy": true,
+  "local_only": true,
+  "threshold": 0.65,
+  "cooldown_ms": 2000,
+  "listening": true,
+  "sample_rate": 16000,
+  "chunk_size": 1280,
+  "sherpa_onnx_execution_provider": "cpu",
+  "sherpa_onnx_keywords": ".local/models/wakeword/ni-hao-xiao-hui.keywords.txt",
+  "last_event": {
+    "type": "wake.detected",
+    "phrase": "你好小慧",
+    "score": 0.82,
+    "threshold": 0.65,
+    "timestamp": "2026-06-25T15:43:05.261234+00:00"
+  },
+  "last_error": null
+}
+```
+
+ASR health:
+
+```json
+{
+  "status": "ok",
+  "service": "asr",
+  "runtime": "breeze_asr_25",
+  "model": "../../models/breeze-asr-26-ct2-int8",
+  "sourceModel": "MediaTek-Research/Breeze-ASR-26",
+  "engine": "faster-whisper",
+  "loaded": true
+}
+```
+
+TTS model list:
+
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "MediaTek-Research/BreezyVoice",
+      "object": "model",
+      "created": 0,
+      "owned_by": "local"
+    }
+  ]
+}
+```
+
+Redpanda readiness:
+
+```json
+{ "status": "ready" }
+```
+
+Voice-agent readiness:
+
+```json
+{
+  "status": "ok",
+  "service": "voice-agent-server",
+  "api": {
+    "endpoint": "http://localhost:3010",
+    "ready": true,
+    "healthy": true,
+    "latencyMs": 1,
+    "error_code": null
+  },
+  "llm": {
+    "provider": "ollama_native",
+    "model": "gemma4:e4b",
+    "mode": "live",
+    "endpoint": "http://localhost:11434",
+    "ready": true,
+    "healthy": true,
+    "computeBackend": "gpu",
+    "gpuRequired": true,
+    "cpuOffload": false,
+    "cpuFallbackAllowed": false,
+    "acceptanceEligible": true
+  }
+}
+```
+
+### Live API Command
+
+The API server was restarted after the wake-greeting prompt update so the user
+test endpoint uses the current code.
+
+```bash
+PORT=3010 \
+PUBLIC_REPORT_BASE_URL=http://localhost:3010/api/v1/reports \
+VOICE_PROVIDER_MODE=live \
+ASR_PROVIDER=faster_whisper_breeze_asr_26 \
+ASR_SERVICE_URL=http://localhost:8001 \
+ASR_HEALTH_PATH=/health \
+ASR_TRANSCRIBE_PATH=/asr \
+ASR_MODEL=Breeze-ASR-26-CT2-int8 \
+ASR_COMPUTE_BACKEND=gpu \
+ASR_DEVICE=cuda \
+ASR_COMPUTE_TYPE=int8 \
+ASR_CPU_OFFLOAD=false \
+ASR_ALLOW_CPU_FALLBACK=false \
+ASR_LANGUAGE=zh \
+LLM_PROVIDER=ollama_native \
+LLM_COMPUTE_BACKEND=gpu \
+LLM_DEVICE=cuda \
+LLM_CPU_OFFLOAD=false \
+LLM_ALLOW_CPU_FALLBACK=false \
+LLM_BASE_URL=http://localhost:11434 \
+LLM_MODEL=gemma4:e4b \
+LLM_TEMPERATURE=0.3 \
+OLLAMA_THINK=false \
+LLM_MAX_TOKENS=80 \
+TTS_PROVIDER=breezyvoice_default \
+TTS_COMPUTE_BACKEND=gpu \
+TTS_DEVICE=cuda \
+TTS_CPU_OFFLOAD=false \
+TTS_ALLOW_CPU_FALLBACK=false \
+BREEZYVOICE_BASE_URL=http://localhost:9003/v1 \
+BREEZYVOICE_MODEL=MediaTek-Research/BreezyVoice \
+TTS_VOICE=default \
+BREEZYVOICE_VOICE_ID=default \
+REDPANDA_BOOTSTRAP_SERVERS=localhost:9092 \
+REDPANDA_ADMIN_URL=http://localhost:9644 \
+RERANKER_REQUIRED_FOR_LIVE_ACCEPTANCE=false \
+corepack pnpm --filter @shc/api-server start
+```
+
+Voice-agent command:
+
+```bash
+VOICE_AGENT_PORT=3011 \
+API_BASE_URL=http://localhost:3010 \
+LLM_PROVIDER=ollama_native \
+LLM_COMPUTE_BACKEND=gpu \
+LLM_DEVICE=cuda \
+LLM_CPU_OFFLOAD=false \
+LLM_ALLOW_CPU_FALLBACK=false \
+LLM_BASE_URL=http://localhost:11434 \
+LLM_MODEL=gemma4:e4b \
+LLM_REQUEST_TIMEOUT_MS=30000 \
+corepack pnpm --filter @shc/voice-agent-server start
+```
+
+Kiosk command:
+
+```bash
+VITE_API_BASE_URL=http://localhost:3010 \
+VITE_WAKE_WORD_SERVICE_URL=http://localhost:8013 \
+VITE_WAKE_WORD_ENABLED=true \
+VITE_VOICE_MAX_UTTERANCE_MS=8000 \
+corepack pnpm --filter @shc/kiosk-web dev -- --host 127.0.0.1 --port 5176
+```
+
+### Live Acceptance Check
+
+Command:
+
+```bash
+API_BASE_URL=http://localhost:3010 \
+VOICE_AGENT_SERVER_URL=http://localhost:3011 \
+corepack pnpm live:check
+```
+
+Result: passed.
+
+```json
+{
+  "startedAt": "2026-06-25T15:50:04.856Z",
+  "endedAt": "2026-06-25T15:50:05.769Z",
+  "code": 0,
+  "eligible": true,
+  "providers": {
+    "asr": {
+      "provider": "faster_whisper_breeze_asr_26",
+      "model": "Breeze-ASR-26-CT2-int8",
+      "mode": "live",
+      "endpoint": "http://localhost:8001",
+      "ready": true,
+      "healthy": true,
+      "latencyMs": 2,
+      "computeBackend": "gpu",
+      "gpuRequired": true,
+      "cpuOffload": false,
+      "cpuFallbackAllowed": false,
+      "acceptanceEligible": true
+    },
+    "llm": {
+      "provider": "ollama_native",
+      "model": "gemma4:e4b",
+      "mode": "live",
+      "endpoint": "http://localhost:11434",
+      "ready": true,
+      "healthy": true,
+      "latencyMs": 357,
+      "computeBackend": "gpu",
+      "gpuRequired": true,
+      "cpuOffload": false,
+      "cpuFallbackAllowed": false,
+      "acceptanceEligible": true
+    },
+    "tts": {
+      "provider": "breezyvoice_default",
+      "model": "MediaTek-Research/BreezyVoice",
+      "mode": "live",
+      "endpoint": "http://localhost:9003/v1",
+      "ready": true,
+      "healthy": true,
+      "latencyMs": 1,
+      "computeBackend": "gpu",
+      "gpuRequired": true,
+      "cpuOffload": false,
+      "cpuFallbackAllowed": false,
+      "acceptanceEligible": true
+    },
+    "reranker": {
+      "provider": "qwen3_reranker_0_6b",
+      "model": "Qwen3-Reranker-0.6B",
+      "mode": "unavailable",
+      "endpoint": "http://localhost:8014",
+      "ready": false,
+      "healthy": false,
+      "lastError": "TypeError",
+      "fallback": "deterministic mapping + confirmation / touch fallback",
+      "acceptanceEligible": false
+    },
+    "redpanda": {
+      "provider": "redpanda",
+      "mode": "live",
+      "endpoint": "http://localhost:9644",
+      "ready": true,
+      "healthy": true,
+      "latencyMs": 1,
+      "acceptanceEligible": true
+    }
+  },
+  "voiceAgent": {
+    "status": "ok",
+    "service": "voice-agent-server",
+    "api": {
+      "endpoint": "http://localhost:3010",
+      "ready": true,
+      "healthy": true,
+      "latencyMs": 1
+    },
+    "llm": {
+      "provider": "ollama_native",
+      "model": "gemma4:e4b",
+      "mode": "live",
+      "endpoint": "http://localhost:11434",
+      "ready": true,
+      "healthy": true,
+      "acceptanceEligible": true
+    }
+  }
+}
+```
+
+Scope note: reranker was optional for this live acceptance run through
+`RERANKER_REQUIRED_FOR_LIVE_ACCEPTANCE=false`; deterministic mapping,
+confirmation, and touch fallback remained the active scope-control path.
+
+### Direct API Smoke
+
+Direct API smoke sequence:
+
+```text
+POST /api/v1/agent-sessions
+POST /api/v1/agent-turns/respond with purpose=wake_greeting
+POST /api/v1/agent-turns/respond with question_name=phq9_01
+POST /api/v1/agent-turns/tts with the greeting text
+```
+
+Result:
+
+```json
+{
+  "started": "2026-06-25T15:47:23.477Z",
+  "ended": "2026-06-25T15:47:32.791Z",
+  "agentSessionId": "4007a499-f113-4288-9b68-c04235e084e9",
+  "greetingProvider": "ollama_native",
+  "greetingModel": "gemma4:e4b",
+  "greetingSentenceCountApprox": 3,
+  "greetingHasEmoji": false,
+  "greeting": "您好，我是 Smart Health Cabin 的語音導引。很高興能協助您完成問卷，請不用擔心，您也可以隨時使用觸控螢幕來作答喔。我們慢慢來，沒關係的。",
+  "firstQuestionProvider": "ollama_native",
+  "firstQuestionModel": "gemma4:e4b",
+  "firstQuestion": "您好，這題想了解的是在過去兩週的時間內，您做事情時是否感到提不起勁或沒有樂趣。請您參考畫面上的四個選項：「完全沒有」、「幾天」、「一半以上的天數」和「幾乎每天」，選擇最符合您狀況的選項即可。",
+  "ttsProvider": "breezyvoice_default",
+  "ttsModel": "MediaTek-Research/BreezyVoice",
+  "ttsAudioPrefix": "data:audio/wav;base64,UklGRkb+",
+  "ttsAudioLength": 960638
+}
+```
+
+Interpretation:
+
+- The LLM-generated wake greeting obeyed the 3-sentence cap.
+- The greeting contained no emoji.
+- The first PHQ-9 question guidance was generated by the live LLM provider.
+- BreezyVoice returned a playable WAV data URL for the greeting.
+
+### Browser Request-Level Smoke
+
+Browser validation used Playwright against:
+
+```text
+http://localhost:5176/
+```
+
+The check clicked the dev-only `模擬喚醒` button and waited until the first
+question TTS request appeared, or until a 50-second timeout.
+
+Result:
+
+```json
+{
+  "startedAt": "2026-06-25T15:50:17.951Z",
+  "endedAt": "2026-06-25T15:50:46.882Z",
+  "url": "http://localhost:5176/",
+  "wakeGreetingRequestSeen": true,
+  "questionRequestSeen": true,
+  "ttsRequestCount": 2,
+  "respondRequestCount": 2,
+  "errors": []
+}
+```
+
+Observed request sequence:
+
+```json
+[
+  {
+    "at": "2026-06-25T15:50:18.871Z",
+    "url": "http://localhost:3010/api/v1/agent-turns/respond",
+    "postData": "{\"agent_session_id\":\"bc1cde15-a483-484c-9de7-dd5edb73620e\",\"purpose\":\"wake_greeting\"}"
+  },
+  {
+    "at": "2026-06-25T15:50:19.823Z",
+    "url": "http://localhost:3010/api/v1/agent-turns/tts",
+    "postData": "{\"agent_session_id\":\"bc1cde15-a483-484c-9de7-dd5edb73620e\",\"text\":\"您好，我是 Smart Health Cabin 的語音導引。很高興能協助您完成這份問卷，請不用擔心，您也可以隨時使用觸控螢幕來作答喔。我們慢慢來，您準備好了嗎？\"}"
+  },
+  {
+    "at": "2026-06-25T15:50:45.659Z",
+    "url": "http://localhost:3010/api/v1/agent-turns/respond",
+    "postData": "{\"agent_session_id\":\"bc1cde15-a483-484c-9de7-dd5edb73620e\",\"question_name\":\"phq9_01\"}"
+  },
+  {
+    "at": "2026-06-25T15:50:46.633Z",
+    "url": "http://localhost:3010/api/v1/agent-turns/tts",
+    "postData": "{\"agent_session_id\":\"bc1cde15-a483-484c-9de7-dd5edb73620e\",\"question_name\":\"phq9_01\",\"text\":\"這題是在詢問您過去兩週做事情時，是否會感到提不起勁或缺乏樂趣。請您回想一下這個時間範圍的狀況，然後從畫面上的四個選項中選擇最符合您情況的一個即可。\"}"
+  }
+]
+```
+
+Interpretation:
+
+- The browser UI loaded from the current test URL.
+- The wake event now asks the API for a dedicated `wake_greeting` turn before
+  requesting the first question.
+- The browser sent two TTS requests in order: greeting first, first question
+  second.
+- No browser console or page errors were observed.
+
+### Focused Code Checks
+
+Commands:
+
+```bash
+corepack pnpm test apps/api-server/src/services/questionnaireService.test.ts apps/kiosk-web/src/features/avatar/avatarStateMachine.test.ts apps/kiosk-web/src/features/avatar/voiceQuestionnaireController.test.ts packages/voice-safety-core/src/voice-safety-core.test.ts
+corepack pnpm --filter @shc/api-server typecheck
+corepack pnpm --filter @shc/kiosk-web typecheck
+corepack pnpm --filter @shc/voice-safety-core typecheck
+git diff --check
+```
+
+Observed results:
+
+```text
+Focused Vitest: 4 files passed, 59 tests passed.
+@shc/api-server typecheck: passed.
+@shc/kiosk-web typecheck: passed.
+@shc/voice-safety-core typecheck: passed.
+git diff --check: passed.
+```
+
+### Result And Scope Controls
+
+Confirmed capability:
+
+```text
+wake detected / simulated
+-> LLM-generated greeting, <= 3 sentences, no emoji in observed runs
+-> BreezyVoice TTS for greeting
+-> LLM-generated first-question oral guidance
+-> BreezyVoice TTS for first question
+```
+
+The run is suitable for local user testing at:
+
+```text
+http://localhost:5176/
+```
+
+Scope controls:
+
+- The wakeword sidecar was live and listening for `你好小慧`; the browser smoke
+  used the dev-only simulated wake button to make the request sequence
+  deterministic.
+- This entry validates the wake greeting and first-question TTS path. The full
+  real-room microphone path still needs a physical spoken wakeword and spoken
+  answer pass on the target kiosk hardware.
+- Questionnaire writes remain gated by deterministic option mapping,
+  confirmation, and touch fallback. The run does not diagnose, change scoring,
+  or write unmapped speech.
+
+Next validation action:
+
+```text
+Run the same flow in the visible browser with physical microphone permission:
+say "你好小慧" -> hear greeting -> hear first question -> speak an answer
+-> confirm mapping -> hear <= 2 sentence answer summary plus next question.
+```
 | `apps/api-server/src/services/questionnaireService.ts` | Live LLM uses `LLM_TEMPERATURE ?? 0.3`; live TTS uses BreezyVoice default voice |
 
 ## Experiment Notes
@@ -559,4 +1107,3 @@ corepack pnpm live:check
    `/tmp/smart-health-cabin-answer-daily.wav`.
 10. Click dev-only `模擬喚醒` and verify the UI advances across at least two
     PHQ-9 questions while TTS requests contain summary and feedback.
-

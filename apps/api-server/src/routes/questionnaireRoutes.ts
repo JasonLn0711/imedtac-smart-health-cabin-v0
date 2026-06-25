@@ -159,7 +159,7 @@ export async function registerQuestionnaireRoutes(
     }
   });
 
-  app.post<{ Body: { agent_session_id?: string; session_id?: string; question_name?: string } }>(
+  app.post<{ Body: { agent_session_id?: string; session_id?: string; question_name?: string; purpose?: string } }>(
     "/api/v1/agent-turns/respond",
     async (request, reply) => {
       try {

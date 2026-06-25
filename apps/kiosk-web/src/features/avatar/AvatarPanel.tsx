@@ -76,6 +76,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
   const currentQuestionRef = useRef(currentQuestion);
   const continuousVoiceRef = useRef(false);
   const agentSessionIdRef = useRef<string | null>(null);
+  const wakeIntroPlayingRef = useRef(false);
   const stopReasonRef = useRef<StopReason | null>(null);
   const cancelRecordingRef = useRef(false);
   const cleanupRef = useRef<(() => void) | null>(null);
@@ -117,11 +118,8 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
         setContinuousVoiceActive(true);
         continuousVoiceRef.current = true;
         setTurnCount(0);
-        setMessage("偵測到喚醒詞，開始連續語音偵測。");
-        startRecording({ continuous: true }).catch(() => {
-          send({ type: "VOICE_SERVICE_DOWN" });
-          setMessage("語音流程已交由手動開始與觸控填答接續。");
-        });
+        setMessage("偵測到喚醒詞，正在以語音開始問卷。");
+        void speakWakeIntroThenRecord();
       }
     };
     socket.onerror = () => {
@@ -159,6 +157,39 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
     const session = await createAgentSession(`sess_kiosk_voice_${Date.now()}`);
     agentSessionIdRef.current = session.agent_session_id;
     return session.agent_session_id;
+  }
+
+  async function speakWakeIntroThenRecord() {
+    if (wakeIntroPlayingRef.current) {
+      return;
+    }
+    wakeIntroPlayingRef.current = true;
+    try {
+      const question = currentQuestionRef.current;
+      const agentSessionId = await ensureAgentSession();
+      const greeting = await buildGuidanceTurn({ agentSessionId, purpose: "wake_greeting" });
+      const greetingText =
+        greeting.guidance ??
+        "您好，我是慧誠智醫健康互動助理。接下來我會用語音帶您完成問卷，也可以隨時改用觸控填答。";
+      setMessage(greetingText);
+      await playAudioDataUrl((await synthesizeTtsTurn({ agentSessionId, text: greetingText })).audio_data_url);
+
+      if (question) {
+        const guidance = await buildGuidanceTurn({ agentSessionId, questionName: question.name });
+        const questionText = guidance.guidance ?? `接下來請回答：「${question.title}」。`;
+        setMessage(questionText);
+        await playAudioDataUrl(
+          (await synthesizeTtsTurn({ agentSessionId, questionName: question.name, text: questionText })).audio_data_url
+        );
+      }
+
+      await startRecording({ continuous: true });
+    } catch (error) {
+      send({ type: "VOICE_SERVICE_DOWN" });
+      setMessage(error instanceof Error ? error.message : "語音開場失敗，可改用手動開始或觸控填答。");
+    } finally {
+      wakeIntroPlayingRef.current = false;
+    }
   }
 
   function restartContinuousListening(startEvent: StartRecordingEvent = "MANUAL_START") {
