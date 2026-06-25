@@ -39,6 +39,15 @@ describe("Avatar voice entry state machine", () => {
     expect(state).toBe("retry_or_touch");
   });
 
+  it("routes safety-sensitive mapping to staff review before writes", () => {
+    let state = nextAvatarState("transcribing", "ASR_DONE");
+    state = nextAvatarState(state, "ASR_DONE");
+    state = nextAvatarState(state, "ASR_DONE");
+    state = nextAvatarState(state, "STAFF_REVIEW");
+
+    expect(state).toBe("staff_review");
+  });
+
   it("returns to recording after a continuous voice reply", () => {
     let state = nextAvatarState("recording_answer", "VAD_END_SILENCE");
     state = nextAvatarState(state, "TRANSCRIBE");

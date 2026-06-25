@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { buildAsrHypothesisSet, collectHotwords, getDomainPacks, normalizeTranscript, processVoiceEvidence } from ".";
+import {
+  buildAsrHypothesisSet,
+  collectHotwords,
+  domainPackIdsForContext,
+  getDomainPacks,
+  normalizeTranscript,
+  processVoiceEvidence
+} from ".";
 
 const phq9Choices = [
   { value: 0, text: "完全沒有" },
@@ -101,6 +108,30 @@ describe("voice-safety-core", () => {
     expect(measurement.semanticFrame.questionnaireAnswerCandidates).toEqual([]);
     expect(faq.semanticFrame.intent).toBe("command_or_faq");
     expect(faq.semanticFrame.questionnaireAnswerCandidates).toEqual([]);
+  });
+
+  it("selects domain packs by questionnaire or future module context", () => {
+    expect(domainPackIdsForContext({ questionnaireCode: "phq9" })).toContain("phq9_zh_tw");
+    expect(domainPackIdsForContext({ questionnaireCode: "hpa_adult_preventive" })).toContain(
+      "hpa_adult_preventive_zh_tw"
+    );
+    expect(getDomainPacks(["vision_screening_phase2", "hearing_screening_phase2", "kiosk_faq"]).map((pack) => pack.domainId)).toEqual([
+      "vision_screening_phase2",
+      "hearing_screening_phase2",
+      "kiosk_faq"
+    ]);
+  });
+
+  it("keeps kiosk FAQ commands outside questionnaire answer writes", () => {
+    const result = processVoiceEvidence({
+      rawText: "我不想錄音改用觸控",
+      asrConfidence: 0.92,
+      domainPackIds: ["kiosk_faq"]
+    });
+
+    expect(result.semanticFrame.intent).toBe("command_or_faq");
+    expect(result.semanticFrame.questionnaireAnswerCandidates).toEqual([]);
+    expect(result.routingDecision).toBe("medium_confidence_needs_confirmation");
   });
 
   it("routes empty or no-speech ASR as no-speech retry", () => {
