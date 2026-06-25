@@ -4,7 +4,7 @@ title: "Smart Health Cabin MVP Fast-March Sprint Plan"
 date: 2026-06-24
 topic: smart-health-cabin
 type: implementation-schedule-reference
-status: reference
+status: superseded
 source:
   - ./MVP-SYSTEM-SPEC.md
   - ../../workstreams/smart-health-cabin/2026-06-24-mvp-monorepo-redpanda-architecture-note.md
@@ -14,6 +14,23 @@ source:
 ---
 
 # Smart Health Cabin MVP Fast-March Sprint Plan
+
+## Superseded By 2026-06-25 Pivot
+
+This four-module fast-march plan is superseded for current MVP execution by:
+
+```text
+docs/specs/MVP-QUESTIONNAIRE-AVATAR-SPRINT-PLAN.md
+```
+
+The historical value of this file is preserving the earlier `10` working-day
+system-spine plan. The active July MVP now focuses on:
+
+```text
+open questionnaire platform + ASR/LLM/TTS Avatar Agent
+```
+
+Vision and hearing move to Phase 2.
 
 ## Record Purpose
 
@@ -181,6 +198,15 @@ lint
 typecheck
 unit test
 build
+```
+
+Branch and review rule:
+
+```text
+main is protected for delivery work.
+Feature branches enter through PR.
+Each PR runs CI before merge.
+Schema changes include a migration.
 ```
 
 Acceptance:
@@ -743,6 +769,37 @@ Acceptance:
 | `2026-07-03` Fri | Sprint 3 D2 | kiosk answering, questionnaire_result, report |
 | `2026-07-06` Mon | Sprint 4 D1 | deterministic Avatar guide |
 | `2026-07-07` Tue | Sprint 4 D2 | Redpanda outbox-worker and E2E demo |
+
+## Planning Mirror And Devlog Map
+
+Canonical implementation detail stays in this repo. The planning repo records
+only dates, capacity, status, blockers, validation, and next action.
+
+| Planning week | Dates | Smart Health Cabin focus | Planning mirror |
+| --- | --- | --- | --- |
+| W26 | `2026-06-24` to `2026-06-28` | Sprint 0 and Sprint 1 D1 | `../planning-everything-track/weeks/2026-W26/weekly-plan.md` |
+| W27 | `2026-06-29` to `2026-07-05` | Sprint 1 D2, Sprint 2, Sprint 3 | `../planning-everything-track/weeks/2026-W27/weekly-plan.md` |
+| W28 | `2026-07-06` to `2026-07-12` | Sprint 4 and E2E demo gate | `../planning-everything-track/weeks/2026-W28/weekly-plan.md` |
+
+Daily closeout file:
+
+```text
+docs/devlog/YYYY-MM-DD.md
+```
+
+Each daily devlog entry records:
+
+```text
+1. sprint / day
+2. planned finish line
+3. actual outcome
+4. validation command or evidence
+5. blocker or scope cut
+6. next day handoff
+```
+
+Planning mirrors should never claim implementation progress from this schedule
+alone. They should cite the day's devlog, commit, validation, or blocker.
 
 ## Deferred To Sprint 5+
 

@@ -43,6 +43,31 @@ Data integration remains a cross-module layer: integrated report, QR Code,
 HIS/API/JSON, database, and CMS connection. It is important for delivery, but
 it is not counted as a fifth user-facing module in the current meeting record.
 
+## 2026-06-25 MVP Pivot
+
+The 多寶 / Jason LINE follow-up narrows the Phase 1 MVP to:
+
+```text
+open questionnaire platform + ASR/LLM/TTS Avatar Agent
+```
+
+This pivot keeps the module architecture but changes delivery order. The active
+show path now proves questionnaire publishing, PHQ-9 rendering, response
+persistence, scoring/safety flags, public report/QR, and voice Avatar guidance.
+Vision and hearing are Phase 2 planned modules.
+
+Canonical pivot note:
+
+```text
+2026-06-25-questionnaire-avatar-mvp-pivot.md
+```
+
+Active sprint plan:
+
+```text
+../../docs/specs/MVP-QUESTIONNAIRE-AVATAR-SPRINT-PLAN.md
+```
+
 ## 2026-06-24 Open-Source Module Research
 
 The active research packet asks whether open-source GitHub projects can be
@@ -95,7 +120,9 @@ missing. Keep future Smart Health Cabin material here rather than inside
 | `2026-06-24-open-source-module-research-plan.md` | Open-source module adaptation research plan. |
 | `2026-06-24-mvp-monorepo-redpanda-architecture-note.md` | Reference architecture note for MVP monorepo, modular monolith, PostgreSQL, Redpanda, event contracts, and future repo-splitting gates. |
 | `../../docs/specs/MVP-SYSTEM-SPEC.md` | Full-system MVP reference spec for repo strategy, apps, modules, PostgreSQL, Redpanda, API, deployment, versioning, tests, and acceptance gates. |
-| `../../docs/specs/MVP-FAST-MARCH-SPRINT-PLAN.md` | Fast-march Sprint 0-4 reference plan from `2026-06-24` to `2026-07-07`, with two working days per sprint and explicit deferred scope. |
+| `../../docs/specs/MVP-FAST-MARCH-SPRINT-PLAN.md` | Superseded fast-march Sprint 0-4 reference plan for the earlier four-module path. |
+| `../../docs/specs/MVP-QUESTIONNAIRE-AVATAR-SPRINT-PLAN.md` | Active revised sprint plan for questionnaire + Avatar MVP v0.1. |
+| `2026-06-25-questionnaire-avatar-mvp-pivot.md` | Decision record for moving vision/hearing to Phase 2 and prioritizing questionnaire + Avatar. |
 | `../../research-packets/2026-06-24-smart-health-cabin-module-research/README.md` | Independent research packets for hearing, vision, questionnaire, live Avatar, and module event-layer architecture. |
 | `hpa-adult-preventive-health-questionnaire-mvp-design-note.md` | Expert record and MVP design note for using HPA adult preventive health fields plus WHO STEPS and standardized modules. |
 | `meeting-question-bank.md` | Questions to bring to Johnny, Jason Miao, imedtac engineering, and clinical/content owners. |

@@ -36,6 +36,17 @@ Jason's question:
 
 MVP 版本請用單一 monorepo，不要把四個模組拆成四個獨立 repo。
 
+2026-06-25 update: Phase 1 delivery no longer tries to build all four modules
+at once. The current MVP spine is:
+
+```text
+open questionnaire platform + ASR/LLM/TTS Avatar Agent
+```
+
+Vision and hearing stay in the module registry as Phase 2 planned modules.
+This preserves the architecture without spending the first implementation cycle
+on hardware calibration and measurement wording risk.
+
 但 repo 內部要把程式碼邊界切清楚：四個模組可以在同一個 repo 內獨立
 開發、獨立測試、獨立啟用、獨立升級。現在需要的是 modular monolith /
 modular monorepo，不是 microservices，也不是多 repo。
@@ -215,12 +226,18 @@ System name:
 Smart Health Cabin MVP
 ```
 
+Current Phase 1 name:
+
+```text
+Smart Health Cabin MVP v0.1: Questionnaire + Avatar Agent
+```
+
 Core purpose:
 
 ```text
-讓民眾在智慧健康倉內，自主完成簡易視力、聽力、問卷與 Avatar 導引流程，
-並產生結構化健康參考報告。系統保留未來 HIS JSON API 串接能力，但 MVP
-不直接與正式 HIS 寫入整合。
+讓民眾在智慧健康倉內，先完成可配置健康問卷與 Avatar 語音導引流程，
+並產生結構化健康參考報告。系統保留未來視力、聽力與 HIS JSON API
+串接能力，但 Phase 1 MVP 不直接實作正式視聽力量測或正式 HIS 寫入。
 ```
 
 Scope controls:
@@ -661,30 +678,38 @@ Production minimum:
 
 ## 12. Iteration Plan
 
-The active compressed schedule is the fast-march thin-slice plan:
+The active compressed schedule is now the questionnaire + Avatar sprint plan:
+
+```text
+docs/specs/MVP-QUESTIONNAIRE-AVATAR-SPRINT-PLAN.md
+```
+
+The earlier four-module fast-march plan remains preserved as historical
+reference in:
 
 ```text
 docs/specs/MVP-FAST-MARCH-SPRINT-PLAN.md
 ```
 
-This replaces the earlier broad multi-week estimate with a `10` working-day
-thin-slice MVP path. The goal is not to complete the full product. The goal is
-to make the system spine runnable:
+The active goal is not to complete the full product. The goal is to make the
+questionnaire + Avatar spine runnable:
 
 ```text
-session -> enabled modules -> questionnaire -> vision -> hearing -> Avatar guide
--> report -> QR Code -> PostgreSQL save -> outbox -> Redpanda event
+session -> published questionnaire -> PHQ-9 response -> score/safety flag
+-> Avatar voice guidance -> report -> QR Code -> PostgreSQL -> outbox
+-> Redpanda event
 ```
 
-Fast-march calendar:
+Active calendar:
 
 | Sprint | Dates | Working days | Finish line |
 | --- | --- | ---: | --- |
-| Sprint 0 | `2026-06-24` to `2026-06-25` | 2 | monorepo, app skeletons, DB migration, API skeleton, CI |
-| Sprint 1 | `2026-06-26` + `2026-06-29` | 2 | session, module registry, module_run lifecycle, report skeleton, QR token |
-| Sprint 2 | `2026-06-30` to `2026-07-01` | 2 | vision and hearing thin-slice results plus report integration |
-| Sprint 3 | `2026-07-02` to `2026-07-03` | 2 | questionnaire CMS thin slice and kiosk answering |
-| Sprint 4 | `2026-07-06` to `2026-07-07` | 2 | deterministic Avatar guide, outbox-worker, Redpanda event visibility, E2E demo |
+| Sprint 0 | `2026-06-25` to `2026-06-26` | 2 | monorepo + questionnaire skeleton |
+| Sprint 1 | `2026-06-29` to `2026-06-30` | 2 | SurveyJS + PHQ-9 seed + kiosk answer save |
+| Sprint 2 | `2026-07-01` to `2026-07-02` | 2 | questionnaire CMS + versioning + report |
+| Sprint 3 | `2026-07-03` + `2026-07-06` | 2 | ASR + LLM + TTS voice Agent MVP |
+| Sprint 4 | `2026-07-07` to `2026-07-08` | 2 | Avatar UI + voice-guided questionnaire + Redpanda outbox |
+| Sprint 5 | `2026-07-09` to `2026-07-10` | 2 | E2E hardening + roles + deployment docs |
 
 Operating controls:
 
@@ -693,18 +718,16 @@ Operating controls:
 2. Keep PostgreSQL as the source of truth.
 3. Keep Redpanda outside the kiosk critical path.
 4. Use one report_section shape for all modules.
-5. Keep Avatar deterministic in Sprint 4.
-6. Defer calibration, complex CMS, HIS adapter, Kubernetes, full FHIR mapping,
-   real AI Avatar, and full clinical-validation scope to Sprint 5+.
+5. Keep public PHQ-9 output non-diagnostic and staff-review oriented.
+6. Defer vision, hearing, HIS adapter, Kubernetes, full FHIR mapping, and full
+   clinical-validation scope.
 ```
 
 Calendar source control:
 
 ```text
-The workday assumptions are based on the 2026 government administrative
-calendar published by Taiwan DGPA. The planning window excludes 2026-06-27 to
-2026-06-28 and 2026-07-04 to 2026-07-05 weekends. 2026-06-26 is treated as a
-working day in this schedule.
+The planning window excludes 2026-06-27 to 2026-06-28 and 2026-07-04 to
+2026-07-05 weekends. 2026-06-26 is treated as a working day in this schedule.
 ```
 
 Sprint 5+ backlog:
@@ -714,7 +737,7 @@ formal vision calibration
 formal hearing calibration
 complex questionnaire rule editor
 review workflow
-real AI Avatar conversation
+autonomous clinical conversation
 HIS adapter
 Kubernetes
 full FHIR mapping

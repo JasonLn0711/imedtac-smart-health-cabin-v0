@@ -29,6 +29,15 @@ Data integration is a cross-module layer: integrated report, QR Code report
 access, structured JSON export, database/CMS connection, and future HIS-ready
 planning.
 
+The `2026-06-25` 多寶 / Jason LINE follow-up narrows Phase 1 MVP delivery to:
+
+```text
+open questionnaire platform + ASR/LLM/TTS Avatar Agent
+```
+
+Vision and hearing remain planned modules, but move to Phase 2 after the
+questionnaire + Avatar demo path works.
+
 ## 2026-06-24 Module Research Packet
 
 The active research packet asks whether open-source GitHub projects can be
@@ -38,10 +47,10 @@ first, with Kafka-like infrastructure reserved for replay, multiple consumers,
 durable ordering, or cross-service scale.
 
 The `2026-06-24` monorepo / Redpanda architecture note is the canonical record
-of today's repo-splitting question, engineering answer, and future service-split
+of the repo-splitting question, engineering answer, and future service-split
 activation gates. The MVP system spec expands that note into an implementation
-reference. The fast-march sprint plan compresses Sprint 0-4 into a `10`
-working-day thin-slice MVP schedule from `2026-06-24` to `2026-07-07`.
+reference. The `2026-06-25` questionnaire + Avatar sprint plan is the active
+Phase 1 delivery route.
 
 Packet root:
 
@@ -51,6 +60,10 @@ research-packets/2026-06-24-smart-health-cabin-module-research/
 
 ## Current MVP Direction
 
+The active MVP direction is no longer the full four-module thin slice. The
+current MVP should first prove that a hospital/admin can publish a questionnaire
+and that the kiosk can collect answers with voice Avatar guidance.
+
 The questionnaire MVP should not invent a new medical questionnaire.
 
 Use:
@@ -59,10 +72,21 @@ Use:
   backbone;
 - WHO STEPS core simplified public-health risk-factor fields as the
   international backbone;
-- PHQ-2 as the first mental-health screen;
-- basic measurement summaries for height, weight, waist, blood pressure,
-  vision, and hearing;
+- PHQ-9 as the first implemented demo seed;
+- vision and hearing as Phase 2 planned modules;
 - source-backed, non-diagnostic report wording.
+
+First implemented seed:
+
+```text
+modules/questionnaire/seed/phq9.zh-TW.surveyjs.json
+```
+
+Canonical revised sprint plan:
+
+```text
+docs/specs/MVP-QUESTIONNAIRE-AVATAR-SPRINT-PLAN.md
+```
 
 The MVP report should provide health measurement summary, self-assessment
 summary, health behavior reminders, and staff / healthcare-professional follow
@@ -78,7 +102,13 @@ level, or live HIS writeback claims.
 | `workstreams/smart-health-cabin/post-meeting-decision-log.md` | Confirmed facts, decisions, open questions, and next actions. |
 | `workstreams/smart-health-cabin/hpa-adult-preventive-health-questionnaire-mvp-design-note.md` | Expert note and MVP design rules for the questionnaire path. |
 | `docs/specs/MVP-SYSTEM-SPEC.md` | Full-system MVP reference spec for monorepo structure, four modules, API, PostgreSQL, Redpanda, deployment, versioning, tests, and acceptance gates. |
-| `docs/specs/MVP-FAST-MARCH-SPRINT-PLAN.md` | Ten-working-day thin-slice Sprint 0-4 schedule for system skeleton, module lifecycle, vision/hearing, questionnaire, Avatar guide, and Redpanda events. |
+| `docs/specs/MVP-FAST-MARCH-SPRINT-PLAN.md` | Superseded historical ten-working-day four-module plan. |
+| `docs/specs/MVP-QUESTIONNAIRE-AVATAR-SPRINT-PLAN.md` | Active revised sprint plan for questionnaire platform plus ASR/LLM/TTS Avatar Agent. |
+| `docs/devlog/README.md` | Daily sprint closeout convention for actual results, validation, blockers, and handoff. |
+| `docs/devlog/2026-06-25.md` | Pivot/source devlog for the questionnaire + Avatar MVP route, PHQ-9 seed, and planning mirror. |
+| `workstreams/smart-health-cabin/2026-06-25-questionnaire-avatar-mvp-pivot.md` | Decision record for moving vision/hearing to Phase 2 and making questionnaire + Avatar the MVP spine. |
+| `modules/questionnaire/seed/phq9.zh-TW.surveyjs.json` | First SurveyJS questionnaire seed. |
+| `modules/questionnaire/scoring/phq9.public-scoring-config.json` | PHQ-9 public report and safety-flag scoring configuration. |
 | `workstreams/smart-health-cabin/module-a-vision-hearing-discovery.md` | Hearing and vision discovery constraints. |
 | `workstreams/smart-health-cabin/module-b-questionnaire-triage-discovery.md` | Questionnaire/CMS/source-governance discovery. |
 | `workstreams/smart-health-cabin/module-c-avatar-interaction-discovery.md` | Avatar voice interaction discovery. |
