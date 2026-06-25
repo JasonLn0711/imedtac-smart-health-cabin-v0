@@ -412,7 +412,7 @@ LLM_MAX_TOKENS=80
 Reason:
 
 ```text
-This produced complete Traditional Chinese guidance in 3 of 3 baseline runs, with 31-54 generated tokens and 631-892ms latency. It avoids hidden-reasoning budget loss and keeps the voice interaction responsive.
+This produced complete Traditional Chinese guidance in the original one-sentence experiment and remains the selected setting after the follow-up 1-5 sentence threshold experiment. The follow-up found 72 tokens as the lowest passing cap across short general, sensitive, and longer general prompts; 80 keeps a small operating margin while avoiding hidden-reasoning budget loss and preserving voice interaction responsiveness.
 ```
 
 If a future experiment explicitly requires thinking mode:
@@ -436,10 +436,11 @@ the same output-token budget. With `max_tokens=80`, Gemma 4 E4B spent the full
 budget in thinking mode, then stopped with `finish_reason=length` before the
 assistant `content` field received final text.
 
-The `80` cap was not a model limit. It was the application request value chosen
-for a one-sentence guidance task. That value is reasonable only when the model
-emits directly to visible content. It is too small when thinking mode is enabled
-and hidden reasoning tokens share the same completion budget.
+The `80` cap is not a model limit. It is the application request value selected
+for the questionnaire-guidance task. It is reasonable when the model emits
+directly to visible content with `think:false`, including the current 1-5
+sentence guidance prompt. It is too small when thinking mode is enabled and
+hidden reasoning tokens share the same completion budget.
 
 ## Runtime Decision
 
@@ -459,7 +460,7 @@ Native Ollama request shape:
 {
   "model": "gemma4:e4b",
   "messages": [
-    {"role": "system", "content": "你是 Smart Health Cabin 的問卷語音導引。只用繁體中文，回答一句，協助使用者理解題目與選項。不得診斷、不得改變問卷分數、不得替使用者作答。"},
+    {"role": "system", "content": "你是 Smart Health Cabin 的問卷語音導引。只用繁體中文，回答 1 到 5 句話。你要協助使用者理解題目、回想時間範圍、知道如何在畫面選項中作答，不得診斷、不得改變問卷分數、不得替使用者作答。若題目提到「不如死掉」或「傷害自己」，第一句要說：這題需要現場人員關心與協助，您可以請現場人員一起完成。接著再提醒使用者依照過去兩週的頻率從畫面選項作答。"},
     {"role": "user", "content": "請依照過去兩週的狀況回答：「做事時提不起勁或沒有樂趣」。選項是：完全沒有、幾天、一半以上的天數、幾乎每天。"}
   ],
   "stream": false,

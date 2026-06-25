@@ -45,6 +45,9 @@ Co., Ltd.）Smart Health Cabin collaboration project.
 | `docs/db/ERD_SUMMARY.md` | PostgreSQL entity relationship summary for questionnaire versions, responses, reports, agent turns, and outbox events. |
 | `docs/evidence/sprint-5-five-run-demo.md` | Sprint 5 five-run evidence file with current provider smoke and remaining strict live acceptance gates. |
 | `docs/evidence/2026-06-25-llm-thinking-mode-provider-log.md` | LLM provider experiment log showing why OpenAI-compatible Gemma returned empty visible guidance content and why native Ollama with `think:false` is the current LLM path. |
+| `docs/evidence/2026-06-25-llm-one-to-five-guidance-experiment-log.md` | LLM questionnaire-guidance experiment log proving the move from one sentence to 1-5 sentences, selecting the staff-first prompt, and keeping `LLM_MAX_TOKENS=80` as the operating default. |
+| `docs/evidence/2026-06-25-llm-temperature-sweep-experiment-log.md` | LLM temperature sweep summary for `0.0` through `0.7`, selecting `LLM_TEMPERATURE=0.3` as the flexible questionnaire-guidance default while keeping `0` as the stability baseline. |
+| `docs/evidence/raw/2026-06-25-llm-temperature-sweep-0.0-0.7.json` | Complete raw temperature-sweep artifact with 120 run-level rows, environment metadata, summaries, and full generated outputs. |
 | `docs/devlog/README.md` | Daily sprint closeout convention for actual implementation results, validation evidence, blockers, and next handoff. |
 | `docs/devlog/2026-06-25.md` | Pivot/source devlog for the questionnaire + Avatar MVP route, PHQ-9 seed, and planning-repo coordination. |
 | `docs/devlog/2026-06-26.md` | Sprint 0 D2 closeout for monorepo, app/API/storage skeleton, local dev, CI, and validation evidence. |
