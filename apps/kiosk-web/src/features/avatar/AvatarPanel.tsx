@@ -377,7 +377,10 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
         mediaChunksRef.current.push(event.data);
       }
     };
+    // ponytail: hard cap covers AudioContext/fake-mic endpointing stalls.
+    const hardStopTimer = window.setTimeout(() => stopByEndpoint("MAX_UTTERANCE_REACHED"), maxUtteranceMs + 1000);
     recorder.onstop = () => {
+      window.clearTimeout(hardStopTimer);
       stream.getTracks().forEach((track) => track.stop());
       cleanupRecording();
       mediaRecorderRef.current = null;
@@ -387,14 +390,14 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
         return;
       }
       const reason = stopReasonRef.current;
-      if (reason === "NO_SPEECH_TIMEOUT") {
+      const audioBlob = new Blob(mediaChunksRef.current, { type: recorder.mimeType || "audio/webm" });
+      if (reason === "NO_SPEECH_TIMEOUT" && audioBlob.size === 0) {
         setMessage("目前偵測到安靜狀態，系統持續聆聽；也可直接觸控填答。");
         restartContinuousListening();
         return;
       }
       send({ type: "TRANSCRIBE" });
       setMessage(`錄音已自動停止（${mediaChunksRef.current.length} 個片段），正在產生語音回覆。`);
-      const audioBlob = new Blob(mediaChunksRef.current, { type: recorder.mimeType || "audio/webm" });
       void handleRecordedTurn(audioBlob)
         .then((outcome) => {
           if (continuousVoiceRef.current && outcome === "continue") {
