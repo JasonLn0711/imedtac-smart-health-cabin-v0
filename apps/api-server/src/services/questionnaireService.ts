@@ -19,7 +19,13 @@ import {
   validateSurveyJsQuestionnaire
 } from "@shc/questionnaire-core";
 import { assertPublicSummaryIsNonDiagnostic, buildPhq9PublicSummary } from "@shc/report-core";
-import { collectHotwords, getDomainPacks, processVoiceEvidence } from "@shc/voice-safety-core";
+import {
+  collectHotwords,
+  domainPackIdsForContext,
+  getDomainPacks,
+  parseDomainPackIds,
+  processVoiceEvidence
+} from "@shc/voice-safety-core";
 import type { QuestionnaireRepository } from "../repositories/questionnaireRepository";
 
 const seedPath = "modules/questionnaire/seed/phq9.zh-TW.surveyjs.json";
@@ -119,6 +125,19 @@ function asrLanguageHint(): string {
 
 function ttsVoiceId(): string {
   return process.env.TTS_VOICE ?? process.env.BREEZYVOICE_VOICE_ID ?? defaultTtsVoice;
+}
+
+function configuredDomainPackIds(context: { questionnaireCode?: string; questionName?: string } = {}): string[] {
+  const configured = parseDomainPackIds(process.env.VOICE_DEFAULT_DOMAIN_PACKS);
+  if (configured.length > 0) {
+    return configured;
+  }
+  return domainPackIdsForContext(context);
+}
+
+function collectVoiceHotwords(context: { questionnaireCode?: string; questionName?: string } = {}): string[] {
+  const maxHotwords = Number(process.env.VOICE_MAX_HOTWORDS_PER_REQUEST ?? 80);
+  return collectHotwords(getDomainPacks(configuredDomainPackIds(context)), maxHotwords);
 }
 
 function allowedLlmProviders(): string[] {
@@ -337,6 +356,7 @@ export interface ASRAdapter {
     audioBase64: string;
     audioFormat: string;
     agentSessionId?: string;
+    questionName?: string;
   }): Promise<{ provider: string; model: string; transcript: string; payload: Record<string, unknown> }>;
 }
 
@@ -519,7 +539,7 @@ export class ProviderStatusService {
 
 const liveAsrAdapter: ASRAdapter = {
   async transcribe(input) {
-    const hotwords = collectHotwords(getDomainPacks(["phq9_zh_tw", "smart_cabin_measurement"]));
+    const hotwords = collectVoiceHotwords({ questionName: input.questionName });
     const asr = await postJson<{
       transcript?: string;
       text?: string;
@@ -762,7 +782,8 @@ export class QuestionnaireService {
       const asr = await liveAsrAdapter.transcribe({
         audioBase64,
         audioFormat: input.audio_format ?? (audioBase64.startsWith("text:") ? "mock" : "wav"),
-        agentSessionId: input.agent_session_id
+        agentSessionId: input.agent_session_id,
+        questionName: input.question_name
       });
       ({ provider, model, transcript, payload } = asr);
     }
@@ -775,7 +796,13 @@ export class QuestionnaireService {
       transcript,
       payload
     });
-    return { agent_turn_id: turnId, provider, model, transcript };
+    return {
+      agent_turn_id: turnId,
+      provider,
+      model,
+      transcript,
+      confidence: typeof payload.confidence === "number" ? payload.confidence : undefined
+    };
   }
 
   async buildGuidance(input: {
@@ -863,7 +890,10 @@ export class QuestionnaireService {
       questionName: question.name,
       questionTitle: question.title,
       choices: question.choices,
-      domainPackIds: ["phq9_zh_tw", "smart_cabin_measurement"]
+      domainPackIds: configuredDomainPackIds({
+        questionnaireCode: active.questionnaireCode,
+        questionName: question.name
+      })
     });
     const safetyCandidate = safety.semanticFrame.questionnaireAnswerCandidates[0];
     const candidate = safetyCandidate

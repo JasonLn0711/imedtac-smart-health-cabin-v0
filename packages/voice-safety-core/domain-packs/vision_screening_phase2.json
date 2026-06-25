@@ -1,0 +1,52 @@
+{
+  "domainId": "vision_screening_phase2",
+  "version": "0.1.0",
+  "language": "zh-TW",
+  "moduleId": "vision",
+  "sourceFiles": ["docs/specs/MVP-SYSTEM-SPEC.md"],
+  "hotwords": [
+    "右眼",
+    "左眼",
+    "裸眼視力",
+    "矯正視力",
+    "近視",
+    "老花",
+    "散光",
+    "色盲",
+    "色弱",
+    "看不清楚",
+    "模糊",
+    "戴眼鏡",
+    "隱形眼鏡",
+    "重新測量",
+    "改用觸控"
+  ],
+  "canonicalTerms": [
+    { "term": "右眼", "category": "measurement", "aliases": ["右邊眼睛"], "commonAsrErrors": ["有眼"] },
+    { "term": "左眼", "category": "measurement", "aliases": ["左邊眼睛"], "commonAsrErrors": [] },
+    { "term": "裸眼視力", "category": "measurement", "aliases": ["沒戴眼鏡的視力"], "commonAsrErrors": [] },
+    { "term": "矯正視力", "category": "measurement", "aliases": ["戴眼鏡的視力"], "commonAsrErrors": [] },
+    { "term": "看不清楚", "category": "symptom", "aliases": ["模糊", "看不太清楚"], "commonAsrErrors": [] },
+    { "term": "改用觸控", "category": "module_command", "aliases": ["用螢幕點", "用螢幕選"], "commonAsrErrors": [] }
+  ],
+  "answerAliases": [
+    { "optionValue": true, "optionText": "有", "aliases": ["有", "是", "看得到"], "confirmationRequired": true },
+    { "optionValue": false, "optionText": "沒有", "aliases": ["沒有", "否", "看不到"], "confirmationRequired": true }
+  ],
+  "semanticSlots": [
+    { "slot": "eye_side", "examples": ["右眼", "左眼"] },
+    { "slot": "visual_acuity", "examples": ["裸眼視力 0.8", "矯正視力 1.0"] },
+    { "slot": "vision_symptom", "examples": ["看不清楚", "模糊"] }
+  ],
+  "safetyRules": [],
+  "retrievalTemplates": [
+    { "intent": "measurement_value", "template": "視力篩檢量測候選：{normalizedText}" },
+    { "intent": "symptom_description", "template": "視力篩檢問答候選：{normalizedText}" }
+  ],
+  "confirmationTemplates": {
+    "singleCandidate": "我剛剛聽到的是「{candidate}」，請問有聽對嗎？",
+    "multipleCandidates": "請問你剛剛想表達的是哪一個？",
+    "lowConfidence": "我不太確定剛剛的視力測量內容，請重新說一次，或改用螢幕選擇。",
+    "touchFallback": "這一題也可以直接用螢幕點選。"
+  }
+}

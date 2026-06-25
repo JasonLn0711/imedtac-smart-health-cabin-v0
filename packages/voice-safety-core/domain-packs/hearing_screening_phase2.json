@@ -1,0 +1,48 @@
+{
+  "domainId": "hearing_screening_phase2",
+  "version": "0.1.0",
+  "language": "zh-TW",
+  "moduleId": "hearing",
+  "sourceFiles": ["docs/specs/MVP-SYSTEM-SPEC.md"],
+  "hotwords": [
+    "右耳",
+    "左耳",
+    "聽得到",
+    "聽不到",
+    "聲音太小",
+    "聲音太大",
+    "背景噪音",
+    "助聽器",
+    "耳鳴",
+    "重新測量",
+    "改用觸控"
+  ],
+  "canonicalTerms": [
+    { "term": "右耳", "category": "measurement", "aliases": ["右邊耳朵"], "commonAsrErrors": [] },
+    { "term": "左耳", "category": "measurement", "aliases": ["左邊耳朵"], "commonAsrErrors": [] },
+    { "term": "聽得到", "category": "answer_option", "aliases": ["有聽到"], "commonAsrErrors": ["聽的到"] },
+    { "term": "聽不到", "category": "answer_option", "aliases": ["沒有聽到"], "commonAsrErrors": ["聽不到了"] },
+    { "term": "耳鳴", "category": "symptom", "aliases": ["耳朵嗡嗡叫"], "commonAsrErrors": [] },
+    { "term": "背景噪音", "category": "module_command", "aliases": ["旁邊太吵", "環境太吵"], "commonAsrErrors": [] }
+  ],
+  "answerAliases": [
+    { "optionValue": true, "optionText": "聽得到", "aliases": ["聽得到", "有聽到", "可以"], "confirmationRequired": true },
+    { "optionValue": false, "optionText": "聽不到", "aliases": ["聽不到", "沒有聽到", "不可以"], "confirmationRequired": true }
+  ],
+  "semanticSlots": [
+    { "slot": "ear_side", "examples": ["右耳", "左耳"] },
+    { "slot": "hearing_response", "examples": ["聽得到", "聽不到"] },
+    { "slot": "environment_noise", "examples": ["背景噪音", "旁邊太吵"] }
+  ],
+  "safetyRules": [],
+  "retrievalTemplates": [
+    { "intent": "questionnaire_answer", "template": "聽力篩檢回答候選：{normalizedText}" },
+    { "intent": "command_or_faq", "template": "聽力篩檢操作問題：{normalizedText}" }
+  ],
+  "confirmationTemplates": {
+    "singleCandidate": "我剛剛聽到的是「{candidate}」，請問有聽對嗎？",
+    "multipleCandidates": "請問你剛剛想表達的是哪一個？",
+    "lowConfidence": "我不太確定剛剛的聽力測量回答，請重新說一次，或改用螢幕選擇。",
+    "touchFallback": "這一題也可以直接用螢幕點選。"
+  }
+}
