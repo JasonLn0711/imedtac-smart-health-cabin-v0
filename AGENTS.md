@@ -53,6 +53,15 @@ For company-facing material, lead with what the project can own and what the
 next decision is. State safety and validation boundaries as design controls,
 not apologies.
 
+## Evidence Log Method
+
+Every experiment log must record the date, local time, timezone, command,
+environment or port context, hardware/runtime context, and outcome for each
+experiment or check. For repeated runs, record each run separately with its own
+timestamp, session ID or run ID, input, output, and acceptance result. Use
+Taiwan local time (`Asia/Taipei`, UTC+08:00) unless a source timestamp is
+explicitly UTC.
+
 ## Taiwan zh-TW Product Voice
 
 For durable docs, agent plans, kiosk UI, Avatar speech, and company-facing
