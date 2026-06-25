@@ -28,6 +28,10 @@ Co., Ltd.）Smart Health Cabin collaboration project.
 | `docs/prompts/sprint-1-codex-goal-prompt.md` | Codex execution prompt for updated Sprint 1: PHQ-9 SurveyJS render, answer persistence, backend scoring, item-9 safety flag, non-diagnostic public summary, and validation evidence. |
 | `docs/devlog/README.md` | Daily sprint closeout convention for actual implementation results, validation evidence, blockers, and next handoff. |
 | `docs/devlog/2026-06-25.md` | Pivot/source devlog for the questionnaire + Avatar MVP route, PHQ-9 seed, and planning-repo coordination. |
+| `docs/devlog/2026-06-26.md` | Sprint 0 D2 closeout for monorepo, app/API/storage skeleton, local dev, CI, and validation evidence. |
+| `docs/devlog/2026-06-29.md` | Sprint 1 D1 closeout for PHQ-9 SurveyJS kiosk render and browser fill/submit evidence. |
+| `docs/devlog/2026-06-30.md` | Sprint 1 D2 closeout for PostgreSQL persistence, backend scoring, item-9 safety flag, and public summary. |
+| `docs/dev/LOCAL_DEV.md` | Local install, PostgreSQL, API, kiosk, admin, and validation commands. |
 | `workstreams/smart-health-cabin/2026-06-25-questionnaire-avatar-mvp-pivot.md` | Decision record for the Phase 1 MVP pivot based on the 2026-06-25 LINE discussion. |
 | `modules/questionnaire/seed/phq9.zh-TW.surveyjs.json` | SurveyJS PHQ-9 seed used as the first questionnaire-system demo form. |
 | `modules/questionnaire/scoring/phq9.public-scoring-config.json` | PHQ-9 public status and human-review scoring configuration. |

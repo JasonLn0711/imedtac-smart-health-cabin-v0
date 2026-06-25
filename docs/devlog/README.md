@@ -31,6 +31,15 @@ Planning mirrors live in:
 - `../planning-everything-track/weeks/2026-W27/days/`
 - `../planning-everything-track/weeks/2026-W28/days/`
 
+## Entries
+
+| Date | Sprint | Closeout |
+| --- | --- | --- |
+| `2026-06-25` | Pivot / Sprint 0 D1 | Questionnaire + Avatar MVP pivot, PHQ-9 source/seed route. |
+| `2026-06-26` | Sprint 0 D2 | Monorepo, app/API/storage skeleton, local dev, CI, validation evidence. |
+| `2026-06-29` | Sprint 1 D1 | PHQ-9 SurveyJS kiosk render and browser fill/submit evidence. |
+| `2026-06-30` | Sprint 1 D2 | PostgreSQL persistence, backend score, item-9 safety flag, public summary. |
+
 ## Daily Entry Shape
 
 ```text
