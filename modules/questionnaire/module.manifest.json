@@ -1,0 +1,14 @@
+{
+  "module_id": "questionnaire",
+  "module_version": "0.1.0",
+  "display_name": "開放式健康問卷系統",
+  "status": "phase_1_core",
+  "enabled_by_default": true,
+  "can_run_standalone": true,
+  "supports_admin_cms": true,
+  "supports_surveyjs": true,
+  "input_contract": "questionnaire_session_input.v1",
+  "output_contract": "questionnaire_response.v1",
+  "public_report_section": "questionnaire_public_summary.v1",
+  "first_seed": "phq9.zh-TW.surveyjs.json"
+}
