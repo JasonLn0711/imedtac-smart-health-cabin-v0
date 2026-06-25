@@ -46,6 +46,23 @@ Planning mirrors live in:
 | `2026-07-07` | Sprint 4 D1 | Visible Avatar state UI and 3 voice-confirmed PHQ-9 answers in kiosk smoke. |
 | `2026-07-08` | Sprint 4 D2 | Outbox worker, Redpanda topics, published events, and non-blocking failure behavior. |
 
+## Sprint 5 Handoff
+
+Sprint 5 should start from:
+
+```text
+docs/handoff/sprint-0-4-to-sprint-5-plus-handoff.md
+```
+
+That handoff records the Sprint 0-4.5 capability map, Sprint 5 provider-mode
+entry gate, Phase 1 exit definition, and post-Sprint 5 activation lanes.
+
+Sprint 5 agents should also read:
+
+```text
+docs/prompts/sprint-4.5-codex-goal-prompt.md
+```
+
 ## Daily Entry Shape
 
 ```text
