@@ -9,15 +9,12 @@ import {
   blobToBase64,
   buildGuidanceTurn,
   createAgentSession,
+  mapVoiceAnswerTurn,
   playAudioDataUrl,
   runAsrTurn,
   synthesizeTtsTurn
 } from "./voiceAgentApi";
-import {
-  candidateFromTranscript,
-  confirmVoiceAnswerAndMoveNext,
-  getCurrentSurveyQuestion
-} from "./voiceQuestionnaireController";
+import { confirmVoiceAnswerAndMoveNext, getCurrentSurveyQuestion } from "./voiceQuestionnaireController";
 
 interface AvatarPanelProps {
   model: Model;
@@ -25,10 +22,12 @@ interface AvatarPanelProps {
 
 type StopReason = "VAD_END_SILENCE" | "MAX_UTTERANCE_REACHED" | "NO_SPEECH_TIMEOUT";
 type StartRecordingEvent = "MANUAL_START" | "LOOP_READY";
+type RecordedTurnOutcome = "await_confirmation" | "continue" | "stop";
 
 const wakeWordServiceUrl = import.meta.env.VITE_WAKE_WORD_SERVICE_URL ?? "http://localhost:8013";
 const wakeWordEnabled = import.meta.env.VITE_WAKE_WORD_ENABLED !== "false";
 const showWakeSimulation = import.meta.env.DEV;
+const showVoiceDebug = import.meta.env.DEV;
 const endpointMode = import.meta.env.VITE_VOICE_ENDPOINT_MODE ?? "standard";
 const prerollMs = Number(import.meta.env.VITE_VOICE_PREROLL_MS ?? 300);
 const minSpeechMs = Number(import.meta.env.VITE_VOICE_MIN_SPEECH_MS ?? (endpointMode === "elder" ? 300 : 250));
@@ -255,7 +254,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
     };
   }
 
-  async function handleRecordedTurn(audioBlob: Blob): Promise<boolean> {
+  async function handleRecordedTurn(audioBlob: Blob): Promise<RecordedTurnOutcome> {
     const question = currentQuestionRef.current;
     if (!question) {
       const doneText = "問卷已完成，可以送出問卷。";
@@ -263,7 +262,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
       const agentSessionId = await ensureAgentSession();
       const tts = await synthesizeTtsTurn({ agentSessionId, text: doneText });
       await playAudioDataUrl(tts.audio_data_url);
-      return false;
+      return "stop";
     }
 
     const agentSessionId = await ensureAgentSession();
@@ -277,47 +276,63 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
     });
     const heardText = asr.transcript?.trim() || transcript.trim() || "尚未取得可用語音文字";
     setTranscript(heardText);
+    send({ type: "ASR_DONE" });
 
-    const candidate = candidateFromTranscript(question, heardText);
-    if (!candidate) {
-      const retryText = `我聽到：「${heardText}」，但還不能對應到目前題目的選項。請再回答一次，或使用觸控填答。`;
+    const mapped = await mapVoiceAnswerTurn({
+      agentSessionId,
+      questionName: question.name,
+      transcript: heardText,
+      asrConfidence: asr.confidence
+    });
+    send({ type: "ASR_DONE" });
+    send({ type: "ASR_DONE" });
+
+    if (!mapped.candidate || mapped.routing_decision === "low_confidence_retry" || mapped.routing_decision === "no_speech_retry") {
+      const retryText = `我聽到：「${mapped.normalized_transcript ?? heardText}」，但還不能安全對應到目前題目的選項。請再回答一次，或使用觸控填答。`;
       setMessage(retryText);
+      send({ type: "ASR_LOW_CONFIDENCE" });
       const tts = await synthesizeTtsTurn({
         agentSessionId,
         questionName: question.name,
         text: retryText
       });
       await playAudioDataUrl(tts.audio_data_url);
-      return true;
+      return "continue";
     }
 
-    const nextQuestion = confirmVoiceAnswerAndMoveNext(model, question, candidate);
-    setDraft(null);
-    setConfirmedCount((count) => count + 1);
-    const summaryText = `我聽到你這題的答案是「${candidate.text}」。`;
-    const feedbackText = voiceFeedback(question, candidate.value);
-    let replyText = `${summaryText}${feedbackText}問卷已完成，可以送出問卷。`;
-    let ttsQuestionName = question.name;
+    setDraft({
+      questionName: question.name,
+      questionTitle: question.title,
+      transcript: heardText,
+      normalizedTranscript: mapped.normalized_transcript,
+      routingDecision: mapped.routing_decision,
+      confirmationRequired: mapped.confirmation_required,
+      candidate: mapped.candidate
+    });
 
-    if (nextQuestion) {
-      const guidance = await buildGuidanceTurn({ agentSessionId, questionName: nextQuestion.name });
-      const nextPrompt = guidance.guidance ?? `接下來請回答：「${nextQuestion.title}」。`;
-      replyText = `${summaryText}${feedbackText}${nextPrompt}`;
-      ttsQuestionName = nextQuestion.name;
-    } else {
-      continuousVoiceRef.current = false;
-      setContinuousVoiceActive(false);
+    if (mapped.routing_decision === "safety_sensitive_staff_review") {
+      const staffText = `我剛剛聽到的是「${mapped.candidate.text}」，這一題會請現場人員協助確認後再完成。`;
+      setMessage(staffText);
+      send({ type: "STAFF_REVIEW" });
+      const tts = await synthesizeTtsTurn({
+        agentSessionId,
+        questionName: question.name,
+        text: staffText
+      });
+      await playAudioDataUrl(tts.audio_data_url);
+      return "await_confirmation";
     }
 
-    setMessage(replyText);
-    setTurnCount((count) => count + 1);
+    send({ type: "ASR_DONE" });
+    const confirmText = `我剛剛聽到的是「${mapped.candidate.text}」，請問有聽對嗎？請按確認後才會寫入問卷。`;
+    setMessage(confirmText);
     const tts = await synthesizeTtsTurn({
       agentSessionId,
-      questionName: ttsQuestionName,
-      text: replyText
+      questionName: question.name,
+      text: confirmText
     });
     await playAudioDataUrl(tts.audio_data_url);
-    return Boolean(nextQuestion);
+    return "await_confirmation";
   }
 
   async function startRecording(options: { continuous?: boolean; startEvent?: StartRecordingEvent } = {}) {
@@ -357,10 +372,10 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
       setMessage(`錄音已自動停止（${mediaChunksRef.current.length} 個片段），正在產生語音回覆。`);
       const audioBlob = new Blob(mediaChunksRef.current, { type: recorder.mimeType || "audio/webm" });
       void handleRecordedTurn(audioBlob)
-        .then((shouldContinue) => {
-          if (continuousVoiceRef.current && shouldContinue) {
+        .then((outcome) => {
+          if (continuousVoiceRef.current && outcome === "continue") {
             restartContinuousListening("LOOP_READY");
-          } else if (!shouldContinue) {
+          } else if (outcome === "stop") {
             send({ type: "RESET" });
           }
         })
@@ -387,16 +402,26 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
     setMessage(`Avatar：${currentQuestion.title}`);
   }
 
-  function mapAnswer() {
+  async function mapAnswer() {
     if (!currentQuestion) {
       setMessage("沒有需要填答的下一題。");
       return;
     }
     try {
       send({ type: "TRANSCRIBE" });
-      const candidate = candidateFromTranscript(currentQuestion, transcript);
-      if (!candidate) {
-        setMessage("沒有找到可確認的候選答案，請重錄或使用觸控填答。");
+      const agentSessionId = await ensureAgentSession();
+      const mapped = await mapVoiceAnswerTurn({
+        agentSessionId,
+        questionName: currentQuestion.name,
+        transcript: transcript.trim()
+      });
+      send({ type: "ASR_DONE" });
+      send({ type: "ASR_DONE" });
+      send({ type: "ASR_DONE" });
+
+      if (!mapped.candidate || mapped.routing_decision === "low_confidence_retry" || mapped.routing_decision === "no_speech_retry") {
+        setDraft(null);
+        setMessage("沒有找到可安全確認的候選答案，請重錄或使用觸控填答。");
         send({ type: "ASR_LOW_CONFIDENCE" });
         return;
       }
@@ -404,8 +429,16 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
         questionName: currentQuestion.name,
         questionTitle: currentQuestion.title,
         transcript,
-        candidate
+        normalizedTranscript: mapped.normalized_transcript,
+        routingDecision: mapped.routing_decision,
+        confirmationRequired: mapped.confirmation_required,
+        candidate: mapped.candidate
       });
+      if (mapped.routing_decision === "safety_sensitive_staff_review") {
+        setMessage("這個語音內容需要現場人員協助確認，系統不會直接寫入問卷。");
+        send({ type: "STAFF_REVIEW" });
+        return;
+      }
       send({ type: "ASR_DONE" });
       setMessage("ASR 僅產生候選答案；請確認後才會寫入問卷。");
     } catch (error) {
@@ -414,16 +447,46 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
     }
   }
 
-  function confirmAnswer() {
+  async function confirmAnswer() {
     if (!currentQuestion || !draft) {
       return;
     }
-    confirmVoiceAnswerAndMoveNext(model, currentQuestion, draft.candidate);
+    if (draft.routingDecision === "safety_sensitive_staff_review") {
+      send({ type: "STAFF_REVIEW" });
+      setMessage("此回答已進入現場人員協助確認流程，系統不會由語音候選直接寫入。");
+      return;
+    }
+    const nextQuestion = confirmVoiceAnswerAndMoveNext(model, currentQuestion, draft.candidate);
     send({ type: "CONFIRM_YES" });
     setDraft(null);
     setConfirmedCount((count) => count + 1);
-    setMessage("已確認並寫入問卷。");
+    setTurnCount((count) => count + 1);
+    const agentSessionId = await ensureAgentSession();
+    const summaryText = `我聽到你這題的答案是「${draft.candidate.text}」。`;
+    const feedbackText = voiceFeedback(currentQuestion, draft.candidate.value);
+    let replyText = `${summaryText}${feedbackText}問卷已完成，可以送出問卷。`;
+    let ttsQuestionName = currentQuestion.name;
+
+    if (nextQuestion) {
+      const guidance = await buildGuidanceTurn({ agentSessionId, questionName: nextQuestion.name });
+      replyText = `${summaryText}${feedbackText}${guidance.guidance ?? `接下來請回答：「${nextQuestion.title}」。`}`;
+      ttsQuestionName = nextQuestion.name;
+    } else {
+      continuousVoiceRef.current = false;
+      setContinuousVoiceActive(false);
+    }
+
+    setMessage(replyText);
+    const tts = await synthesizeTtsTurn({
+      agentSessionId,
+      questionName: ttsQuestionName,
+      text: replyText
+    });
+    await playAudioDataUrl(tts.audio_data_url);
     send({ type: "RESET" });
+    if (nextQuestion && continuousVoiceRef.current) {
+      restartContinuousListening("MANUAL_START");
+    }
   }
 
   function retry() {
@@ -492,7 +555,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
           <button type="button" onClick={readQuestion}>
             朗讀題目
           </button>
-          <button type="button" onClick={mapAnswer}>
+          <button type="button" onClick={() => void mapAnswer()}>
             產生候選答案
           </button>
           <button type="button" onClick={retry}>
@@ -504,12 +567,16 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
             <strong>等待確認</strong>
             <span>{draft.questionTitle}</span>
             <span>ASR: {draft.transcript}</span>
+            {showVoiceDebug && draft.normalizedTranscript && <span>校正後: {draft.normalizedTranscript}</span>}
+            {showVoiceDebug && draft.routingDecision && <span>路由: {draft.routingDecision}</span>}
             <span>
               Candidate: {draft.candidate.text} ({draft.candidate.value})
             </span>
-            <button type="button" onClick={confirmAnswer}>
-              確認寫入
-            </button>
+            {draft.routingDecision !== "safety_sensitive_staff_review" && (
+              <button type="button" onClick={() => void confirmAnswer()}>
+                確認寫入
+              </button>
+            )}
           </div>
         )}
         <p className="touch-fallback">觸控備援：下方問卷可隨時直接填答。</p>

@@ -1,4 +1,4 @@
-import type { AgentSessionResponse, AgentTurnResponse } from "@shc/contracts";
+import type { AgentSessionResponse, AgentTurnResponse, VoiceAnswerMappingResponse } from "@shc/contracts";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
 
@@ -38,6 +38,20 @@ export async function runAsrTurn(input: {
     audio_base64: input.audioBase64,
     audio_format: input.audioFormat,
     transcript: input.fallbackTranscript
+  });
+}
+
+export async function mapVoiceAnswerTurn(input: {
+  agentSessionId: string;
+  questionName: string;
+  transcript: string;
+  asrConfidence?: number;
+}): Promise<VoiceAnswerMappingResponse> {
+  return postJson<VoiceAnswerMappingResponse>("/api/v1/agent-turns/map-answer", {
+    agent_session_id: input.agentSessionId,
+    question_name: input.questionName,
+    transcript: input.transcript,
+    asr_confidence: input.asrConfidence
   });
 }
 

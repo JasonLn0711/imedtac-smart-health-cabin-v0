@@ -66,24 +66,28 @@ const transitions: Record<AvatarState, Partial<Record<AvatarEvent, AvatarState>>
   normalizing_asr: {
     ASR_DONE: "building_semantic_frame",
     ASR_LOW_CONFIDENCE: "retry_or_touch",
+    STAFF_REVIEW: "staff_review",
     RESET: "idle_touch_ready",
     VOICE_SERVICE_DOWN: "voice_unavailable"
   },
   building_semantic_frame: {
     ASR_DONE: "ranking_candidates",
     ASR_LOW_CONFIDENCE: "retry_or_touch",
+    STAFF_REVIEW: "staff_review",
     RESET: "idle_touch_ready",
     VOICE_SERVICE_DOWN: "voice_unavailable"
   },
   ranking_candidates: {
     ASR_DONE: "confirming_candidate",
     ASR_LOW_CONFIDENCE: "clarifying_ambiguous",
+    STAFF_REVIEW: "staff_review",
     RESET: "idle_touch_ready",
     VOICE_SERVICE_DOWN: "voice_unavailable"
   },
   clarifying_ambiguous: {
     MANUAL_START: "recording_answer",
     TOUCH_SELECTED: "idle_touch_ready",
+    STAFF_REVIEW: "staff_review",
     RESET: "idle_touch_ready",
     VOICE_SERVICE_DOWN: "voice_unavailable"
   },
