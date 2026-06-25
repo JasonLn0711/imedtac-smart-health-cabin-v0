@@ -45,6 +45,7 @@ Planning mirrors live in:
 | `2026-07-06` | Sprint 3 D2 | SurveyJS-derived voice guidance, deterministic answer mapping, confirmation boundary, touch fallback. |
 | `2026-07-07` | Sprint 4 D1 | Visible Avatar state UI and 3 voice-confirmed PHQ-9 answers in kiosk smoke. |
 | `2026-07-08` | Sprint 4 D2 | Outbox worker, Redpanda topics, published events, and non-blocking failure behavior. |
+| `2026-07-09` | Sprint 4.5 | Provider selection freeze, status route, static Avatar image, Zod contracts, and ASR/TTS sidecar boundary. |
 
 ## Sprint 5 Handoff
 
@@ -62,6 +63,19 @@ Sprint 5 agents should also read:
 ```text
 docs/prompts/sprint-4.5-codex-goal-prompt.md
 ```
+
+## Last Sprint And Phase 2 Handoff
+
+After Sprint 5, the next closeout should start from:
+
+```text
+docs/handoff/sprint-5-to-last-sprint-next-phase-handoff.md
+docs/prompts/sprint-6-last-sprint-codex-goal-prompt.md
+docs/phase2/activation-roadmap.md
+```
+
+The last sprint owns release evidence and stakeholder handoff. Phase 2 owns
+new activation lanes.
 
 ## Daily Entry Shape
 

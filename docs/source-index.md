@@ -30,7 +30,13 @@ Co., Ltd.）Smart Health Cabin collaboration project.
 | `docs/prompts/sprint-3-codex-goal-prompt.md` | Codex execution prompt for updated Sprint 3: ASR / LLM / TTS voice Agent MVP, agent session/turn logs, PHQ-9 question and option reading from SurveyJS, answer confirmation, safety boundary, and touch fallback. |
 | `docs/prompts/sprint-4-codex-goal-prompt.md` | Codex execution prompt for updated Sprint 4: Avatar UI states, voice-confirmed PHQ-9 answers, public report / QR continuity, outbox events, Redpanda publishing, failure isolation, and E2E demo evidence. |
 | `docs/prompts/sprint-4.5-codex-goal-prompt.md` | Codex execution prompt for Sprint 4.5 technical selection freeze: faster-whisper Breeze-ASR-26, local Gemma via vLLM, BreezyVoice default voice, static image Avatar, xstate, provider status, mock/live fallback, and local-first model sidecars. |
+| `docs/prompts/sprint-5-codex-goal-prompt.md` | Codex execution prompt for Sprint 5 live acceptance hardening: all Phase 1 services must run live for acceptance, mock is limited to tests/fallback, provider status must expose acceptance eligibility, and five-run E2E evidence is required. |
+| `docs/prompts/sprint-6-last-sprint-codex-goal-prompt.md` | Codex execution prompt for the last Phase 1 closeout sprint: freeze evidence, complete stakeholder handoff, preserve safety proof, and prepare Phase 2 entry without adding features. |
+| `docs/prompts/phase-2-next-phase-codex-goal-prompt.md` | Codex execution prompt for the next activation phase after Phase 1: provider validation first, then questionnaire expansion, vision/hearing activation, and integration governance. |
+| `docs/handoff/sprint-4.5-model-selection.md` | Sprint 4.5 handoff for frozen provider choices, provider modes, default-voice boundary, static Avatar, sidecar paths, and deferred animation/custom-voice scope. |
 | `docs/handoff/sprint-0-4-to-sprint-5-plus-handoff.md` | Sprint 0-4.5 capability map and revised Sprint 5+ continuation guide: provider-mode entry gate, static Avatar scope, repeatable demo hardening, Phase 1 exit definition, and post-Sprint 5 activation lanes. |
+| `docs/handoff/sprint-5-to-last-sprint-next-phase-handoff.md` | Sprint 5 to final closeout handoff: Phase 1 evidence-freeze work order, Phase 1 exit claim, and Phase 2 entry gate. |
+| `docs/phase2/activation-roadmap.md` | Phase 2 activation roadmap for provider validation, questionnaire expansion, vision/hearing activation, and integration/governance sequencing. |
 | `docs/devlog/README.md` | Daily sprint closeout convention for actual implementation results, validation evidence, blockers, and next handoff. |
 | `docs/devlog/2026-06-25.md` | Pivot/source devlog for the questionnaire + Avatar MVP route, PHQ-9 seed, and planning-repo coordination. |
 | `docs/devlog/2026-06-26.md` | Sprint 0 D2 closeout for monorepo, app/API/storage skeleton, local dev, CI, and validation evidence. |
@@ -42,6 +48,7 @@ Co., Ltd.）Smart Health Cabin collaboration project.
 | `docs/devlog/2026-07-06.md` | Sprint 3 D2 closeout for SurveyJS-derived voice mapping, confirmation boundary, and touch fallback. |
 | `docs/devlog/2026-07-07.md` | Sprint 4 D1 closeout for Avatar state UI and 3 voice-confirmed PHQ-9 answers. |
 | `docs/devlog/2026-07-08.md` | Sprint 4 D2 closeout for outbox-worker, Redpanda topics, published events, and failure isolation. |
+| `docs/devlog/2026-07-09.md` | Sprint 4.5 closeout for provider selection, status route, Zod contracts, static Avatar path, MediaRecorder capture, sidecar scaffolds, and fallback status. |
 | `docs/dev/LOCAL_DEV.md` | Local install, PostgreSQL, API, kiosk, admin, and validation commands. |
 | `workstreams/smart-health-cabin/2026-06-25-questionnaire-avatar-mvp-pivot.md` | Decision record for the Phase 1 MVP pivot based on the 2026-06-25 LINE discussion. |
 | `modules/questionnaire/seed/phq9.zh-TW.surveyjs.json` | SurveyJS PHQ-9 seed used as the first questionnaire-system demo form. |
