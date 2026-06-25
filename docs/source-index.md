@@ -51,7 +51,10 @@ Co., Ltd.）Smart Health Cabin collaboration project.
 | `docs/devlog/README.md` | Daily sprint closeout convention for actual implementation results, validation evidence, blockers, and next handoff. |
 | `docs/devlog/2026-06-25.md` | Pivot/source devlog for the questionnaire + Avatar MVP route, PHQ-9 seed, and planning-repo coordination. |
 | `apps/model-sidecars/wakeword-service/README.md` | Sprint 5.6 wake word activation gate sidecar: local openWakeWord provider, status/event API, and test-only simulation route. |
-| `apps/model-sidecars/wakeword-service/app.py` | FastAPI implementation for `/healthz`, `/status`, `/simulate-wake`, and `WS /events`; wake word is activation-only and never writes questionnaire answers. |
+| `apps/model-sidecars/wakeword-service/app.py` | FastAPI implementation for `/healthz`, `/status`, `/simulate-wake`, `WS /events`, and local live microphone readiness; wake word is activation-only and never writes questionnaire answers. |
+| `apps/kiosk-web/src/features/questionnaire/SurveyJsQuestionnaireRenderer.tsx` | Kiosk SurveyJS adapter for one-question-per-page rendering and Avatar/question layout shell. |
+| `apps/kiosk-web/src/features/avatar/voiceQuestionnaireController.ts` | Voice-to-SurveyJS controller that maps speech candidates to the currently visible SurveyJS question. |
+| `apps/kiosk-web/src/styles/app.css` | Kiosk layout rules for replaceable Avatar rail, active-question stage, desktop 1:2 columns, and mobile stacked fallback. |
 | `docs/devlog/2026-06-26.md` | Sprint 0 D2 closeout for monorepo, app/API/storage skeleton, local dev, CI, and validation evidence. |
 | `docs/devlog/2026-06-29.md` | Sprint 1 D1 closeout for PHQ-9 SurveyJS kiosk render and browser fill/submit evidence. |
 | `docs/devlog/2026-06-30.md` | Sprint 1 D2 closeout for PostgreSQL persistence, backend scoring, item-9 safety flag, and public summary. |

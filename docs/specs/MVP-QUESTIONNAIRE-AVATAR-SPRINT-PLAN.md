@@ -233,6 +233,8 @@ answer confirmation.
 Deliverables:
 
 - Avatar UI shell;
+- one-question-per-page SurveyJS kiosk flow;
+- replaceable Avatar rail beside the active questionnaire question;
 - idle / listening / transcribing / thinking / speaking / confirming / error
   states;
 - Avatar reads PHQ-9 questions and options;
@@ -245,6 +247,9 @@ Deliverables:
 Acceptance:
 
 - Avatar appears on screen;
+- kiosk shows one PHQ-9 question at a time;
+- desktop kiosk layout keeps the Avatar rail beside the active question and
+  narrow screens stack the rail above the question;
 - Avatar can play TTS;
 - Avatar can read at least PHQ-9 questions;
 - user can answer at least 3 questions by voice;
