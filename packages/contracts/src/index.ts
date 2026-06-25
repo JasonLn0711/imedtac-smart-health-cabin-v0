@@ -156,15 +156,17 @@ export const VoiceProviderModeSchema = z.enum(["mock", "live", "unavailable"]);
 export type VoiceProviderMode = z.infer<typeof VoiceProviderModeSchema>;
 
 export const AvatarStateSchema = z.enum([
-  "idle",
-  "speaking",
-  "listening",
-  "recording",
+  "idle_touch_ready",
+  "wake_armed",
+  "wake_detected",
+  "recording_answer",
+  "endpointing_wait",
   "transcribing",
-  "thinking",
-  "confirming_answer",
-  "writing_answer",
-  "error_fallback"
+  "confirming_candidate",
+  "committed",
+  "retry_or_touch",
+  "voice_unavailable",
+  "staff_review"
 ]);
 export type AvatarState = z.infer<typeof AvatarStateSchema>;
 

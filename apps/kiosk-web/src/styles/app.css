@@ -127,7 +127,9 @@ textarea {
   height: 88px;
 }
 
-.avatar-image-error_fallback {
+.avatar-image-voice_unavailable,
+.avatar-image-retry_or_touch,
+.avatar-image-staff_review {
   filter: grayscale(1);
 }
 
@@ -159,7 +161,19 @@ textarea {
   font-size: 0.9rem;
 }
 
-.avatar-state-error_fallback {
+.avatar-state-recording_answer,
+.avatar-state-endpointing_wait,
+.avatar-state-transcribing {
+  background: #1f5f8b;
+}
+
+.avatar-state-committed {
+  background: #2d6a4f;
+}
+
+.avatar-state-voice_unavailable,
+.avatar-state-retry_or_touch,
+.avatar-state-staff_review {
   background: #9a2f2f;
 }
 
