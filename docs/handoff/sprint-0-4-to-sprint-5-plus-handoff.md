@@ -17,6 +17,8 @@ source:
   - ../devlog/2026-07-07.md
   - ../devlog/2026-07-08.md
   - ../prompts/sprint-4.5-codex-goal-prompt.md
+  - ../devlog/2026-07-09.md
+  - ./sprint-4.5-model-selection.md
 ---
 
 # Sprint 0-4.5 To Sprint 5+ Handoff
@@ -78,7 +80,7 @@ admin publishes PHQ-9
 | Sprint 2 | Admin questionnaire CMS path, SurveyJS JSON validation/preview, draft/publish lifecycle, active questionnaire version, report section, public token / QR URL, admin response list, audit trail. | `docs/devlog/2026-07-01.md`, `docs/devlog/2026-07-02.md` |
 | Sprint 3 | Deterministic mock ASR/respond/TTS endpoints, `agent_sessions`, `agent_turns`, SurveyJS-derived question reading, answer mapping, confirmation before write, touch fallback. | `docs/devlog/2026-07-03.md`, `docs/devlog/2026-07-06.md` |
 | Sprint 4 | Avatar state UI, three voice-confirmed PHQ-9 answers in kiosk smoke, outbox-worker, Redpanda topics, event publishing, nonblocking Redpanda failure behavior. | `docs/devlog/2026-07-07.md`, `docs/devlog/2026-07-08.md` |
-| Sprint 4.5 | Technology choices frozen for local-first providers: static image Avatar, `xstate`, `MediaRecorder`, `faster-whisper` + Breeze-ASR-26, local Gemma via vLLM, BreezyVoice default voice only, Python ASR/TTS sidecars, `pino` / JSON logging, provider-status route, mock/live fallback boundary. | `docs/prompts/sprint-4.5-codex-goal-prompt.md` |
+| Sprint 4.5 | Technology choices frozen for local-first providers: static image Avatar, `xstate`, `MediaRecorder`, `faster-whisper` + Breeze-ASR-26, local Gemma via vLLM/OpenAI-compatible API, BreezyVoice default voice only, Python ASR/TTS sidecars, `pino` / JSON logging, provider-status route, mock/live/unavailable fallback boundary. | `docs/devlog/2026-07-09.md`, `docs/handoff/sprint-4.5-model-selection.md` |
 
 ## Do Not Rebuild
 
