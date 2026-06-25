@@ -1,8 +1,11 @@
 const apiBaseUrl = process.env.API_BASE_URL ?? process.env.VITE_API_BASE_URL ?? "http://localhost:3000";
 const voiceAgentBaseUrl = process.env.VOICE_AGENT_SERVER_URL ?? "http://localhost:3004";
 const statusUrl = new URL("/api/v1/providers/status", apiBaseUrl);
-const requiredProviders = ["asr", "llm", "tts", "redpanda"];
-const requiredGpuProviders = ["asr", "llm", "tts"];
+const rerankerRequired = ["1", "true", "yes", "on"].includes(
+  String(process.env.RERANKER_REQUIRED_FOR_LIVE_ACCEPTANCE ?? "").toLowerCase()
+);
+const requiredProviders = ["asr", "llm", "tts", ...(rerankerRequired ? ["reranker"] : []), "redpanda"];
+const requiredGpuProviders = ["asr", "llm", "tts", ...(rerankerRequired ? ["reranker"] : [])];
 
 function isGpuOnly(provider) {
   return (
@@ -28,6 +31,7 @@ try {
     asr: status.asr,
     llm: status.llm,
     tts: status.tts,
+    reranker: status.reranker,
     redpanda: status.redpanda
   };
   const failures = requiredProviders

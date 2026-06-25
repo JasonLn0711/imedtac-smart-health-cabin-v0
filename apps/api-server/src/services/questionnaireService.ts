@@ -522,6 +522,9 @@ export class ProviderStatusService {
       ...rerankerRuntimeScope
     });
     const requiredProviders = [asr, llm, tts, redpanda];
+    if (booleanEnv(["RERANKER_REQUIRED_FOR_LIVE_ACCEPTANCE"])) {
+      requiredProviders.push(reranker);
+    }
     const allRequiredLive = requiredProviders.every((provider) => provider.mode === "live");
     const eligible = requiredProviders.every((provider) => provider.acceptanceEligible);
 
