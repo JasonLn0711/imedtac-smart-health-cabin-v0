@@ -40,3 +40,23 @@ export function confirmVoiceAnswer(question: Question, candidate: VoiceAnswerCan
   }
   question.value = candidate.value;
 }
+
+export function getNextUnansweredSurveyQuestion(model: Model): Question | null {
+  return (
+    model
+      .getAllQuestions()
+      .find((question) => isQuestion(question) && (question.value === undefined || question.value === null)) ?? null
+  );
+}
+
+export function confirmVoiceAnswerAndMoveNext(
+  model: Model,
+  question: Question,
+  candidate: VoiceAnswerCandidate
+): Question | null {
+  confirmVoiceAnswer(question, candidate);
+  if (!model.isLastPage) {
+    model.nextPage();
+  }
+  return getNextUnansweredSurveyQuestion(model);
+}

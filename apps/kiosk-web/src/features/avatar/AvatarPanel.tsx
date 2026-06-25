@@ -1,16 +1,30 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Model } from "survey-core";
+import type { Model, Question } from "survey-core";
 import { useMachine } from "@xstate/react";
 import { AvatarImage } from "./AvatarImage";
 import { avatarStateLabel, avatarStateMachine } from "./avatarStateMachine";
 import type { AvatarState, VoiceAnswerDraft } from "./avatarTypes";
-import { candidateFromTranscript, confirmVoiceAnswer, getCurrentSurveyQuestion } from "./voiceQuestionnaireController";
+import {
+  audioFormatFromBlob,
+  blobToBase64,
+  buildGuidanceTurn,
+  createAgentSession,
+  playAudioDataUrl,
+  runAsrTurn,
+  synthesizeTtsTurn
+} from "./voiceAgentApi";
+import {
+  candidateFromTranscript,
+  confirmVoiceAnswerAndMoveNext,
+  getCurrentSurveyQuestion
+} from "./voiceQuestionnaireController";
 
 interface AvatarPanelProps {
   model: Model;
 }
 
 type StopReason = "VAD_END_SILENCE" | "MAX_UTTERANCE_REACHED" | "NO_SPEECH_TIMEOUT";
+type StartRecordingEvent = "MANUAL_START" | "LOOP_READY";
 
 const wakeWordServiceUrl = import.meta.env.VITE_WAKE_WORD_SERVICE_URL ?? "http://localhost:8013";
 const wakeWordEnabled = import.meta.env.VITE_WAKE_WORD_ENABLED !== "false";
@@ -40,24 +54,45 @@ function speechRms(data: Uint8Array): number {
   return Math.sqrt(sum / data.length);
 }
 
+function voiceFeedback(question: Question, answerValue: number): string {
+  if (question.name === "phq9_09" && answerValue > 0) {
+    return "謝謝你願意說出來，現場人員可以陪你一起完成接下來的流程。";
+  }
+  return "謝謝你，照自己的感受回答就很好。";
+}
+
 export function AvatarPanel({ model }: AvatarPanelProps) {
   const [snapshot, send] = useMachine(avatarStateMachine);
   const [transcript, setTranscript] = useState("完全沒有");
   const [draft, setDraft] = useState<VoiceAnswerDraft | null>(null);
   const [confirmedCount, setConfirmedCount] = useState(0);
+  const [turnCount, setTurnCount] = useState(0);
+  const [continuousVoiceActive, setContinuousVoiceActive] = useState(false);
   const [surveyRevision, setSurveyRevision] = useState(0);
   const [message, setMessage] = useState("等待喚醒詞，或直接使用手動開始與觸控問卷。");
+  const currentQuestion = useMemo(() => getCurrentSurveyQuestion(model), [model, confirmedCount, surveyRevision]);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaChunksRef = useRef<Blob[]>([]);
   const stateRef = useRef<AvatarState>("idle_touch_ready");
+  const currentQuestionRef = useRef(currentQuestion);
+  const continuousVoiceRef = useRef(false);
+  const agentSessionIdRef = useRef<string | null>(null);
   const stopReasonRef = useRef<StopReason | null>(null);
+  const cancelRecordingRef = useRef(false);
   const cleanupRef = useRef<(() => void) | null>(null);
   const state = snapshot.value as AvatarState;
-  const currentQuestion = useMemo(() => getCurrentSurveyQuestion(model), [model, confirmedCount, surveyRevision]);
 
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
+
+  useEffect(() => {
+    currentQuestionRef.current = currentQuestion;
+  }, [currentQuestion]);
+
+  useEffect(() => {
+    continuousVoiceRef.current = continuousVoiceActive;
+  }, [continuousVoiceActive]);
 
   useEffect(() => {
     const refresh = () => setSurveyRevision((revision) => revision + 1);
@@ -80,8 +115,11 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
       const payload = JSON.parse(event.data) as { type?: string };
       if (payload.type === "wake.detected") {
         send({ type: "WAKE_DETECTED" });
-        setMessage("偵測到喚醒詞，正在開啟錄音閘門。");
-        startRecording().catch(() => {
+        setContinuousVoiceActive(true);
+        continuousVoiceRef.current = true;
+        setTurnCount(0);
+        setMessage("偵測到喚醒詞，開始連續語音偵測。");
+        startRecording({ continuous: true }).catch(() => {
           send({ type: "VOICE_SERVICE_DOWN" });
           setMessage("無法啟動錄音，可改用手動開始或觸控填答。");
         });
@@ -101,6 +139,44 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
   function cleanupRecording() {
     cleanupRef.current?.();
     cleanupRef.current = null;
+  }
+
+  function stopContinuousVoice() {
+    setContinuousVoiceActive(false);
+    continuousVoiceRef.current = false;
+    cancelRecordingRef.current = true;
+    const recorder = mediaRecorderRef.current;
+    if (recorder?.state === "recording") {
+      recorder.stop();
+    }
+    setMessage("已停止連續聆聽；可用喚醒詞或手動開始重新啟動。");
+    send({ type: "RESET" });
+  }
+
+  async function ensureAgentSession() {
+    if (agentSessionIdRef.current) {
+      return agentSessionIdRef.current;
+    }
+    const session = await createAgentSession(`sess_kiosk_voice_${Date.now()}`);
+    agentSessionIdRef.current = session.agent_session_id;
+    return session.agent_session_id;
+  }
+
+  function restartContinuousListening(startEvent: StartRecordingEvent = "MANUAL_START") {
+    if (!continuousVoiceRef.current) {
+      return;
+    }
+    window.setTimeout(() => {
+      if (!continuousVoiceRef.current || mediaRecorderRef.current) {
+        return;
+      }
+      startRecording({ continuous: true, startEvent }).catch(() => {
+        continuousVoiceRef.current = false;
+        setContinuousVoiceActive(false);
+        send({ type: "VOICE_SERVICE_DOWN" });
+        setMessage("無法重新啟動連續錄音，可改用手動開始或觸控填答。");
+      });
+    }, 500);
   }
 
   function stopByEndpoint(reason: StopReason) {
@@ -132,6 +208,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
     source.connect(analyser);
     const data = new Uint8Array(analyser.fftSize);
     const startedAt = performance.now();
+    const maxTimer = window.setTimeout(() => stopByEndpoint("MAX_UTTERANCE_REACHED"), maxUtteranceMs);
     let speechCandidateAt: number | null = null;
     let speechStarted = false;
     let lastSpeechAt = startedAt;
@@ -172,12 +249,78 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
 
     frame = window.requestAnimationFrame(tick);
     cleanupRef.current = () => {
+      window.clearTimeout(maxTimer);
       window.cancelAnimationFrame(frame);
       void audioContext.close();
     };
   }
 
-  async function startRecording() {
+  async function handleRecordedTurn(audioBlob: Blob): Promise<boolean> {
+    const question = currentQuestionRef.current;
+    if (!question) {
+      const doneText = "問卷已完成，可以送出問卷。";
+      setMessage(doneText);
+      const agentSessionId = await ensureAgentSession();
+      const tts = await synthesizeTtsTurn({ agentSessionId, text: doneText });
+      await playAudioDataUrl(tts.audio_data_url);
+      return false;
+    }
+
+    const agentSessionId = await ensureAgentSession();
+    const audioBase64 = await blobToBase64(audioBlob);
+    const asr = await runAsrTurn({
+      agentSessionId,
+      questionName: question?.name,
+      audioBase64,
+      audioFormat: audioFormatFromBlob(audioBlob),
+      fallbackTranscript: transcript.trim()
+    });
+    const heardText = asr.transcript?.trim() || transcript.trim() || "尚未取得可用語音文字";
+    setTranscript(heardText);
+
+    const candidate = candidateFromTranscript(question, heardText);
+    if (!candidate) {
+      const retryText = `我聽到：「${heardText}」，但還不能對應到目前題目的選項。請再回答一次，或使用觸控填答。`;
+      setMessage(retryText);
+      const tts = await synthesizeTtsTurn({
+        agentSessionId,
+        questionName: question.name,
+        text: retryText
+      });
+      await playAudioDataUrl(tts.audio_data_url);
+      return true;
+    }
+
+    const nextQuestion = confirmVoiceAnswerAndMoveNext(model, question, candidate);
+    setDraft(null);
+    setConfirmedCount((count) => count + 1);
+    const summaryText = `我聽到你這題的答案是「${candidate.text}」。`;
+    const feedbackText = voiceFeedback(question, candidate.value);
+    let replyText = `${summaryText}${feedbackText}問卷已完成，可以送出問卷。`;
+    let ttsQuestionName = question.name;
+
+    if (nextQuestion) {
+      const guidance = await buildGuidanceTurn({ agentSessionId, questionName: nextQuestion.name });
+      const nextPrompt = guidance.guidance ?? `接下來請回答：「${nextQuestion.title}」。`;
+      replyText = `${summaryText}${feedbackText}${nextPrompt}`;
+      ttsQuestionName = nextQuestion.name;
+    } else {
+      continuousVoiceRef.current = false;
+      setContinuousVoiceActive(false);
+    }
+
+    setMessage(replyText);
+    setTurnCount((count) => count + 1);
+    const tts = await synthesizeTtsTurn({
+      agentSessionId,
+      questionName: ttsQuestionName,
+      text: replyText
+    });
+    await playAudioDataUrl(tts.audio_data_url);
+    return Boolean(nextQuestion);
+  }
+
+  async function startRecording(options: { continuous?: boolean; startEvent?: StartRecordingEvent } = {}) {
     if (!navigator.mediaDevices || typeof MediaRecorder === "undefined") {
       send({ type: "VOICE_SERVICE_DOWN" });
       setMessage("此瀏覽器目前無法使用 MediaRecorder，可改用觸控或文字模擬填答。");
@@ -185,6 +328,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
     }
 
     cleanupRecording();
+    cancelRecordingRef.current = false;
     stopReasonRef.current = null;
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const recorder = new MediaRecorder(stream);
@@ -198,19 +342,38 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
       stream.getTracks().forEach((track) => track.stop());
       cleanupRecording();
       mediaRecorderRef.current = null;
+      if (cancelRecordingRef.current) {
+        cancelRecordingRef.current = false;
+        mediaChunksRef.current = [];
+        return;
+      }
       const reason = stopReasonRef.current;
       if (reason === "NO_SPEECH_TIMEOUT") {
-        setMessage("沒有偵測到有效語音，請重試或直接觸控填答。");
+        setMessage("沒有偵測到有效語音，持續聆聽中；也可直接觸控填答。");
+        restartContinuousListening();
         return;
       }
       send({ type: "TRANSCRIBE" });
-      setMessage(
-        `錄音已自動停止（${mediaChunksRef.current.length} 個片段，pre-roll ${prerollMs}ms）。請送出 ASR 或使用文字模擬。`
-      );
+      setMessage(`錄音已自動停止（${mediaChunksRef.current.length} 個片段），正在產生語音回覆。`);
+      const audioBlob = new Blob(mediaChunksRef.current, { type: recorder.mimeType || "audio/webm" });
+      void handleRecordedTurn(audioBlob)
+        .then((shouldContinue) => {
+          if (continuousVoiceRef.current && shouldContinue) {
+            restartContinuousListening("LOOP_READY");
+          } else if (!shouldContinue) {
+            send({ type: "RESET" });
+          }
+        })
+        .catch((error) => {
+          continuousVoiceRef.current = false;
+          setContinuousVoiceActive(false);
+          send({ type: "VOICE_SERVICE_DOWN" });
+          setMessage(error instanceof Error ? error.message : "語音回覆流程失敗，可改用觸控填答。");
+        });
     };
     mediaRecorderRef.current = recorder;
-    send({ type: "MANUAL_START" });
-    setMessage("正在錄音；系統會用 VAD / endpointing 自動停止。");
+    send({ type: options.startEvent ?? "MANUAL_START" });
+    setMessage("正在錄音；系統會用 VAD / endpointing 自動停止，然後以 TTS 回覆。");
     recorder.start();
     startEndpointing(stream);
   }
@@ -255,10 +418,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
     if (!currentQuestion || !draft) {
       return;
     }
-    confirmVoiceAnswer(currentQuestion, draft.candidate);
-    if (!model.isLastPage) {
-      model.nextPage();
-    }
+    confirmVoiceAnswerAndMoveNext(model, currentQuestion, draft.candidate);
     send({ type: "CONFIRM_YES" });
     setDraft(null);
     setConfirmedCount((count) => count + 1);
@@ -296,6 +456,9 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
           <span className={`avatar-state avatar-state-${state}`}>{avatarStateLabel(state)}</span>
         </div>
         <p>{message}</p>
+        {continuousVoiceActive && (
+          <p className="touch-fallback">連續語音模式啟用中，已完成 {turnCount} 輪語音回覆。</p>
+        )}
         {currentQuestion && (
           <p className="avatar-question">
             {currentQuestion.name}: {currentQuestion.title}
@@ -319,6 +482,11 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
           {showWakeSimulation && (
             <button type="button" onClick={() => void simulateWake()}>
               模擬喚醒
+            </button>
+          )}
+          {continuousVoiceActive && (
+            <button type="button" onClick={stopContinuousVoice}>
+              停止連續聆聽
             </button>
           )}
           <button type="button" onClick={readQuestion}>

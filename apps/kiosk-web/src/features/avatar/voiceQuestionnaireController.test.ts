@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 import { Model } from "survey-core";
 import phq9Seed from "../../../../../modules/questionnaire/seed/phq9.zh-TW.surveyjs.json";
 import { createKioskSurveyModel } from "../questionnaire/SurveyJsQuestionnaireRenderer";
-import { candidateFromTranscript, confirmVoiceAnswer, getCurrentSurveyQuestion } from "./voiceQuestionnaireController";
+import {
+  candidateFromTranscript,
+  confirmVoiceAnswer,
+  confirmVoiceAnswerAndMoveNext,
+  getCurrentSurveyQuestion
+} from "./voiceQuestionnaireController";
 
 function makeModel() {
   return new Model(phq9Seed);
@@ -63,6 +68,18 @@ describe("voice questionnaire controller", () => {
     expect(getCurrentSurveyQuestion(model)?.name).toBe("phq9_02");
     expect(model.prevPage()).toBe(true);
     expect(getCurrentSurveyQuestion(model)?.name).toBe("phq9_01");
+  });
+
+  it("writes a confirmed voice answer and moves the UI to the next question", () => {
+    const model = createKioskSurveyModel(phq9Seed);
+    const firstQuestion = getCurrentSurveyQuestion(model);
+    const candidate = candidateFromTranscript(firstQuestion!, "完全沒有");
+
+    const nextQuestion = confirmVoiceAnswerAndMoveNext(model, firstQuestion!, candidate!);
+
+    expect(model.data).toMatchObject({ phq9_01: 0 });
+    expect(nextQuestion?.name).toBe("phq9_02");
+    expect(getCurrentSurveyQuestion(model)?.name).toBe("phq9_02");
   });
 
   it("returns no candidate for invalid speech so touch fallback remains needed", () => {
