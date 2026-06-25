@@ -281,6 +281,7 @@ export interface AgentTurnResponse {
   provider: string;
   model?: string;
   transcript?: string;
+  confidence?: number;
   guidance?: string;
   audio_data_url?: string;
   audio_url?: string;
