@@ -136,23 +136,33 @@ afterEach(() => {
   delete process.env.ASR_SERVICE_URL;
   delete process.env.ASR_PROVIDER;
   delete process.env.ASR_MODEL;
+  delete process.env.ASR_LANGUAGE;
   delete process.env.ASR_TRANSCRIBE_PATH;
   delete process.env.ASR_HEALTH_PATH;
   delete process.env.LLM_PROVIDER;
+  delete process.env.VLLM_BASE_URL;
+  delete process.env.VLLM_MODEL;
   delete process.env.LLM_BASE_URL;
   delete process.env.LLM_MODEL;
   delete process.env.LLM_MODELS_PATH;
+  delete process.env.LLM_REQUEST_TIMEOUT_MS;
+  delete process.env.LLM_TEMPERATURE;
   delete process.env.OLLAMA_BASE_URL;
   delete process.env.OLLAMA_MODEL;
   delete process.env.TTS_PROVIDER;
   delete process.env.TTS_SERVICE_URL;
   delete process.env.TTS_MODEL_PATH;
+  delete process.env.TTS_VOICE;
   delete process.env.TTS_SYNTHESIZE_PATH;
   delete process.env.TTS_HEALTH_PATH;
+  delete process.env.TTS_REQUEST_TIMEOUT_MS;
   delete process.env.TTS_REQUEST_STYLE;
   delete process.env.BREEZYVOICE_BASE_URL;
   delete process.env.BREEZYVOICE_MODEL;
   delete process.env.BREEZYVOICE_VOICE_ID;
+  delete process.env.REDPANDA_ADMIN_URL;
+  delete process.env.REDPANDA_READY_PATH;
+  delete process.env.SPRINT5_REQUIRE_VLLM;
 });
 
 describe("QuestionnaireService", () => {
@@ -278,8 +288,8 @@ describe("QuestionnaireService", () => {
 
   it("calls local Gemma 4 E4B through an OpenAI-compatible endpoint in real mode", async () => {
     process.env.VOICE_MODEL_MODE = "real";
-    process.env.LLM_BASE_URL = "http://llm.local/v1";
-    process.env.LLM_MODEL = "gemma-4-e4b";
+    process.env.VLLM_BASE_URL = "http://llm.local/v1";
+    process.env.VLLM_MODEL = "gemma-4-e4b";
     const fetchMock = vi.fn(async () => {
       return new Response(JSON.stringify({ choices: [{ message: { content: "請依照題目選一個最接近的頻率。" } }] }), {
         status: 200,
@@ -340,6 +350,18 @@ describe("QuestionnaireService", () => {
     });
   });
 
+  it("rejects a configured customized BreezyVoice voice", async () => {
+    process.env.VOICE_MODEL_MODE = "real";
+    process.env.BREEZYVOICE_BASE_URL = "http://breezy.local/v1";
+    process.env.TTS_VOICE = "jason-custom";
+
+    const service = new QuestionnaireService(new InMemoryQuestionnaireRepository());
+
+    await expect(service.runTts({ text: "請依照題目回答。" })).rejects.toThrow(
+      "Only BreezyVoice default voice is accepted"
+    );
+  });
+
   it("rejects customized TTS voice request fields", async () => {
     const service = new QuestionnaireService(new InMemoryQuestionnaireRepository());
 
@@ -355,9 +377,73 @@ describe("QuestionnaireService", () => {
     const service = new QuestionnaireService(new InMemoryQuestionnaireRepository());
 
     await expect(service.getProviderStatus()).resolves.toMatchObject({
-      asr: { provider: "faster_whisper_breeze_asr_26", mode: "mock", ready: true },
-      llm: { provider: "vllm_openai_compatible", model: "gemma-4-e4b", mode: "mock", ready: true },
-      tts: { provider: "breezyvoice_default", mode: "mock", ready: true }
+      asr: { provider: "faster_whisper_breeze_asr_26", mode: "mock", ready: true, acceptanceEligible: false },
+      llm: { provider: "vllm_openai_compatible", model: "gemma-4-e4b", mode: "mock", ready: true, acceptanceEligible: false },
+      tts: { provider: "breezyvoice_default", mode: "mock", ready: true, acceptanceEligible: false },
+      redpanda: { provider: "redpanda", mode: "mock", ready: true, acceptanceEligible: false },
+      sprint5Acceptance: { allRequiredLive: false, eligible: false }
+    });
+  });
+
+  it("reports Sprint 5 eligible provider status only when all live probes pass", async () => {
+    process.env.VOICE_MODEL_MODE = "real";
+    process.env.ASR_SERVICE_URL = "http://asr.local";
+    process.env.VLLM_BASE_URL = "http://llm.local/v1";
+    process.env.VLLM_MODEL = "gemma-4-e4b";
+    process.env.TTS_SERVICE_URL = "http://tts.local";
+    process.env.REDPANDA_ADMIN_URL = "http://redpanda.local";
+    const fetchMock = vi.fn(async () => {
+      return new Response(JSON.stringify({ status: "ok" }), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const service = new QuestionnaireService(new InMemoryQuestionnaireRepository());
+
+    await expect(service.getProviderStatus()).resolves.toMatchObject({
+      providers: {
+        asr: { mode: "live", ready: true, acceptanceEligible: true },
+        llm: { mode: "live", model: "gemma-4-e4b", ready: true, acceptanceEligible: true },
+        tts: { mode: "live", ready: true, acceptanceEligible: true },
+        redpanda: { mode: "live", ready: true, acceptanceEligible: true }
+      },
+      sprint5Acceptance: { allRequiredLive: true, eligible: true }
+    });
+    expect(fetchMock).toHaveBeenCalledWith("http://asr.local/healthz", expect.any(Object));
+    expect(fetchMock).toHaveBeenCalledWith("http://llm.local/v1/chat/completions", expect.any(Object));
+    expect(fetchMock).toHaveBeenCalledWith("http://tts.local/healthz", expect.any(Object));
+    expect(fetchMock).toHaveBeenCalledWith("http://redpanda.local/v1/status/ready", expect.any(Object));
+  });
+
+  it("keeps an Ollama-compatible Gemma endpoint live but not strict Sprint 5 eligible", async () => {
+    process.env.VOICE_MODEL_MODE = "real";
+    process.env.LLM_PROVIDER = "ollama_openai_compatible";
+    process.env.LLM_BASE_URL = "http://ollama.local/v1";
+    process.env.LLM_MODEL = "gemma4:e4b";
+    const fetchMock = vi.fn(async () => {
+      return new Response(JSON.stringify({ status: "ok" }), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const service = new QuestionnaireService(new InMemoryQuestionnaireRepository());
+
+    await expect(service.getProviderStatus()).resolves.toMatchObject({
+      providers: {
+        llm: {
+          provider: "ollama_openai_compatible",
+          model: "gemma4:e4b",
+          mode: "live",
+          ready: true,
+          acceptanceEligible: false,
+          error_code: "LLM_PROVIDER_NOT_VLLM"
+        }
+      },
+      sprint5Acceptance: { allRequiredLive: true, eligible: false }
     });
   });
 
@@ -371,7 +457,9 @@ describe("QuestionnaireService", () => {
     await expect(service.getProviderStatus()).resolves.toMatchObject({
       asr: { mode: "unavailable", ready: false, error_code: "HTTP_503" },
       llm: { mode: "unavailable", ready: false, error_code: "HTTP_503" },
-      tts: { mode: "unavailable", ready: false, error_code: "HTTP_503" }
+      tts: { mode: "unavailable", ready: false, error_code: "HTTP_503" },
+      redpanda: { mode: "unavailable", ready: false, error_code: "HTTP_503" },
+      sprint5Acceptance: { allRequiredLive: false, eligible: false }
     });
   });
 });

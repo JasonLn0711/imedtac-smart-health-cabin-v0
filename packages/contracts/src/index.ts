@@ -173,6 +173,12 @@ export const ProviderRuntimeStatusSchema = z.object({
   model: z.string().optional(),
   mode: VoiceProviderModeSchema,
   ready: z.boolean(),
+  healthy: z.boolean().optional(),
+  acceptanceEligible: z.boolean().optional(),
+  endpoint: z.string().optional(),
+  latencyMs: z.number().optional(),
+  lastError: z.string().nullable().optional(),
+  fallback: z.string().optional(),
   error_code: z.string().optional()
 });
 export type ProviderRuntimeStatus = z.infer<typeof ProviderRuntimeStatusSchema>;
@@ -180,7 +186,22 @@ export type ProviderRuntimeStatus = z.infer<typeof ProviderRuntimeStatusSchema>;
 export const ProviderStatusResponseSchema = z.object({
   asr: ProviderRuntimeStatusSchema,
   llm: ProviderRuntimeStatusSchema,
-  tts: ProviderRuntimeStatusSchema
+  tts: ProviderRuntimeStatusSchema,
+  redpanda: ProviderRuntimeStatusSchema.optional(),
+  providers: z
+    .object({
+      asr: ProviderRuntimeStatusSchema,
+      llm: ProviderRuntimeStatusSchema,
+      tts: ProviderRuntimeStatusSchema,
+      redpanda: ProviderRuntimeStatusSchema
+    })
+    .optional(),
+  sprint5Acceptance: z
+    .object({
+      allRequiredLive: z.boolean(),
+      eligible: z.boolean()
+    })
+    .optional()
 });
 export type ProviderStatusResponse = z.infer<typeof ProviderStatusResponseSchema>;
 

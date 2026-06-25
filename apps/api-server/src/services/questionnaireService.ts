@@ -50,7 +50,13 @@ function voiceModelMode(): "mock" | "live" {
 }
 
 function voiceModelTimeoutMs(): number {
-  return Number(process.env.VOICE_MODEL_TIMEOUT_MS ?? 30000);
+  return Number(
+    process.env.VOICE_MODEL_TIMEOUT_MS ??
+      process.env.ASR_REQUEST_TIMEOUT_MS ??
+      process.env.LLM_REQUEST_TIMEOUT_MS ??
+      process.env.TTS_REQUEST_TIMEOUT_MS ??
+      30000
+  );
 }
 
 function env(name: string, fallback: string): string {
@@ -66,6 +72,9 @@ function joinUrl(baseUrl: string, path: string): string {
 }
 
 function llmBaseUrl(): string {
+  if (process.env.VLLM_BASE_URL) {
+    return process.env.VLLM_BASE_URL;
+  }
   if (process.env.LLM_BASE_URL) {
     return process.env.LLM_BASE_URL;
   }
@@ -76,7 +85,23 @@ function llmBaseUrl(): string {
 }
 
 function llmModel(): string {
-  return process.env.LLM_MODEL ?? process.env.OLLAMA_MODEL ?? defaultLlmModel;
+  return process.env.VLLM_MODEL ?? process.env.LLM_MODEL ?? process.env.OLLAMA_MODEL ?? defaultLlmModel;
+}
+
+function llmTemperature(): number {
+  return Number(process.env.LLM_TEMPERATURE ?? 0.2);
+}
+
+function asrLanguageHint(): string {
+  return process.env.ASR_LANGUAGE ?? process.env.ASR_LANGUAGE_HINT ?? "zh";
+}
+
+function ttsVoiceId(): string {
+  return process.env.TTS_VOICE ?? process.env.BREEZYVOICE_VOICE_ID ?? defaultTtsVoice;
+}
+
+function sprint5RequiresVllm(): boolean {
+  return process.env.SPRINT5_REQUIRE_VLLM !== "false";
 }
 
 async function postJson<T>(url: string, body: unknown): Promise<T> {
@@ -99,17 +124,91 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
   }
 }
 
-async function getProviderReady(url: string): Promise<{ ready: boolean; error_code?: string }> {
+async function getProviderReady(url: string): Promise<{ ready: boolean; healthy: boolean; latencyMs: number; lastError: string | null; error_code?: string }> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), voiceModelTimeoutMs());
+  const startedAt = Date.now();
   try {
     const response = await fetch(url, { signal: controller.signal });
-    return response.ok ? { ready: true } : { ready: false, error_code: `HTTP_${response.status}` };
+    const latencyMs = Date.now() - startedAt;
+    return response.ok
+      ? { ready: true, healthy: true, latencyMs, lastError: null }
+      : {
+          ready: false,
+          healthy: false,
+          latencyMs,
+          lastError: `HTTP_${response.status}`,
+          error_code: `HTTP_${response.status}`
+        };
   } catch (error) {
-    return { ready: false, error_code: error instanceof Error ? error.name : "PROVIDER_UNAVAILABLE" };
+    const errorCode = error instanceof Error ? error.name : "PROVIDER_UNAVAILABLE";
+    return {
+      ready: false,
+      healthy: false,
+      latencyMs: Date.now() - startedAt,
+      lastError: errorCode,
+      error_code: errorCode
+    };
   } finally {
     clearTimeout(timeout);
   }
+}
+
+async function postProviderReady(url: string, body: unknown): Promise<{ ready: boolean; healthy: boolean; latencyMs: number; lastError: string | null; error_code?: string }> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), voiceModelTimeoutMs());
+  const startedAt = Date.now();
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+      signal: controller.signal
+    });
+    const latencyMs = Date.now() - startedAt;
+    return response.ok
+      ? { ready: true, healthy: true, latencyMs, lastError: null }
+      : {
+          ready: false,
+          healthy: false,
+          latencyMs,
+          lastError: `HTTP_${response.status}`,
+          error_code: `HTTP_${response.status}`
+        };
+  } catch (error) {
+    const errorCode = error instanceof Error ? error.name : "PROVIDER_UNAVAILABLE";
+    return {
+      ready: false,
+      healthy: false,
+      latencyMs: Date.now() - startedAt,
+      lastError: errorCode,
+      error_code: errorCode
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function withAcceptance(input: {
+  provider: string;
+  model?: string;
+  mode: "mock" | "live" | "unavailable";
+  ready: boolean;
+  healthy?: boolean;
+  endpoint?: string;
+  latencyMs?: number;
+  lastError?: string | null;
+  fallback: string;
+  error_code?: string;
+  acceptanceEligible?: boolean;
+}) {
+  const runtimeEligible = input.mode === "live" && input.ready && (input.healthy ?? input.ready);
+  return {
+    ...input,
+    healthy: input.healthy ?? input.ready,
+    acceptanceEligible: input.acceptanceEligible ?? runtimeEligible,
+    lastError: input.lastError ?? null
+  };
 }
 
 async function postAudio(url: string, body: unknown): Promise<string> {
@@ -159,40 +258,116 @@ export interface TTSAdapter {
 export class ProviderStatusService {
   async getStatus(): Promise<ProviderStatusResponse> {
     if (voiceModelMode() === "mock") {
+      const asr = withAcceptance({
+        provider: env("ASR_PROVIDER", defaultAsrProvider),
+        model: env("ASR_MODEL", defaultAsrModel),
+        mode: "mock",
+        ready: true,
+        endpoint: env("ASR_SERVICE_URL", "http://localhost:8011"),
+        fallback: "touch input"
+      });
+      const llm = withAcceptance({
+        provider: env("LLM_PROVIDER", defaultLlmProvider),
+        model: llmModel(),
+        mode: "mock",
+        ready: true,
+        endpoint: llmBaseUrl(),
+        fallback: "deterministic rejection / touch input"
+      });
+      const tts = withAcceptance({
+        provider: env("TTS_PROVIDER", defaultTtsProvider),
+        model: env("TTS_MODEL_PATH", defaultTtsModel),
+        mode: "mock",
+        ready: true,
+        endpoint: env("TTS_SERVICE_URL", "http://localhost:8012"),
+        fallback: "text-only question display"
+      });
+      const redpanda = withAcceptance({
+        provider: "redpanda",
+        mode: "mock",
+        ready: true,
+        endpoint: env("REDPANDA_BROKERS", "localhost:9092"),
+        fallback: "outbox rows remain pending and retryable"
+      });
+
       return {
-        asr: { provider: env("ASR_PROVIDER", defaultAsrProvider), model: env("ASR_MODEL", defaultAsrModel), mode: "mock", ready: true },
-        llm: { provider: env("LLM_PROVIDER", defaultLlmProvider), model: llmModel(), mode: "mock", ready: true },
-        tts: { provider: env("TTS_PROVIDER", defaultTtsProvider), model: env("TTS_MODEL_PATH", defaultTtsModel), mode: "mock", ready: true }
+        asr,
+        llm,
+        tts,
+        redpanda,
+        providers: { asr, llm, tts, redpanda },
+        sprint5Acceptance: { allRequiredLive: false, eligible: false }
       };
     }
 
-    const asr = await getProviderReady(
-      joinUrl(env("ASR_SERVICE_URL", "http://localhost:8011"), env("ASR_HEALTH_PATH", "/healthz"))
-    );
-    const llm = await getProviderReady(joinUrl(llmBaseUrl(), env("LLM_MODELS_PATH", "/models")));
+    const asrEndpoint = env("ASR_SERVICE_URL", "http://localhost:8011");
+    const asrProbe = await getProviderReady(joinUrl(asrEndpoint, env("ASR_HEALTH_PATH", "/healthz")));
+    const llmEndpoint = llmBaseUrl();
+    const llmProbe = await postProviderReady(joinUrl(llmEndpoint, "/chat/completions"), {
+      model: llmModel(),
+      messages: [{ role: "user", content: "Reply OK only." }],
+      max_tokens: 4,
+      temperature: 0
+    });
     const ttsBaseUrl = process.env.BREEZYVOICE_BASE_URL ?? env("TTS_SERVICE_URL", "http://localhost:8012");
     const ttsHealthPath = process.env.BREEZYVOICE_BASE_URL ? "/models" : env("TTS_HEALTH_PATH", "/healthz");
-    const tts = await getProviderReady(joinUrl(ttsBaseUrl, ttsHealthPath));
+    const ttsProbe = await getProviderReady(joinUrl(ttsBaseUrl, ttsHealthPath));
+    const redpandaEndpoint = env("REDPANDA_ADMIN_URL", "http://localhost:9644");
+    const redpandaProbe = await getProviderReady(joinUrl(redpandaEndpoint, env("REDPANDA_READY_PATH", "/v1/status/ready")));
+
+    const asr = withAcceptance({
+      provider: env("ASR_PROVIDER", defaultAsrProvider),
+      model: env("ASR_MODEL", defaultAsrModel),
+      mode: asrProbe.ready ? "live" : "unavailable",
+      endpoint: asrEndpoint,
+      fallback: "touch input",
+      ...asrProbe
+    });
+    const llm = withAcceptance({
+      provider: env("LLM_PROVIDER", defaultLlmProvider),
+      model: llmModel(),
+      mode: llmProbe.ready ? "live" : "unavailable",
+      endpoint: llmEndpoint,
+      fallback: "deterministic rejection / touch input",
+      ...llmProbe,
+      acceptanceEligible:
+        llmProbe.ready &&
+        llmProbe.healthy &&
+        (!sprint5RequiresVllm() || env("LLM_PROVIDER", defaultLlmProvider) === defaultLlmProvider),
+      lastError:
+        llmProbe.ready && sprint5RequiresVllm() && env("LLM_PROVIDER", defaultLlmProvider) !== defaultLlmProvider
+          ? "LLM_PROVIDER_NOT_VLLM"
+          : llmProbe.lastError,
+      error_code:
+        llmProbe.ready && sprint5RequiresVllm() && env("LLM_PROVIDER", defaultLlmProvider) !== defaultLlmProvider
+          ? "LLM_PROVIDER_NOT_VLLM"
+          : llmProbe.error_code
+    });
+    const tts = withAcceptance({
+      provider: env("TTS_PROVIDER", defaultTtsProvider),
+      model: process.env.BREEZYVOICE_MODEL ?? env("TTS_MODEL_PATH", defaultTtsModel),
+      mode: ttsProbe.ready ? "live" : "unavailable",
+      endpoint: ttsBaseUrl,
+      fallback: "text-only question display",
+      ...ttsProbe
+    });
+    const redpanda = withAcceptance({
+      provider: "redpanda",
+      mode: redpandaProbe.ready ? "live" : "unavailable",
+      endpoint: redpandaEndpoint,
+      fallback: "outbox rows remain pending and retryable",
+      ...redpandaProbe
+    });
+    const allRequiredLive = [asr, llm, tts, redpanda].every((provider) => provider.mode === "live");
+    const eligible = [asr, llm, tts, redpanda].every((provider) => provider.acceptanceEligible);
 
     return {
-      asr: {
-        provider: env("ASR_PROVIDER", defaultAsrProvider),
-        model: env("ASR_MODEL", defaultAsrModel),
-        mode: asr.ready ? "live" : "unavailable",
-        ...asr
-      },
-      llm: {
-        provider: env("LLM_PROVIDER", defaultLlmProvider),
-        model: llmModel(),
-        mode: llm.ready ? "live" : "unavailable",
-        ...llm
-      },
-      tts: {
-        provider: env("TTS_PROVIDER", defaultTtsProvider),
-        model: process.env.BREEZYVOICE_MODEL ?? env("TTS_MODEL_PATH", defaultTtsModel),
-        mode: tts.ready ? "live" : "unavailable",
-        ...tts
-      }
+      asr,
+      llm,
+      tts,
+      redpanda,
+      providers: { asr, llm, tts, redpanda },
+      sprint5Acceptance: { allRequiredLive, eligible }
     };
   }
 }
@@ -209,7 +384,7 @@ const liveAsrAdapter: ASRAdapter = {
     }>(joinUrl(env("ASR_SERVICE_URL", "http://localhost:8011"), env("ASR_TRANSCRIBE_PATH", "/v1/asr/transcribe")), {
       audio_format: input.audioFormat,
       audio_base64: input.audioBase64,
-      language_hint: env("ASR_LANGUAGE_HINT", "zh"),
+      language_hint: asrLanguageHint(),
       turn_id: input.agentSessionId
     });
     const transcript = asr.transcript ?? asr.text ?? "";
@@ -237,7 +412,7 @@ const liveLlmAdapter: LLMAdapter = {
           }
         ],
         stream: false,
-        temperature: 0.2,
+        temperature: llmTemperature(),
         max_tokens: 80
       }
     );
@@ -253,10 +428,12 @@ const liveTtsAdapter: TTSAdapter = {
     const provider = env("TTS_PROVIDER", defaultTtsProvider);
     const model = process.env.BREEZYVOICE_MODEL ?? env("TTS_MODEL_PATH", defaultTtsModel);
     let audioBase64: string;
-    let voice = defaultTtsVoice;
+    const voice = ttsVoiceId();
+    if (voice !== defaultTtsVoice) {
+      throw new QuestionnaireValidationError("Only BreezyVoice default voice is accepted");
+    }
 
     if (process.env.BREEZYVOICE_BASE_URL || process.env.TTS_REQUEST_STYLE === "openai") {
-      voice = env("BREEZYVOICE_VOICE_ID", defaultTtsVoice);
       audioBase64 = await postAudio(joinUrl(env("BREEZYVOICE_BASE_URL", "http://localhost:9003/v1"), "/audio/speech"), {
         model,
         voice,
