@@ -518,6 +518,7 @@ Relevant implementation surfaces:
 | `apps/kiosk-web/src/features/avatar/voiceAgentApi.ts` | Kiosk calls to agent session, ASR, respond, and TTS routes |
 | `apps/kiosk-web/src/features/avatar/voiceQuestionnaireController.ts` | Shared answer-write-and-next-question helper |
 | `apps/kiosk-web/src/features/avatar/avatarStateMachine.ts` | `LOOP_READY` transition for returning to recording |
+| `apps/api-server/src/services/questionnaireService.ts` | Live LLM uses `LLM_TEMPERATURE ?? 0.3`; live TTS uses BreezyVoice default voice; answer follow-up prompt keeps a deterministic fallback |
 
 ## Experiment Run: Wake Greeting Then First Question TTS
 
@@ -1066,7 +1067,66 @@ Run the same flow in the visible browser with physical microphone permission:
 say "你好小慧" -> hear greeting -> hear first question -> speak an answer
 -> confirm mapping -> hear <= 2 sentence answer summary plus next question.
 ```
-| `apps/api-server/src/services/questionnaireService.ts` | Live LLM uses `LLM_TEMPERATURE ?? 0.3`; live TTS uses BreezyVoice default voice |
+
+## Experiment Run: Answer Follow-Up Guidance Code Check
+
+Experiment purpose:
+
+```text
+Validate the answer-followup guidance layer:
+confirmed answer -> <= 2 sentence response summary -> next question prompt,
+while keeping questionnaire writes confirmation-gated.
+```
+
+Time record:
+
+| Field | Value |
+| --- | --- |
+| Focused Vitest start shown by tool | `2026-06-25 23:59:18 +08:00` |
+| Local evidence record time | `2026-06-25T23:58:07+08:00` |
+| UTC evidence record time | `2026-06-25T15:58:07+00:00` |
+
+Changed surfaces:
+
+- `apps/api-server/src/services/questionnaireService.ts` adds
+  `purpose=answer_followup`, passes transcript and confirmed answer text into
+  the live LLM prompt, and falls back to a deterministic response when the live
+  output is unusable.
+- `apps/api-server/src/routes/questionnaireRoutes.ts` exposes
+  `next_question_name`, `transcript`, `answer_text`, and `purpose` on the
+  existing respond route.
+- `apps/kiosk-web/src/features/avatar/AvatarPanel.tsx` asks the API for the
+  post-confirmation follow-up before TTS playback.
+- `apps/kiosk-web/src/features/avatar/voiceAgentApi.ts` carries the typed
+  request fields from kiosk to API.
+
+Focused code checks:
+
+```bash
+corepack pnpm exec vitest run apps/api-server/src/services/questionnaireService.test.ts apps/kiosk-web/src/features/avatar/avatarStateMachine.test.ts apps/kiosk-web/src/features/avatar/voiceQuestionnaireController.test.ts packages/voice-safety-core/src/voice-safety-core.test.ts
+corepack pnpm --filter @shc/api-server typecheck
+corepack pnpm --filter @shc/kiosk-web typecheck
+corepack pnpm --filter @shc/voice-safety-core typecheck
+git diff --check
+```
+
+Observed results:
+
+```text
+Focused Vitest: 4 files passed, 60 tests passed.
+@shc/api-server typecheck: passed.
+@shc/kiosk-web typecheck: passed.
+@shc/voice-safety-core typecheck: passed.
+git diff --check: passed.
+```
+
+Scope controls:
+
+- The LLM can phrase the response summary and next-question wording.
+- The LLM does not write questionnaire answers, alter scoring, create answer
+  categories, diagnose, or bypass confirmation.
+- The next validation layer is a full browser/microphone pass that confirms
+  spoken answer -> confirmation -> answer follow-up TTS -> next question TTS.
 
 ## Experiment Notes
 

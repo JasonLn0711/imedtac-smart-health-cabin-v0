@@ -478,6 +478,37 @@ describe("QuestionnaireService", () => {
     expect(guidance.split("。").filter(Boolean).length).toBeLessThanOrEqual(3);
   });
 
+  it("passes answer transcript to LLM for the two-sentence next-question follow-up", async () => {
+    process.env.VOICE_MODEL_MODE = "real";
+    process.env.LLM_BASE_URL = "http://ollama.local";
+    const fetchMock = vi.fn<typeof fetch>(async () => {
+      return new Response(JSON.stringify({ message: { content: "ering ering ering" } }), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const repository = new InMemoryQuestionnaireRepository();
+    const service = new QuestionnaireService(repository);
+    const response = await service.buildGuidance({
+      purpose: "answer_followup",
+      question_name: "phq9_01",
+      next_question_name: "phq9_02",
+      transcript: "我想應該是幾乎每天",
+      answer_text: "幾乎每天"
+    });
+
+    expect(response.guidance).toContain("幾乎每天");
+    expect(response.guidance).toContain("感到心情低落");
+    expect(response.guidance).not.toContain("請用不超過");
+    expect(repository.savedTurns[0]?.questionName).toBe("phq9_02");
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+    expect(body.messages[1].content).toContain("不超過 2 句");
+    expect(body.messages[1].content).toContain("我想應該是幾乎每天");
+    expect(body.options.temperature).toBe(0.3);
+  });
+
   it("falls back to deterministic guidance when live LLM guidance is unusable", async () => {
     process.env.VOICE_MODEL_MODE = "real";
     process.env.LLM_BASE_URL = "http://ollama.local";

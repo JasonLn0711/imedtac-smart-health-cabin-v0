@@ -53,13 +53,6 @@ function speechRms(data: Uint8Array): number {
   return Math.sqrt(sum / data.length);
 }
 
-function voiceFeedback(question: Question, answerValue: number): string {
-  if (question.name === "phq9_09" && answerValue > 0) {
-    return "謝謝你願意說出來，現場人員可以陪你一起完成接下來的流程。";
-  }
-  return "謝謝你，照自己的感受回答就很好。";
-}
-
 export function AvatarPanel({ model }: AvatarPanelProps) {
   const [snapshot, send] = useMachine(avatarStateMachine);
   const [transcript, setTranscript] = useState("完全沒有");
@@ -493,19 +486,26 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
     setConfirmedCount((count) => count + 1);
     setTurnCount((count) => count + 1);
     const agentSessionId = await ensureAgentSession();
-    const summaryText = `我聽到你這題的答案是「${draft.candidate.text}」。`;
-    const feedbackText = voiceFeedback(currentQuestion, draft.candidate.value);
-    let replyText = `${summaryText}${feedbackText}問卷已完成，可以送出問卷。`;
+    let replyText = `我聽到您這題的回答是「${draft.candidate.text}」。問卷已完成，可以送出問卷。`;
     let ttsQuestionName = currentQuestion.name;
+    let nextQuestionName: string | undefined;
 
     if (nextQuestion) {
-      const guidance = await buildGuidanceTurn({ agentSessionId, questionName: nextQuestion.name });
-      replyText = `${summaryText}${feedbackText}${guidance.guidance ?? `接下來請回答：「${nextQuestion.title}」。`}`;
+      nextQuestionName = nextQuestion.name;
       ttsQuestionName = nextQuestion.name;
     } else {
       continuousVoiceRef.current = false;
       setContinuousVoiceActive(false);
     }
+    const guidance = await buildGuidanceTurn({
+      agentSessionId,
+      questionName: currentQuestion.name,
+      nextQuestionName,
+      transcript: draft.transcript,
+      answerText: draft.candidate.text,
+      purpose: "answer_followup"
+    });
+    replyText = guidance.guidance ?? replyText;
 
     setMessage(replyText);
     const tts = await synthesizeTtsTurn({

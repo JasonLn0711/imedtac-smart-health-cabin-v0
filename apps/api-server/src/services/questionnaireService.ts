@@ -460,6 +460,31 @@ function buildWakeGreetingGuidance(): string {
   return "您好，我是慧誠智醫健康互動助理。接下來我會用語音帶您完成問卷，也可以隨時改用觸控填答。";
 }
 
+function buildAnswerFollowupGuidance(
+  surveyjsJson: unknown,
+  input: { question_name?: string; next_question_name?: string; transcript?: string; answer_text?: string }
+): { prompt: string; fallback: string } {
+  const questions = getSurveyQuestionContexts(surveyjsJson);
+  const current = questions.find((item) => item.name === input.question_name);
+  const next = questions.find((item) => item.name === input.next_question_name);
+  const transcript = input.transcript?.trim() || "未提供逐字稿";
+  const answer = input.answer_text?.trim() || transcript;
+
+  if (!next) {
+    const fallback = `我聽到您這題的回答是「${answer}」。問卷已完成，可以送出問卷。`;
+    return {
+      fallback,
+      prompt: `請用不超過 2 句繁體中文 TTS 文字回覆，摘要使用者剛才的回答，並說明問卷已完成。使用者語音逐字稿：「${transcript}」。確認答案：「${answer}」。剛回答題目：「${current?.title ?? input.question_name ?? "目前題目"}」。`
+    };
+  }
+
+  const fallback = `我聽到您這題的回答是「${answer}」。接下來請回答：「${next.title}」；請依照畫面選項選擇最符合的頻率。`;
+  return {
+    fallback,
+    prompt: `請用不超過 2 句繁體中文 TTS 文字回覆。第一句摘要使用者剛才的回答，第二句口語化詢問下一題；不得診斷、不得改分、不得替使用者作答。使用者語音逐字稿：「${transcript}」。確認答案：「${answer}」。剛回答題目：「${current?.title ?? input.question_name ?? "目前題目"}」。下一題：「${next.title}」。下一題選項：${next.choices.map((choice) => choice.text).join("、")}。`
+  };
+}
+
 function isUsableGuidance(value: string): boolean {
   return /[\u4e00-\u9fff]/.test(value);
 }
@@ -474,7 +499,7 @@ export interface ASRAdapter {
 }
 
 export interface LLMAdapter {
-  guide(fallbackGuidance: string): Promise<{ provider: string; model: string; guidance: string; payload: Record<string, unknown> }>;
+  guide(prompt: string, fallbackGuidance?: string): Promise<{ provider: string; model: string; guidance: string; payload: Record<string, unknown> }>;
 }
 
 export interface TTSAdapter {
@@ -684,7 +709,7 @@ const liveAsrAdapter: ASRAdapter = {
 };
 
 const liveLlmAdapter: LLMAdapter = {
-  async guide(fallbackGuidance) {
+  async guide(prompt, fallbackGuidance = prompt) {
     const provider = env("LLM_PROVIDER", defaultLlmProvider);
     const model = llmModel();
     const messages = [
@@ -695,7 +720,7 @@ const liveLlmAdapter: LLMAdapter = {
       },
       {
         role: "user",
-        content: fallbackGuidance
+        content: prompt
       }
     ];
     const llm: { choices?: Array<{ message?: { content?: string } }>; message?: { content?: string } } =
@@ -719,7 +744,7 @@ const liveLlmAdapter: LLMAdapter = {
           );
     const generatedGuidance = llm.choices?.[0]?.message?.content?.trim() || llm.message?.content?.trim() || "";
     const guidance = isUsableGuidance(generatedGuidance) ? generatedGuidance : fallbackGuidance;
-    return { provider, model, guidance, payload: { provider, model, guidance } };
+    return { provider, model, guidance, payload: { provider, model, guidance, prompt } };
   }
 };
 
@@ -931,18 +956,25 @@ export class QuestionnaireService {
     agent_session_id?: string;
     session_id?: string;
     question_name?: string;
+    next_question_name?: string;
+    transcript?: string;
+    answer_text?: string;
     purpose?: string;
   }): Promise<AgentTurnResponse> {
     const active = await this.repository.getActiveQuestionnaire();
-    const fallbackGuidance =
-      input.purpose === "wake_greeting" ? buildWakeGreetingGuidance() : buildQuestionGuidance(active.surveyjsJson, input.question_name);
+    const answerFollowup =
+      input.purpose === "answer_followup" ? buildAnswerFollowupGuidance(active.surveyjsJson, input) : null;
+    const prompt =
+      answerFollowup?.prompt ??
+      (input.purpose === "wake_greeting" ? buildWakeGreetingGuidance() : buildQuestionGuidance(active.surveyjsJson, input.question_name));
+    const fallbackGuidance = answerFollowup?.fallback ?? prompt;
     let provider = "mock";
     let model = "mock";
     let guidance = fallbackGuidance;
     let payload: Record<string, unknown> = { provider, guidance };
 
     if (voiceModelMode() === "live") {
-      const llm = await liveLlmAdapter.guide(fallbackGuidance);
+      const llm = await liveLlmAdapter.guide(prompt, fallbackGuidance);
       ({ provider, model, guidance, payload } = llm);
     }
 
@@ -950,7 +982,7 @@ export class QuestionnaireService {
       agentSessionId: input.agent_session_id,
       sessionId: input.session_id,
       turnType: "respond",
-      questionName: input.question_name,
+      questionName: input.next_question_name ?? input.question_name,
       payload
     });
     return { agent_turn_id: turnId, provider, model, guidance };

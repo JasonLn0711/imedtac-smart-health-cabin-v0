@@ -58,11 +58,17 @@ export async function mapVoiceAnswerTurn(input: {
 export async function buildGuidanceTurn(input: {
   agentSessionId: string;
   questionName?: string;
-  purpose?: "wake_greeting";
+  nextQuestionName?: string;
+  transcript?: string;
+  answerText?: string;
+  purpose?: "wake_greeting" | "answer_followup";
 }): Promise<AgentTurnResponse> {
   return postJson<AgentTurnResponse>("/api/v1/agent-turns/respond", {
     agent_session_id: input.agentSessionId,
     question_name: input.questionName,
+    next_question_name: input.nextQuestionName,
+    transcript: input.transcript,
+    answer_text: input.answerText,
     purpose: input.purpose
   });
 }
