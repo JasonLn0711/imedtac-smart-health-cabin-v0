@@ -3,8 +3,8 @@
 Domain packs are the extension boundary for Smart Health Cabin voice safety.
 They let a questionnaire or module add ASR hotwords, common recognition
 repairs, bounded answer aliases, semantic slots, safety flags, retrieval
-templates, and confirmation wording without changing the core six-layer
-pipeline.
+templates, and confirmation wording while the core six-layer pipeline stays
+stable.
 
 ## Current Packs
 
@@ -37,12 +37,11 @@ Each pack should define:
 
 ## Operating Rules
 
-- Do not fabricate N-best alternatives in a domain pack.
-- Do not add diagnosis, treatment, or triage conclusions.
-- Do not create answer aliases that are not present in the active
-  questionnaire choices.
-- Prefer questionnaire-specific packs over adding every term to a global list.
-- Keep hotwords short and concrete: symptom, option, measurement, command, or
+- N-best alternatives come from providers that expose real alternatives.
+- Clinical conclusions stay in human-review and governance workflows.
+- Answer aliases map to active questionnaire choices.
+- Questionnaire-specific packs carry their own vocabulary.
+- Hotwords stay short and concrete: symptom, option, measurement, command, or
   report-access phrases.
-- Use `VOICE_DEFAULT_DOMAIN_PACKS` only for deployment overrides; the default
-  runtime should select packs from questionnaire code or question name.
+- `VOICE_DEFAULT_DOMAIN_PACKS` is available for deployment overrides; the
+  default runtime selects packs from questionnaire code or question name.

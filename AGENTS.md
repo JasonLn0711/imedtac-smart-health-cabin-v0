@@ -53,6 +53,21 @@ For company-facing material, lead with what the project can own and what the
 next decision is. State safety and validation boundaries as design controls,
 not apologies.
 
+## Taiwan zh-TW Product Voice
+
+For durable docs, agent plans, kiosk UI, Avatar speech, and company-facing
+handoff notes, write in Taiwan Traditional Chinese when the reader or user
+surface is zh-TW. Use terms and phrasing familiar in Taiwan healthcare and
+service settings, such as `現場人員`, `健康檢測`, `問卷填答`, `檢測結果`,
+`QR Code`, `觸控填答`, `重新錄音`, `協助確認`, and `人員覆核`.
+
+Use a confident, generous, positive-scope tone: lead with what the system can
+do, how the workflow continues, which evidence supports it, and what the next
+confirmation layer owns. For user-facing copy, prefer service-continuity
+phrasing such as `觸控填答可接續完成`, `請確認最接近的選項`,
+`現場人員會協助確認`, and `系統已整理成候選答案`. Keep clinical and safety
+boundaries as workflow controls, confirmation steps, and human-review paths.
+
 ## File Routing
 
 - `source/`: copied evidence, meeting transcripts, LINE/Gmail/Teams records,

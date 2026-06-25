@@ -17,10 +17,11 @@ external_reference:
 
 # Codex Goal Prompt - Smart Health Cabin ASR Safety Layers + Qwen3 Reranker Integration
 
-結論：Smart Health Cabin 不該只做 2-3 層語音防錯。健康艙應設計成
+結論：Smart Health Cabin 以六層語音安全架構作為健康艙的穩定入口。
+健康艙應設計成
 **六層完整架構**，但 MVP 驗收先把第 1、3、4、5、6 層列為必備；
-第 2 層 N-best / beam candidates 做成可插拔 capability，不要硬假裝 ASR
-已經能穩定輸出真正 N-best。
+第 2 層 N-best / beam candidates 做成可插拔 capability，依 ASR provider
+實際能力清楚呈現。
 
 這份 prompt 對齊目前系統主線：
 
@@ -43,7 +44,7 @@ Raw audio is not retained by default.
 因此 MVP 預設採用 `Qwen3-Reranker-0.6B`，4B / 8B 保留為後續 benchmark
 或更高資源部署選項。
 
-## Why Reranker Cannot Fix Bad ASR
+## Why ASR Evidence Needs Upstream Confirmation
 
 ASR 錯誤會沿著下列鏈條放大：
 
@@ -56,11 +57,12 @@ ASR mishears user
 -> questionnaire / report may become misleading
 ```
 
-Reranker 只看文字候選與排序，不知道原始語音真正說了什麼。它可以改善
-retrieval ranking，但不能可靠修復輸入語意錯誤。健康艙的正確工程策略是：
+Reranker 以文字候選與排序為工作範圍。它可以改善 retrieval ranking；
+健康艙的穩定工程策略是把語音證據先送進 confidence gate、domain
+normalization、semantic frame 與 confirmation workflow，再交給檢索與排序。
 
 ```text
-Do not let wrong or uncertain transcripts directly enter RAG, reranker,
+Route uncertain transcripts through confirmation before RAG, reranker,
 LLM guidance, or questionnaire writes.
 ```
 
@@ -931,36 +933,36 @@ bounded confirmation.
 Required UI behavior:
 
 If one candidate is plausible:
-  "我剛剛聽到的是「胸口悶、走路會喘」，請問我有聽對嗎？"
+  "我剛剛聽到的是「胸口悶、走路會喘」。請確認後繼續。"
   Buttons:
-    是
-    不是，重新錄音
-    改用觸控選擇
+    確認
+    重新錄音
+    改用觸控填答
 
 If multiple candidates are plausible:
-  "請問你剛剛想表達的是哪一個？"
+  "請選擇最接近剛剛語音內容的選項。"
   Buttons:
     candidate A
     candidate B
     candidate C
-    都不是，改用觸控
+    改用觸控填答
 
 For PHQ-9 bounded answer:
-  "你剛剛的回答是不是「幾天」？"
+  "我剛剛聽到的是「幾天」。請確認後填入問卷。"
   Buttons:
-    是
-    不是
-    改用觸控
+    確認並填入
+    重新錄音
+    改用觸控填答
 
 For adult preventive yes/no questions:
-  "我剛剛聽到的是「有」，請問有聽對嗎？"
+  "我剛剛聽到的是「有」。請確認後填入問卷。"
   Buttons:
-    是
-    不是，重新選擇
-    改用觸控
+    確認並填入
+    重新錄音
+    改用觸控填答
 
 For measurement questions:
-  "我剛剛聽到的是「血壓 120 / 80」，請問有聽對嗎？"
+  "我剛剛聽到的是「血壓 120 / 80」。請確認後繼續。"
   Buttons:
     正確
     重新錄音
@@ -1068,7 +1070,7 @@ POST /rerank input:
     }
   ],
   "topK": 5,
-  "instruction": "請依照台灣繁體中文健康篩檢情境，判斷文件是否能支援問卷導引或人工覆核，不要診斷。"
+  "instruction": "請依照台灣繁體中文健康檢測情境，判斷文件是否支援問卷導引或人工覆核，並維持健康檢測支援範圍。"
 }
 
 POST /rerank output:
@@ -1304,9 +1306,9 @@ draft.
 
 For enterprise demo, use user-friendly zh-TW language:
 
-「我剛剛聽到的是『幾天』，請問我有聽對嗎？」
-「我不太確定剛剛的回答，請重新說一次，或直接用螢幕選擇。」
-「這題你也可以直接點選答案。」
+「我剛剛聽到的是『幾天』。請確認後填入問卷。」
+「請用螢幕確認最接近的選項，或重新錄音一次。」
+「這題也可以直接用觸控填答完成。」
 
 ## 9. Voice Agent / LLM Boundary
 
