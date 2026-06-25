@@ -151,6 +151,45 @@ Hotwords are ASR biasing hints when the ASR provider supports them and
 normalization hints otherwise. They must improve recognition and routing only;
 they must not create questionnaire answers, diagnoses, or report claims.
 
+Domain-pack selection must be runtime-extensible:
+
+```text
+Default MVP:
+  phq9_zh_tw
+  smart_cabin_measurement
+  kiosk_faq
+
+Near-term questionnaire:
+  hpa_adult_preventive_zh_tw
+
+Phase-2 module packs:
+  vision_screening_phase2
+  hearing_screening_phase2
+```
+
+Use questionnaire code, question-name prefix, or `VOICE_DEFAULT_DOMAIN_PACKS`
+to select packs. Adding a new questionnaire should require adding a new domain
+pack and a small context mapping, not rewriting ASR routing, semantic-frame
+logic, kiosk UI confirmation, or reranker contracts.
+
+Each domain pack must own:
+
+```text
+sourceFiles
+hotwords
+canonicalTerms
+commonAsrErrors
+answerAliases
+semanticSlots
+safetyRules
+retrievalTemplates
+confirmationTemplates
+```
+
+Answer aliases are only candidate evidence. They are valid only when the active
+SurveyJS question exposes the same bounded choice. They must never create a new
+questionnaire answer category.
+
 ---
 
 ## Direct Codex Goal Prompt
@@ -588,6 +627,66 @@ C 型肝炎
 低密度脂蛋白
 肝功能
 腎功能
+
+Kiosk FAQ / operation hotwords:
+
+重複題目
+請再說一次
+重新開始
+上一題
+下一題
+改用觸控
+用螢幕選
+找工作人員
+查看報告
+QR code
+二維碼
+隱私
+不想錄音
+
+Future vision-screening hotwords:
+
+右眼
+左眼
+裸眼視力
+矯正視力
+近視
+老花
+散光
+色盲
+色弱
+看不清楚
+模糊
+戴眼鏡
+隱形眼鏡
+重新測量
+
+Future hearing-screening hotwords:
+
+右耳
+左耳
+聽得到
+聽不到
+聲音太小
+聲音太大
+背景噪音
+助聽器
+耳鳴
+重新測量
+
+Domain-pack implementation rules:
+
+- Keep `phq9_zh_tw`, `hpa_adult_preventive_zh_tw`,
+  `smart_cabin_measurement`, `kiosk_faq`, `vision_screening_phase2`, and
+  `hearing_screening_phase2` as separate packs.
+- Select packs through questionnaire code, question-name prefix, or
+  `VOICE_DEFAULT_DOMAIN_PACKS`.
+- Send selected pack hotwords to ASR when the provider accepts hotword hints.
+- Use the same selected packs for normalization, semantic-frame extraction,
+  routing, and reranker-option ranking.
+- Never use a hotword alone as a committed answer.
+- Never let a domain pack add answer choices outside the active SurveyJS
+  question.
 肌酸酐
 尿酸
 尿蛋白
@@ -1186,6 +1285,22 @@ touch fallback button
 
 Do not display technical confidence values to end users unless in
 developer/debug mode.
+
+Kiosk implementation rule:
+
+```text
+Recorded voice turn:
+  ASR transcript
+  -> /api/v1/agent-turns/map-answer
+  -> safety metadata + candidate draft
+  -> confirmation UI
+  -> questionnaire write only after explicit user confirmation
+```
+
+Do not keep a browser-only raw transcript mapping path for live or continuous
+voice. Local deterministic mapping helpers may exist for unit tests, but the
+interactive kiosk voice flow must use the API safety pipeline before creating a
+draft.
 
 For enterprise demo, use user-friendly zh-TW language:
 
