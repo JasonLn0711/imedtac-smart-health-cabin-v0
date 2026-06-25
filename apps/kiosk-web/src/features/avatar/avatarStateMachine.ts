@@ -152,11 +152,11 @@ export function avatarStateLabel(state: AvatarState): string {
     normalizing_asr: "語音校正中",
     building_semantic_frame: "建立語意框架",
     ranking_candidates: "候選排序中",
-    clarifying_ambiguous: "需要重新確認",
-    confirming_candidate: "等待確認",
+    clarifying_ambiguous: "確認語音內容",
+    confirming_candidate: "確認候選答案",
     committed: "已寫入答案",
-    retry_or_touch: "請重試或觸控",
-    voice_unavailable: "語音服務不可用",
-    staff_review: "需要人員協助"
+    retry_or_touch: "重新錄音或觸控填答",
+    voice_unavailable: "觸控流程接續",
+    staff_review: "現場人員協助"
   }[state];
 }

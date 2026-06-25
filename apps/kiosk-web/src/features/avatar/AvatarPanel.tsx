@@ -68,7 +68,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
   const [turnCount, setTurnCount] = useState(0);
   const [continuousVoiceActive, setContinuousVoiceActive] = useState(false);
   const [surveyRevision, setSurveyRevision] = useState(0);
-  const [message, setMessage] = useState("等待喚醒詞，或直接使用手動開始與觸控問卷。");
+  const [message, setMessage] = useState("可使用喚醒詞、手動開始，或直接用觸控完成問卷。");
   const currentQuestion = useMemo(() => getCurrentSurveyQuestion(model), [model, confirmedCount, surveyRevision]);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaChunksRef = useRef<Blob[]>([]);
@@ -120,12 +120,12 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
         setMessage("偵測到喚醒詞，開始連續語音偵測。");
         startRecording({ continuous: true }).catch(() => {
           send({ type: "VOICE_SERVICE_DOWN" });
-          setMessage("無法啟動錄音，可改用手動開始或觸控填答。");
+          setMessage("語音流程已交由手動開始與觸控填答接續。");
         });
       }
     };
     socket.onerror = () => {
-      setMessage("Wake word 連線尚未建立；手動開始與觸控問卷仍可完整使用。");
+      setMessage("手動開始與觸控問卷可完整接續填答。");
     };
 
     return () => {
@@ -148,7 +148,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
     if (recorder?.state === "recording") {
       recorder.stop();
     }
-    setMessage("已停止連續聆聽；可用喚醒詞或手動開始重新啟動。");
+    setMessage("連續聆聽已結束；可用喚醒詞或手動開始再次啟動。");
     send({ type: "RESET" });
   }
 
@@ -173,7 +173,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
         continuousVoiceRef.current = false;
         setContinuousVoiceActive(false);
         send({ type: "VOICE_SERVICE_DOWN" });
-        setMessage("無法重新啟動連續錄音，可改用手動開始或觸控填答。");
+        setMessage("手動開始與觸控填答可接續完成。");
       });
     }, 500);
   }
@@ -288,7 +288,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
     send({ type: "ASR_DONE" });
 
     if (!mapped.candidate || mapped.routing_decision === "low_confidence_retry" || mapped.routing_decision === "no_speech_retry") {
-      const retryText = `我聽到：「${mapped.normalized_transcript ?? heardText}」，但還不能安全對應到目前題目的選項。請再回答一次，或使用觸控填答。`;
+      const retryText = `我聽到：「${mapped.normalized_transcript ?? heardText}」。請用螢幕確認最接近的選項，或重新錄音一次。`;
       setMessage(retryText);
       send({ type: "ASR_LOW_CONFIDENCE" });
       const tts = await synthesizeTtsTurn({
@@ -311,7 +311,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
     });
 
     if (mapped.routing_decision === "safety_sensitive_staff_review") {
-      const staffText = `我剛剛聽到的是「${mapped.candidate.text}」，這一題會請現場人員協助確認後再完成。`;
+      const staffText = `我剛剛聽到的是「${mapped.candidate.text}」。這一題會由現場人員協助確認後完成。`;
       setMessage(staffText);
       send({ type: "STAFF_REVIEW" });
       const tts = await synthesizeTtsTurn({
@@ -324,7 +324,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
     }
 
     send({ type: "ASR_DONE" });
-    const confirmText = `我剛剛聽到的是「${mapped.candidate.text}」，請問有聽對嗎？請按確認後才會寫入問卷。`;
+    const confirmText = `我剛剛聽到的是「${mapped.candidate.text}」。請確認後填入問卷。`;
     setMessage(confirmText);
     const tts = await synthesizeTtsTurn({
       agentSessionId,
@@ -338,7 +338,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
   async function startRecording(options: { continuous?: boolean; startEvent?: StartRecordingEvent } = {}) {
     if (!navigator.mediaDevices || typeof MediaRecorder === "undefined") {
       send({ type: "VOICE_SERVICE_DOWN" });
-      setMessage("此瀏覽器目前無法使用 MediaRecorder，可改用觸控或文字模擬填答。");
+      setMessage("此瀏覽器目前提供觸控與文字模擬填答。");
       return;
     }
 
@@ -364,7 +364,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
       }
       const reason = stopReasonRef.current;
       if (reason === "NO_SPEECH_TIMEOUT") {
-        setMessage("沒有偵測到有效語音，持續聆聽中；也可直接觸控填答。");
+        setMessage("目前偵測到安靜狀態，系統持續聆聽；也可直接觸控填答。");
         restartContinuousListening();
         return;
       }
@@ -383,7 +383,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
           continuousVoiceRef.current = false;
           setContinuousVoiceActive(false);
           send({ type: "VOICE_SERVICE_DOWN" });
-          setMessage(error instanceof Error ? error.message : "語音回覆流程失敗，可改用觸控填答。");
+          setMessage(error instanceof Error ? error.message : "語音回覆流程已交由觸控填答接續。");
         });
     };
     mediaRecorderRef.current = recorder;
@@ -404,7 +404,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
 
   async function mapAnswer() {
     if (!currentQuestion) {
-      setMessage("沒有需要填答的下一題。");
+      setMessage("題目已填答完成，可以送出問卷。");
       return;
     }
     try {
@@ -421,7 +421,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
 
       if (!mapped.candidate || mapped.routing_decision === "low_confidence_retry" || mapped.routing_decision === "no_speech_retry") {
         setDraft(null);
-        setMessage("沒有找到可安全確認的候選答案，請重錄或使用觸控填答。");
+        setMessage("請用螢幕確認最接近的選項，或重新錄音一次。");
         send({ type: "ASR_LOW_CONFIDENCE" });
         return;
       }
@@ -435,15 +435,15 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
         candidate: mapped.candidate
       });
       if (mapped.routing_decision === "safety_sensitive_staff_review") {
-        setMessage("這個語音內容需要現場人員協助確認，系統不會直接寫入問卷。");
+        setMessage("這個語音內容已進入現場人員協助確認流程。");
         send({ type: "STAFF_REVIEW" });
         return;
       }
       send({ type: "ASR_DONE" });
-      setMessage("ASR 僅產生候選答案；請確認後才會寫入問卷。");
+      setMessage("系統已整理成候選答案，請確認後填入問卷。");
     } catch (error) {
       send({ type: "VOICE_SERVICE_DOWN" });
-      setMessage(error instanceof Error ? error.message : "語音流程失敗，可改用觸控填答。");
+      setMessage(error instanceof Error ? error.message : "語音流程已交由觸控填答接續。");
     }
   }
 
@@ -453,7 +453,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
     }
     if (draft.routingDecision === "safety_sensitive_staff_review") {
       send({ type: "STAFF_REVIEW" });
-      setMessage("此回答已進入現場人員協助確認流程，系統不會由語音候選直接寫入。");
+      setMessage("此回答已進入現場人員協助確認流程。");
       return;
     }
     const nextQuestion = confirmVoiceAnswerAndMoveNext(model, currentQuestion, draft.candidate);
@@ -491,7 +491,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
 
   function retry() {
     setDraft(null);
-    setMessage("請重新輸入語音文字，或改用觸控填答。");
+    setMessage("請重新錄音，或直接用觸控填答。");
     send({ type: stateRef.current === "confirming_candidate" ? "CONFIRM_NO" : "RESET" });
   }
 
@@ -504,7 +504,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
       });
     } catch {
       send({ type: "VOICE_SERVICE_DOWN" });
-      setMessage("Wake word 模擬服務不可用；請使用手動開始。");
+      setMessage("請使用手動開始啟動語音流程。");
     }
   }
 
@@ -549,37 +549,37 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
           )}
           {continuousVoiceActive && (
             <button type="button" onClick={stopContinuousVoice}>
-              停止連續聆聽
+              結束連續聆聽
             </button>
           )}
           <button type="button" onClick={readQuestion}>
             朗讀題目
           </button>
           <button type="button" onClick={() => void mapAnswer()}>
-            產生候選答案
+            整理語音候選
           </button>
           <button type="button" onClick={retry}>
-            重試
+            重新錄音
           </button>
         </div>
         {draft && (
           <div className="answer-confirmation">
-            <strong>等待確認</strong>
+            <strong>確認候選答案</strong>
             <span>{draft.questionTitle}</span>
-            <span>ASR: {draft.transcript}</span>
+            <span>語音文字：{draft.transcript}</span>
             {showVoiceDebug && draft.normalizedTranscript && <span>校正後: {draft.normalizedTranscript}</span>}
             {showVoiceDebug && draft.routingDecision && <span>路由: {draft.routingDecision}</span>}
             <span>
-              Candidate: {draft.candidate.text} ({draft.candidate.value})
+              候選答案：{draft.candidate.text} ({draft.candidate.value})
             </span>
             {draft.routingDecision !== "safety_sensitive_staff_review" && (
               <button type="button" onClick={() => void confirmAnswer()}>
-                確認寫入
+                確認並填入
               </button>
             )}
           </div>
         )}
-        <p className="touch-fallback">觸控備援：下方問卷可隨時直接填答。</p>
+        <p className="touch-fallback">觸控填答：下方問卷可隨時直接完成。</p>
       </div>
     </aside>
   );

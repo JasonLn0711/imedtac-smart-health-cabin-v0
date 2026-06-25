@@ -19,7 +19,7 @@ describe("Avatar voice entry state machine", () => {
     expect(() => nextAvatarState("wake_detected", "CONFIRM_YES")).toThrow("Invalid Avatar event");
   });
 
-  it("allows tap-to-start fallback when wakeword is unavailable", () => {
+  it("allows tap-to-start fallback when wakeword service hands off to touch", () => {
     let state = nextAvatarState("idle_touch_ready", "VOICE_SERVICE_DOWN");
     expect(state).toBe("voice_unavailable");
 
@@ -28,7 +28,7 @@ describe("Avatar voice entry state machine", () => {
     state = nextAvatarState(state, "ASR_DONE");
 
     expect(state).toBe("confirming_candidate");
-    expect(avatarStateLabel("voice_unavailable")).toBe("語音服務不可用");
+    expect(avatarStateLabel("voice_unavailable")).toBe("觸控流程接續");
   });
 
   it("keeps low-confidence speech out of questionnaire writes", () => {

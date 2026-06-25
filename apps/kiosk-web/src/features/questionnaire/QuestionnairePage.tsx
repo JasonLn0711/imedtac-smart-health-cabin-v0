@@ -28,7 +28,7 @@ export function QuestionnairePage() {
         if (!alive) {
           return;
         }
-        setErrorMessage(error instanceof Error ? error.message : "問卷載入失敗");
+        setErrorMessage(error instanceof Error ? error.message : "問卷流程已切換到現場協助。");
         setLoadState("error");
       });
 
@@ -43,14 +43,14 @@ export function QuestionnairePage() {
 
     try {
       if (!questionnaire) {
-        throw new Error("問卷尚未載入");
+        throw new Error("問卷資料準備中，請由現場人員協助接續。");
       }
       const response = await submitQuestionnaireResponse(questionnaire, rawAnswers);
       setPublicSummary(response.public_summary);
       setCompletedResponse(response);
       setLoadState("complete");
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "問卷送出失敗");
+      setErrorMessage(error instanceof Error ? error.message : "問卷送出流程已切換到現場協助。");
       setLoadState("error");
     }
   }, [questionnaire]);
@@ -75,7 +75,7 @@ export function QuestionnairePage() {
           <>
             <div className="questionnaire-title">
               <h2>{questionnaire.title}</h2>
-              <p>請依照過去兩個星期的狀況填答。完成後只會顯示安全公共摘要。</p>
+              <p>請依照過去兩個星期的狀況填答。完成後會顯示健康檢測公共摘要。</p>
             </div>
             <SurveyJsQuestionnaireRenderer
               surveyJson={questionnaire.surveyjs_json}
@@ -99,7 +99,7 @@ export function QuestionnairePage() {
 
         {loadState === "error" && (
           <div className="error-panel">
-            <h2>目前無法完成問卷</h2>
+            <h2>問卷流程協助中</h2>
             <p>{errorMessage}</p>
           </div>
         )}
