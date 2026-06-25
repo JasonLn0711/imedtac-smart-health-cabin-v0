@@ -81,7 +81,7 @@ extracted/2026-06-25-phq9-zh-TW-agent-readable.md
 10:49 許桓瑜（多寶） 這樣我反而覺得視力聽力模組先不要做
 10:49 許桓瑜（多寶） 我覺得我們先把語音agent 那一塊搞起來
 10:49 許桓瑜（多寶） 視力聽力基本上完全不炫酷
-10:49 阿聖 Jason 我決定就兩件事情，問卷系統以及 avatar real time conversation 
+10:49 阿聖 Jason 我決定就兩件事情，問卷系統以及 avatar real time conversation
 10:50 阿聖 Jason *覺得*
 10:50 阿聖 Jason 不是*決定*
 10:50 許桓瑜（多寶） 是啊先把這兩個做起來基本上9月應該就可以交代了
@@ -105,11 +105,11 @@ extracted/2026-06-25-phq9-zh-TW-agent-readable.md
 10:53 許桓瑜（多寶） 然後我們可以輸入問卷
 10:53 阿聖 Jason 九月 demo 那個可能要先 narrow down 到一兩個問卷
 10:53 阿聖 Jason AI 的部份放在語音對話跟 avatar
-10:54 阿聖 Jason 這些應該夠做炫泡的 campaign 
+10:54 阿聖 Jason 這些應該夠做炫泡的 campaign
 10:54 許桓瑜（多寶） 我覺得那先用那個失智問卷
 10:55 阿聖 Jason 嗯嗯
 10:55 許桓瑜（多寶） d45b03ce-9569-4484-b51d-09e45ef02fd2.pdf
-10:55 許桓瑜（多寶） 這個是MMSE 
+10:55 許桓瑜（多寶） 這個是MMSE
 10:56 許桓瑜（多寶） 臨床上真的會用到的指標
 10:56 許桓瑜（多寶） 不過做這個好像沒有那麼簡單
 10:56 許桓瑜（多寶） MMSE 基本上是真的會寫在病歷裡面的那種
