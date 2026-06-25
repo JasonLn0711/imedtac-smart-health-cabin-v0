@@ -46,7 +46,7 @@ Planning mirrors live in:
 | `2026-07-07` | Sprint 4 D1 | Visible Avatar state UI and 3 voice-confirmed PHQ-9 answers in kiosk smoke. |
 | `2026-07-08` | Sprint 4 D2 | Outbox worker, Redpanda topics, published events, and non-blocking failure behavior. |
 | `2026-07-09` | Sprint 4.5 | Provider selection freeze, status route, static Avatar image, Zod contracts, and ASR/TTS sidecar boundary. |
-| `2026-07-10` | Sprint 5 | Live provider wiring, acceptance status, live-check scripts, and strict vLLM/Redpanda evidence gate. |
+| `2026-07-10` | Sprint 5 | Live provider wiring, acceptance status, live-check scripts, strict GPU-only evidence, and native Ollama thinking-mode comparison. |
 
 ## Sprint 5 Handoff
 

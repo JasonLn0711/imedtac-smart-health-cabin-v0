@@ -38,5 +38,5 @@ Sprint 5 acceptance.
 
 `@shc/voice-agent-server` runs as a thin live-service boundary on port `3004`.
 It exposes `GET /healthz`, `GET /readyz`, and proxies
-`POST /api/v1/agent-turns/*` to the API server while checking strict vLLM
-readiness for Sprint 5.
+`POST /api/v1/agent-turns/*` to the API server while checking strict selected
+LLM readiness for Sprint 5.

@@ -13,6 +13,36 @@ Sprint 5 live acceptance requires five complete runs with live ASR, live Gemma 4
 E4B through vLLM, live BreezyVoice default voice, live Redpanda publication, and
 public report access.
 
+## Measurement Environment
+
+The live-provider and LLM comparison numbers in this evidence set were measured
+on the following local workstation. Latency, VRAM pressure, and token budget
+conclusions should be compared against this environment, not treated as
+hardware-independent constants.
+
+| Layer | Value |
+| --- | --- |
+| OS | Ubuntu 24.04.4 LTS (`noble`) |
+| Kernel | Linux `6.17.0-35-generic` x86_64 |
+| CPU | Intel Core i9-14900HX, 32 logical CPUs, 24 cores / 32 threads |
+| RAM | 62 GiB total; 42 GiB available at measurement time |
+| GPU | NVIDIA GeForce RTX 4090 Laptop GPU |
+| GPU memory | 16,376 MiB total |
+| NVIDIA driver | 580.159.03 |
+| CUDA runtime reported by `nvidia-smi` | 13.0 |
+| Loaded GPU process state during later Ollama comparison | Ollama `llama-server` about 4,522 MiB VRAM; ASR sidecar about 2,234 MiB VRAM; Xorg about 4 MiB VRAM |
+| Node.js | v22.23.1 |
+| pnpm / package manager | pnpm 9.15.0 through Corepack |
+| npm | 10.9.8 |
+| Python | 3.12.3 |
+| Ollama | 0.30.7 |
+| Ollama Gemma model | `gemma4:e4b`, GGUF `Q4_K_M`, 8.0B, digest `c6eb396dbd5992bbe3f5cdb947e8bbc0ee413d7c17e2beaae69f5d569cf982eb`, context length 4096 |
+| ASR sidecar | faster-whisper Breeze-ASR-26 CT2 int8; health reported `engine=faster-whisper`, `sourceModel=MediaTek-Research/Breeze-ASR-26`, loaded `true` |
+| ASR Python packages | `torch==2.11.0+cu128`, `ctranslate2==4.8.0`, `faster-whisper==1.2.1`, `transformers==5.10.2` |
+| vLLM comparison environment | `vllm==0.22.1`, `torch==2.11.0`, `transformers==5.11.0` |
+| Docker | Docker 29.1.3, Docker Compose v2.30.3 |
+| Repo package stack | TypeScript 5.7.x, Vite 6.0.x, Vitest 2.1.x, Playwright 1.49.1 |
+
 ## Strict Provider Smoke
 
 Recorded on the current workstation with GPU-only AI model inference controls:
@@ -97,3 +127,14 @@ corepack pnpm smoke:sprint5-live-demo
 
 The frontend build includes both admin and kiosk apps. Vite reported existing
 large chunk warnings for SurveyJS bundles; the builds completed successfully.
+
+## LLM Provider Comparison Update
+
+After the accepted vLLM five-run evidence, Ollama was tested with the same
+Gemma 4 E4B PHQ-9 guidance prompt. vLLM and Ollama OpenAI-compatible both
+returned empty visible content because thinking-mode tokens consumed the output
+budget before final text was emitted. Native Ollama `/api/chat` with
+`think:false` returned usable short Traditional Chinese guidance and is now the
+preferred LLM runtime. Strict eligibility now accepts providers listed in
+`SPRINT5_ALLOWED_LLM_PROVIDERS`; the full experiment log is
+`docs/evidence/2026-06-25-llm-thinking-mode-provider-log.md`.

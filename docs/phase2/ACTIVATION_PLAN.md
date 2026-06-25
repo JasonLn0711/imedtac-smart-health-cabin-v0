@@ -14,8 +14,9 @@ Avatar + voice-provider + report + outbox path.
 
 ## Activation Order
 
-1. Provider validation: stabilize vLLM Gemma 4 E4B, Breeze-ASR-26 int8, and
-   BreezyVoice default voice under repeatable startup scripts.
+1. Provider validation: stabilize the selected Gemma 4 E4B runtime
+   (currently Ollama, with vLLM kept as an alternative), Breeze-ASR-26 int8,
+   and BreezyVoice default voice under repeatable startup scripts.
 2. Questionnaire expansion: add new validated questionnaire packages through
    the CMS/versioning path, not hard-coded forms.
 3. Vision and hearing activation: keep each module standalone with explicit

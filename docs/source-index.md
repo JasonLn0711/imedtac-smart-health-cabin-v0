@@ -24,6 +24,7 @@ Co., Ltd.）Smart Health Cabin collaboration project.
 | `docs/specs/MVP-SYSTEM-SPEC.md` | Full-system MVP reference spec covering monorepo strategy, module registry, module specs, PostgreSQL, Redpanda, API, deployment, versioning, testing, and acceptance gates. |
 | `docs/specs/MVP-FAST-MARCH-SPRINT-PLAN.md` | Superseded fast-march Sprint 0-4 schedule for the earlier four-module path. |
 | `docs/specs/MVP-QUESTIONNAIRE-AVATAR-SPRINT-PLAN.md` | Active revised sprint plan for open questionnaire system plus ASR/LLM/TTS Avatar Agent, with vision/hearing deferred to Phase 2. |
+| `docs/specs/VOICE-ENTRY-TECH-SELECTION-SDD-DRAFT.md` | Draft voice-entry technology selection note for recording gates, VAD, endpointing, ASR confidence routing, confirmation policy, and enterprise deployment controls. |
 | `docs/prompts/sprint-0-codex-goal-prompt.md` | Codex execution prompt for updated Sprint 0: monorepo skeleton, module registry, API skeleton, DB migration skeleton, PHQ-9 seed path, local dev docs, CI skeleton, and closeout devlog. |
 | `docs/prompts/sprint-1-codex-goal-prompt.md` | Codex execution prompt for updated Sprint 1: PHQ-9 SurveyJS render, answer persistence, backend scoring, item-9 safety flag, non-diagnostic public summary, and validation evidence. |
 | `docs/prompts/sprint-2-codex-goal-prompt.md` | Codex execution prompt for updated Sprint 2: questionnaire CMS, version publish, report section, public token / QR route, admin response list, audit trail, and Sprint 0/1 baseline protection. |
@@ -43,6 +44,7 @@ Co., Ltd.）Smart Health Cabin collaboration project.
 | `docs/api/API_SUMMARY.md` | API endpoint summary for questionnaire, report, admin CMS, voice-agent turns, and provider status. |
 | `docs/db/ERD_SUMMARY.md` | PostgreSQL entity relationship summary for questionnaire versions, responses, reports, agent turns, and outbox events. |
 | `docs/evidence/sprint-5-five-run-demo.md` | Sprint 5 five-run evidence file with current provider smoke and remaining strict live acceptance gates. |
+| `docs/evidence/2026-06-25-llm-thinking-mode-provider-log.md` | LLM provider experiment log showing why OpenAI-compatible Gemma returned empty visible guidance content and why native Ollama with `think:false` is the current LLM path. |
 | `docs/devlog/README.md` | Daily sprint closeout convention for actual implementation results, validation evidence, blockers, and next handoff. |
 | `docs/devlog/2026-06-25.md` | Pivot/source devlog for the questionnaire + Avatar MVP route, PHQ-9 seed, and planning-repo coordination. |
 | `docs/devlog/2026-06-26.md` | Sprint 0 D2 closeout for monorepo, app/API/storage skeleton, local dev, CI, and validation evidence. |
@@ -55,7 +57,7 @@ Co., Ltd.）Smart Health Cabin collaboration project.
 | `docs/devlog/2026-07-07.md` | Sprint 4 D1 closeout for Avatar state UI and 3 voice-confirmed PHQ-9 answers. |
 | `docs/devlog/2026-07-08.md` | Sprint 4 D2 closeout for outbox-worker, Redpanda topics, published events, and failure isolation. |
 | `docs/devlog/2026-07-09.md` | Sprint 4.5 closeout for provider selection, status route, Zod contracts, static Avatar path, MediaRecorder capture, sidecar scaffolds, and fallback status. |
-| `docs/devlog/2026-07-10.md` | Sprint 5 live-hardening closeout for provider acceptance status, live-check scripts, local provider smoke, and remaining strict vLLM/Redpanda gate. |
+| `docs/devlog/2026-07-10.md` | Sprint 5 live-hardening closeout for provider acceptance status, live-check scripts, local provider smoke, strict GPU-only evidence, and native Ollama thinking-mode provider comparison. |
 | `docs/dev/LOCAL_DEV.md` | Local install, PostgreSQL, API, kiosk, admin, and validation commands. |
 | `workstreams/smart-health-cabin/2026-06-25-questionnaire-avatar-mvp-pivot.md` | Decision record for the Phase 1 MVP pivot based on the 2026-06-25 LINE discussion. |
 | `modules/questionnaire/seed/phq9.zh-TW.surveyjs.json` | SurveyJS PHQ-9 seed used as the first questionnaire-system demo form. |

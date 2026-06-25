@@ -132,14 +132,15 @@ ASR_DEVICE=cuda \
 ASR_CPU_OFFLOAD=false \
 ASR_ALLOW_CPU_FALLBACK=false \
 ASR_TRANSCRIBE_PATH=/v1/asr/transcribe \
-LLM_PROVIDER=vllm_openai_compatible \
+LLM_PROVIDER=ollama_native \
 LLM_COMPUTE_BACKEND=gpu \
 LLM_DEVICE=cuda \
 LLM_CPU_OFFLOAD=false \
 LLM_ALLOW_CPU_FALLBACK=false \
-VLLM_CPU_OFFLOAD_GB=0 \
-LLM_BASE_URL=http://localhost:8000/v1 \
-LLM_MODEL=gemma-4-e4b \
+LLM_BASE_URL=http://localhost:11434 \
+LLM_MODEL=gemma4:e4b \
+OLLAMA_THINK=false \
+LLM_MAX_TOKENS=80 \
 TTS_PROVIDER=breezyvoice_default \
 TTS_COMPUTE_BACKEND=gpu \
 TTS_DEVICE=cuda \
@@ -155,8 +156,8 @@ Expected services:
 
 - `http://localhost:8011/v1/asr/transcribe`: FastAPI sidecar for
   faster-whisper Breeze-ASR-26 CT2 int8.
-- `http://localhost:8000/v1/chat/completions`: OpenAI-compatible local Gemma 4
-  E4B runtime, normally vLLM.
+- `http://localhost:11434/api/chat`: native Ollama local Gemma 4 E4B runtime
+  with `think:false` for short guidance.
 - `http://localhost:8012/v1/tts/synthesize`: FastAPI sidecar for BreezyVoice
   default voice.
 
@@ -180,9 +181,11 @@ Strict acceptance is GPU-only for AI model inference. `live:check` rejects ASR,
 LLM, or TTS provider status that reports `computeBackend` other than `gpu`,
 `cpuOffload=true`, `cpuFallbackAllowed=true`, or missing GPU-only controls.
 
-Compatibility: if the local machine only has Ollama or BreezyVoice's upstream
-OpenAI-compatible server running, set `LLM_BASE_URL=http://localhost:11434/v1`
-and/or `BREEZYVOICE_BASE_URL=http://localhost:9003/v1`.
+vLLM remains available as an alternative for provider comparison, but the
+current workstation path uses native Ollama because it is lower-friction,
+lower-VRAM, faster on the same Gemma 4 E4B prompt, and can disable thinking for
+short guidance. The deterministic Chinese guidance fallback remains active when
+model output is unusable.
 
 Current workstation compatibility path:
 
@@ -197,14 +200,16 @@ ASR_DEVICE=cuda \
 ASR_CPU_OFFLOAD=false \
 ASR_ALLOW_CPU_FALLBACK=false \
 ASR_LANGUAGE=zh \
-LLM_PROVIDER=ollama_openai_compatible \
+LLM_PROVIDER=ollama_native \
 LLM_COMPUTE_BACKEND=gpu \
 LLM_DEVICE=cuda \
 LLM_CPU_OFFLOAD=false \
 LLM_ALLOW_CPU_FALLBACK=false \
 VLLM_CPU_OFFLOAD_GB=0 \
-LLM_BASE_URL=http://localhost:11434/v1 \
+LLM_BASE_URL=http://localhost:11434 \
 LLM_MODEL=gemma4:e4b \
+OLLAMA_THINK=false \
+LLM_MAX_TOKENS=80 \
 TTS_COMPUTE_BACKEND=gpu \
 TTS_DEVICE=cuda \
 TTS_CPU_OFFLOAD=false \
@@ -220,17 +225,21 @@ Voice Agent server:
 
 ```bash
 API_BASE_URL=http://localhost:3000 \
-VLLM_BASE_URL=http://localhost:8000/v1 \
-VLLM_MODEL=gemma-4-e4b \
-LLM_PROVIDER=vllm_openai_compatible \
+LLM_BASE_URL=http://localhost:11434 \
+LLM_MODEL=gemma4:e4b \
+LLM_PROVIDER=ollama_native \
 LLM_DEVICE=cuda \
-VLLM_CPU_OFFLOAD_GB=0 \
+LLM_CPU_OFFLOAD=false \
+OLLAMA_THINK=false \
+LLM_MAX_TOKENS=80 \
 corepack pnpm --filter @shc/voice-agent-server start
 ```
 
-For the current Ollama-compatible local Gemma path, set
-`SPRINT5_REQUIRE_VLLM=false` only for compatibility smoke. Leave it unset for
-strict Sprint 5 acceptance.
+Strict LLM acceptance uses `SPRINT5_ALLOWED_LLM_PROVIDERS`; the default allows
+`ollama_native`, `ollama_openai_compatible`, and `vllm_openai_compatible`.
+For this short questionnaire-guidance path, keep `OLLAMA_THINK=false` and
+`LLM_MAX_TOKENS=80`. If a future experiment explicitly enables thinking, use
+`LLM_MAX_TOKENS=768` as the current minimum stable budget.
 
 For this Smart Health Cabin lane, do not start BreezyVoice with Jason's later
 customized prompt audio/text. The TTS API rejects reference audio, speaker
