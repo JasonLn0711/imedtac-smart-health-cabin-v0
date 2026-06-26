@@ -4,17 +4,24 @@ import { useMachine } from "@xstate/react";
 import { AvatarImage } from "./AvatarImage";
 import { avatarStateLabel, avatarStateMachine } from "./avatarStateMachine";
 import type { AvatarState, VoiceAnswerDraft } from "./avatarTypes";
+import { playAgentTurnAudio } from "./StreamingAudioPlayer";
 import {
   audioFormatFromBlob,
   blobToBase64,
   buildGuidanceTurn,
   createAgentSession,
+  describeTtsStreamTurn,
   mapVoiceAnswerTurn,
-  playAudioDataUrl,
   runAsrTurn,
   synthesizeTtsTurn
 } from "./voiceAgentApi";
 import { confirmVoiceAnswerAndMoveNext, getCurrentSurveyQuestion } from "./voiceQuestionnaireController";
+import {
+  isTouchVisible,
+  isVoicePrimary,
+  normalizeVoiceConversationMode,
+  voiceModeLabel
+} from "./voiceConversationMode";
 
 interface AvatarPanelProps {
   model: Model;
@@ -36,6 +43,8 @@ const maxUtteranceMs = Number(
   import.meta.env.VITE_VOICE_MAX_UTTERANCE_MS ?? (endpointMode === "elder" ? 30000 : 20000)
 );
 const noSpeechTimeoutMs = Number(import.meta.env.VITE_VOICE_NO_SPEECH_TIMEOUT_MS ?? 5000);
+const voiceConversationMode = normalizeVoiceConversationMode(import.meta.env.VITE_VOICE_CONVERSATION_MODE);
+const preferStreamingTts = import.meta.env.VITE_TTS_STREAMING === "true";
 
 function toWakeSocketUrl(baseUrl: string): string {
   const url = new URL(baseUrl);
@@ -152,6 +161,21 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
     return session.agent_session_id;
   }
 
+  async function speakText(input: { agentSessionId: string; questionName?: string; text: string }) {
+    if (preferStreamingTts) {
+      const stream = await describeTtsStreamTurn(input);
+      if (stream.stream_url && stream.audio_transport === "ws_pcm16") {
+        try {
+          await playAgentTurnAudio(stream, { text: input.text });
+          return;
+        } catch {
+          // ponytail: streaming fallback, surface errors if completed speech also fails.
+        }
+      }
+    }
+    await playAgentTurnAudio(await synthesizeTtsTurn(input));
+  }
+
   async function speakWakeIntroThenRecord() {
     if (wakeIntroPlayingRef.current) {
       return;
@@ -165,15 +189,13 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
         greeting.guidance ??
         "您好，我是慧誠智醫健康互動助理。接下來我會用語音帶您完成問卷，也可以隨時改用觸控填答。";
       setMessage(greetingText);
-      await playAudioDataUrl((await synthesizeTtsTurn({ agentSessionId, text: greetingText })).audio_data_url);
+      await speakText({ agentSessionId, text: greetingText });
 
       if (question) {
         const guidance = await buildGuidanceTurn({ agentSessionId, questionName: question.name });
         const questionText = guidance.guidance ?? `接下來請回答：「${question.title}」。`;
         setMessage(questionText);
-        await playAudioDataUrl(
-          (await synthesizeTtsTurn({ agentSessionId, questionName: question.name, text: questionText })).audio_data_url
-        );
+        await speakText({ agentSessionId, questionName: question.name, text: questionText });
       }
 
       await startRecording({ continuous: true });
@@ -284,8 +306,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
       const doneText = "問卷已完成，可以送出問卷。";
       setMessage(doneText);
       const agentSessionId = await ensureAgentSession();
-      const tts = await synthesizeTtsTurn({ agentSessionId, text: doneText });
-      await playAudioDataUrl(tts.audio_data_url);
+      await speakText({ agentSessionId, text: doneText });
       return "stop";
     }
 
@@ -315,12 +336,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
       const retryText = `我聽到：「${mapped.normalized_transcript ?? heardText}」。請用螢幕確認最接近的選項，或重新錄音一次。`;
       setMessage(retryText);
       send({ type: "ASR_LOW_CONFIDENCE" });
-      const tts = await synthesizeTtsTurn({
-        agentSessionId,
-        questionName: question.name,
-        text: retryText
-      });
-      await playAudioDataUrl(tts.audio_data_url);
+      await speakText({ agentSessionId, questionName: question.name, text: retryText });
       return "continue";
     }
 
@@ -339,12 +355,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
       const staffText = `我剛剛聽到您說「${mapped.candidate.text}」。這一題會由現場人員協助處理。`;
       setMessage(staffText);
       send({ type: "STAFF_REVIEW" });
-      const tts = await synthesizeTtsTurn({
-        agentSessionId,
-        questionName: question.name,
-        text: staffText
-      });
-      await playAudioDataUrl(tts.audio_data_url);
+      await speakText({ agentSessionId, questionName: question.name, text: staffText });
       return "hold";
     }
 
@@ -352,12 +363,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
       const retryText = `我聽到：「${mapped.normalized_transcript ?? heardText}」。請重新錄音一次，或直接用觸控填答。`;
       setMessage(retryText);
       send({ type: "ASR_LOW_CONFIDENCE" });
-      const tts = await synthesizeTtsTurn({
-        agentSessionId,
-        questionName: question.name,
-        text: retryText
-      });
-      await playAudioDataUrl(tts.audio_data_url);
+      await speakText({ agentSessionId, questionName: question.name, text: retryText });
       return "continue";
     }
 
@@ -516,12 +522,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
     replyText = guidanceText.startsWith("我剛剛聽到您說") ? guidanceText : `${heardPrefix}${guidanceText}`;
 
     setMessage(replyText);
-    const tts = await synthesizeTtsTurn({
-      agentSessionId,
-      questionName: ttsQuestionName,
-      text: replyText
-    });
-    await playAudioDataUrl(tts.audio_data_url);
+    await speakText({ agentSessionId, questionName: ttsQuestionName, text: replyText });
     send({ type: "RESET" });
     if (nextQuestion && continuousVoiceRef.current) {
       restartContinuousListening("MANUAL_START");
@@ -558,6 +559,10 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
           <span className={`avatar-state avatar-state-${state}`}>{avatarStateLabel(state)}</span>
         </div>
         <p>{message}</p>
+        <p className="voice-mode-status">
+          {voiceModeLabel(voiceConversationMode)}
+          {isVoicePrimary(voiceConversationMode) ? "；預設以語音完成問卷。" : "；語音作為輔助。"}
+        </p>
         {continuousVoiceActive && (
           <p className="touch-fallback">連續語音模式啟用中，已完成 {turnCount} 輪語音回覆。</p>
         )}
@@ -613,7 +618,11 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
             </span>
           </div>
         )}
-        <p className="touch-fallback">觸控填答：下方問卷可隨時直接完成。</p>
+        <p className="touch-fallback">
+          {isTouchVisible(voiceConversationMode)
+            ? "觸控填答：下方問卷可隨時直接完成。"
+            : "觸控填答目前收合；重新回答、改用觸控或現場人員協助仍可恢復。"}
+        </p>
       </div>
     </aside>
   );

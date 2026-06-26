@@ -188,7 +188,8 @@ textarea {
 }
 
 .avatar-question,
-.touch-fallback {
+.touch-fallback,
+.voice-mode-status {
   color: #526057;
 }
 

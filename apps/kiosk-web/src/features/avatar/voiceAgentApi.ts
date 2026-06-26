@@ -85,6 +85,18 @@ export async function synthesizeTtsTurn(input: {
   });
 }
 
+export async function describeTtsStreamTurn(input: {
+  agentSessionId: string;
+  questionName?: string;
+  text: string;
+}): Promise<AgentTurnResponse> {
+  return postJson<AgentTurnResponse>("/api/v1/agent-turns/tts/stream", {
+    agent_session_id: input.agentSessionId,
+    question_name: input.questionName,
+    text: input.text
+  });
+}
+
 export function audioFormatFromBlob(blob: Blob): string {
   if (blob.type.includes("wav")) return "wav";
   if (blob.type.includes("ogg")) return "ogg";
