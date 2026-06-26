@@ -31,7 +31,7 @@ describe("voice questionnaire controller", () => {
     expect(candidateFromTranscript(question, transcript)?.value).toBe(value);
   });
 
-  it("does not write until confirmation", () => {
+  it("writes through the shared SurveyJS answer helper", () => {
     const model = makeModel();
     const question = model.getQuestionByName("phq9_01");
     const candidate = candidateFromTranscript(question, "幾天");
@@ -42,7 +42,7 @@ describe("voice questionnaire controller", () => {
     expect(question.value).toBe(1);
   });
 
-  it("fills at least three questions through mocked voice-confirmed answers", () => {
+  it("fills at least three questions through mocked voice answers", () => {
     const model = makeModel();
 
     for (const name of ["phq9_01", "phq9_02", "phq9_03"]) {
@@ -70,7 +70,7 @@ describe("voice questionnaire controller", () => {
     expect(getCurrentSurveyQuestion(model)?.name).toBe("phq9_01");
   });
 
-  it("writes a confirmed voice answer and moves the UI to the next question", () => {
+  it("auto-applies a voice answer and moves the UI to the next question", () => {
     const model = createKioskSurveyModel(phq9Seed);
     const firstQuestion = getCurrentSurveyQuestion(model);
     const candidate = candidateFromTranscript(firstQuestion!, "完全沒有");

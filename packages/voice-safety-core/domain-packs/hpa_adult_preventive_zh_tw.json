@@ -64,7 +64,7 @@
     { "intent": "measurement_value", "template": "成人預防保健量測候選：{normalizedText}" }
   ],
   "confirmationTemplates": {
-    "singleCandidate": "我剛剛聽到的是「{candidate}」，請問有聽對嗎？",
+    "singleCandidate": "我剛剛聽到您說「{candidate}」。",
     "multipleCandidates": "請問你剛剛想表達的是哪一個？",
     "lowConfidence": "我不太確定剛剛的回答，請重新說一次，或直接用螢幕選擇。",
     "touchFallback": "這題也可以改用觸控或請工作人員協助。"

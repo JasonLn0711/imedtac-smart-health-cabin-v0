@@ -39,7 +39,7 @@
     { "intent": "command_or_faq", "template": "健康艙操作問答候選：{normalizedText}" }
   ],
   "confirmationTemplates": {
-    "singleCandidate": "我剛剛聽到的是「{candidate}」，請問有聽對嗎？",
+    "singleCandidate": "我剛剛聽到您說「{candidate}」。",
     "multipleCandidates": "請問你剛剛想做的是哪一個？",
     "lowConfidence": "我不太確定剛剛的操作需求，請重新說一次，或直接用螢幕操作。",
     "touchFallback": "你可以直接用螢幕操作，或請現場人員協助。"

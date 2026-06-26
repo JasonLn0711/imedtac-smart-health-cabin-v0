@@ -34,7 +34,7 @@ describe("voice-safety-core", () => {
     expect(normalizeTranscript("完全美有", packs)).toBe("完全沒有");
   });
 
-  it("maps PHQ-9 answers only through active choices and requires confirmation", () => {
+  it("maps high-confidence PHQ-9 answers through active choices for auto-fill", () => {
     const result = processVoiceEvidence({
       rawText: "機天",
       asrConfidence: 0.91,
@@ -47,7 +47,7 @@ describe("voice-safety-core", () => {
       { optionId: "1", optionText: "幾天", confidence: 0.92, evidenceText: "幾天" }
     ]);
     expect(result.routingDecision).toBe("high_confidence_clear_answer");
-    expect(result.confirmationRequired).toBe(true);
+    expect(result.confirmationRequired).toBe(false);
   });
 
   it("routes low-confidence ASR to retry/touch instead of answer truth", () => {

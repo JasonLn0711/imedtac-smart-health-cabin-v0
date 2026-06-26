@@ -4,7 +4,7 @@ import { avatarImageAltText, avatarImageSrc } from "./AvatarImage";
 import { avatarStateLabel, avatarStateMachine, nextAvatarState } from "./avatarStateMachine";
 
 describe("Avatar voice entry state machine", () => {
-  it("allows wake word activation without writing an answer", () => {
+  it("allows wake word activation and auto-commit after mapping", () => {
     let state = nextAvatarState("idle_touch_ready", "WAKE_ARM");
     state = nextAvatarState(state, "WAKE_DETECTED");
     state = nextAvatarState(state, "VAD_SPEECH_START");
@@ -15,7 +15,7 @@ describe("Avatar voice entry state machine", () => {
     state = nextAvatarState(state, "ASR_DONE");
     state = nextAvatarState(state, "ASR_DONE");
 
-    expect(state).toBe("confirming_candidate");
+    expect(state).toBe("committed");
     expect(() => nextAvatarState("wake_detected", "CONFIRM_YES")).toThrow("Invalid Avatar event");
   });
 
@@ -27,7 +27,7 @@ describe("Avatar voice entry state machine", () => {
     state = nextAvatarState(state, "MAX_UTTERANCE_REACHED");
     state = nextAvatarState(state, "ASR_DONE");
 
-    expect(state).toBe("confirming_candidate");
+    expect(state).toBe("committed");
     expect(avatarStateLabel("voice_unavailable")).toBe("觸控流程接續");
   });
 
@@ -59,8 +59,8 @@ describe("Avatar voice entry state machine", () => {
     expect(state).toBe("idle_touch_ready");
   });
 
-  it("commits only after confirmation and resets to touch-ready idle", () => {
-    let state = nextAvatarState("confirming_candidate", "CONFIRM_YES");
+  it("resets to touch-ready idle after auto-commit", () => {
+    let state = nextAvatarState("ranking_candidates", "ASR_DONE");
     state = nextAvatarState(state, "RESET");
 
     expect(state).toBe("idle_touch_ready");

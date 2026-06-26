@@ -297,7 +297,7 @@ describe("QuestionnaireService", () => {
     expect(mapped).toMatchObject({
       normalized_transcript: "幾乎每天",
       routing_decision: "high_confidence_clear_answer",
-      confirmation_required: true
+      confirmation_required: false
     });
     expect(mapped.semantic_frame?.questionnaireAnswerCandidates[0]).toMatchObject({
       optionId: "3",
@@ -345,7 +345,7 @@ describe("QuestionnaireService", () => {
 
     expect(mapped.candidate).toMatchObject({ value: 3 });
     expect(mapped.routing_decision).toBe("low_confidence_retry");
-    expect(mapped.confirmation_required).toBe(true);
+    expect(mapped.confirmation_required).toBe(false);
   });
 
   it("stores reranker option trace without letting reranker choose the answer", async () => {
@@ -500,11 +500,13 @@ describe("QuestionnaireService", () => {
     });
 
     expect(response.guidance).toContain("幾乎每天");
+    expect(response.guidance).toContain("我剛剛聽到您說");
     expect(response.guidance).toContain("感到心情低落");
     expect(response.guidance).not.toContain("請用不超過");
     expect(repository.savedTurns[0]?.questionName).toBe("phq9_02");
     const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
     expect(body.messages[1].content).toContain("不超過 2 句");
+    expect(body.messages[1].content).toContain("我剛剛聽到您說");
     expect(body.messages[1].content).toContain("我想應該是幾乎每天");
     expect(body.options.temperature).toBe(0.3);
   });

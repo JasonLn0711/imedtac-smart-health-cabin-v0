@@ -40,7 +40,7 @@
     { "intent": "command_or_faq", "template": "聽力篩檢操作問題：{normalizedText}" }
   ],
   "confirmationTemplates": {
-    "singleCandidate": "我剛剛聽到的是「{candidate}」，請問有聽對嗎？",
+    "singleCandidate": "我剛剛聽到您說「{candidate}」。",
     "multipleCandidates": "請問你剛剛想表達的是哪一個？",
     "lowConfidence": "我不太確定剛剛的聽力測量回答，請重新說一次，或改用螢幕選擇。",
     "touchFallback": "這一題也可以直接用螢幕點選。"

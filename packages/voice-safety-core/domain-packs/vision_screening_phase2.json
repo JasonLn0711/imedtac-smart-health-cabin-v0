@@ -44,7 +44,7 @@
     { "intent": "symptom_description", "template": "視力篩檢問答候選：{normalizedText}" }
   ],
   "confirmationTemplates": {
-    "singleCandidate": "我剛剛聽到的是「{candidate}」，請問有聽對嗎？",
+    "singleCandidate": "我剛剛聽到您說「{candidate}」。",
     "multipleCandidates": "請問你剛剛想表達的是哪一個？",
     "lowConfidence": "我不太確定剛剛的視力測量內容，請重新說一次，或改用螢幕選擇。",
     "touchFallback": "這一題也可以直接用螢幕點選。"

@@ -51,7 +51,7 @@ const transitions: Record<AvatarState, Partial<Record<AvatarEvent, AvatarState>>
   },
   endpointing_wait: {
     TRANSCRIBE: "transcribing",
-    ASR_DONE: "confirming_candidate",
+    ASR_DONE: "committed",
     ASR_LOW_CONFIDENCE: "retry_or_touch",
     RESET: "idle_touch_ready",
     VOICE_SERVICE_DOWN: "voice_unavailable"
@@ -78,7 +78,7 @@ const transitions: Record<AvatarState, Partial<Record<AvatarEvent, AvatarState>>
     VOICE_SERVICE_DOWN: "voice_unavailable"
   },
   ranking_candidates: {
-    ASR_DONE: "confirming_candidate",
+    ASR_DONE: "committed",
     ASR_LOW_CONFIDENCE: "clarifying_ambiguous",
     STAFF_REVIEW: "staff_review",
     RESET: "idle_touch_ready",
@@ -153,7 +153,7 @@ export function avatarStateLabel(state: AvatarState): string {
     building_semantic_frame: "建立語意框架",
     ranking_candidates: "候選排序中",
     clarifying_ambiguous: "確認語音內容",
-    confirming_candidate: "確認候選答案",
+    confirming_candidate: "候選答案待確認",
     committed: "已寫入答案",
     retry_or_touch: "重新錄音或觸控填答",
     voice_unavailable: "觸控流程接續",

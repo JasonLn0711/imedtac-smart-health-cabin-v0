@@ -15,7 +15,11 @@ import { buildSemanticFrame } from "./semantic-frame";
 import type { ProcessVoiceEvidenceInput, ProcessVoiceEvidenceResult } from "./types";
 
 function confirmationRequired(routingDecision: ProcessVoiceEvidenceResult["routingDecision"]): boolean {
-  return routingDecision !== "no_speech_retry" && routingDecision !== "voice_unavailable_touch_fallback";
+  return [
+    "medium_confidence_needs_confirmation",
+    "ambiguous_multiple_candidates",
+    "safety_sensitive_staff_review"
+  ].includes(routingDecision);
 }
 
 export function processVoiceEvidence(input: ProcessVoiceEvidenceInput): ProcessVoiceEvidenceResult {

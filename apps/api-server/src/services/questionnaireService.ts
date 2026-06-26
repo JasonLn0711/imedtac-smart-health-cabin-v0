@@ -471,17 +471,17 @@ function buildAnswerFollowupGuidance(
   const answer = input.answer_text?.trim() || transcript;
 
   if (!next) {
-    const fallback = `我聽到您這題的回答是「${answer}」。問卷已完成，可以送出問卷。`;
+    const fallback = `我剛剛聽到您說「${answer}」。問卷已完成，可以送出問卷。`;
     return {
       fallback,
-      prompt: `請用不超過 2 句繁體中文 TTS 文字回覆，摘要使用者剛才的回答，並說明問卷已完成。使用者語音逐字稿：「${transcript}」。確認答案：「${answer}」。剛回答題目：「${current?.title ?? input.question_name ?? "目前題目"}」。`
+      prompt: `請用不超過 2 句繁體中文 TTS 文字回覆。第一句使用「我剛剛聽到您說『${answer}』」，並說明問卷已完成。不得診斷、不得改分、不得替使用者作答。使用者語音逐字稿：「${transcript}」。已自動填入答案：「${answer}」。剛回答題目：「${current?.title ?? input.question_name ?? "目前題目"}」。`
     };
   }
 
-  const fallback = `我聽到您這題的回答是「${answer}」。接下來請回答：「${next.title}」；請依照畫面選項選擇最符合的頻率。`;
+  const fallback = `我剛剛聽到您說「${answer}」。接下來請回答：「${next.title}」；請依照畫面選項選擇最符合的頻率。`;
   return {
     fallback,
-    prompt: `請用不超過 2 句繁體中文 TTS 文字回覆。第一句摘要使用者剛才的回答，第二句口語化詢問下一題；不得診斷、不得改分、不得替使用者作答。使用者語音逐字稿：「${transcript}」。確認答案：「${answer}」。剛回答題目：「${current?.title ?? input.question_name ?? "目前題目"}」。下一題：「${next.title}」。下一題選項：${next.choices.map((choice) => choice.text).join("、")}。`
+    prompt: `請用不超過 2 句繁體中文 TTS 文字回覆。第一句使用「我剛剛聽到您說『${answer}』」，第二句口語化詢問下一題；不得診斷、不得改分、不得替使用者作答。使用者語音逐字稿：「${transcript}」。已自動填入答案：「${answer}」。剛回答題目：「${current?.title ?? input.question_name ?? "目前題目"}」。下一題：「${next.title}」。下一題選項：${next.choices.map((choice) => choice.text).join("、")}。`
   };
 }
 
