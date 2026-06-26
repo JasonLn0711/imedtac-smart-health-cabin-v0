@@ -18,6 +18,8 @@
     "smoke:wakeword:live": "node scripts/smoke-wakeword-live.mjs",
     "smoke:sprint5-live-demo": "node scripts/smoke-sprint5-live-demo.mjs",
     "smoke:redpanda": "node scripts/smoke-redpanda.mjs",
+    "smoke:tts-streaming": "python3 scripts/tts-benchmark/run_tts_matrix.py --manifest experiments/manifests/tts_eval_manifest.jsonl --variants A_original,B_segment --repeats 1 --warmup 1 --randomize true --mode deterministic --output experiments/smoke_tts_streaming",
+    "analyze:tts-streaming": "python3 scripts/tts-benchmark/analyze_tts_matrix.py --run-dir experiments/smoke_tts_streaming --report experiments/smoke_tts_streaming/reports/final_decision.md",
     "validate:json": "find modules apps packages -name '*.json' -print0 | xargs -0 -n1 jq empty"
   },
   "devDependencies": {
