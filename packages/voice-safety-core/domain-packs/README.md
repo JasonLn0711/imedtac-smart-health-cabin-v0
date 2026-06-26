@@ -3,8 +3,8 @@
 Domain packs are the extension boundary for Smart Health Cabin voice safety.
 They let a questionnaire or module add ASR hotwords, common recognition
 repairs, bounded answer aliases, semantic slots, safety flags, retrieval
-templates, and confirmation wording while the core six-layer pipeline stays
-stable.
+templates, acknowledgement wording, and fallback wording while the core
+six-layer pipeline stays stable.
 
 ## Current Packs
 
@@ -31,11 +31,12 @@ Each pack should define:
 - `canonicalTerms`: normalized terms, aliases, and common ASR errors.
 - `answerAliases`: bounded option mappings for the active SurveyJS choices.
 - `semanticSlots`: fields that describe what the normalized transcript means.
-- `safetyRules`: terms that route to confirmation or staff review.
+- `safetyRules`: terms that route away from auto-fill and into staff review or
+  the configured safety workflow.
 - `retrievalTemplates`: normalized query templates for RAG/reranker candidates.
-- `confirmationTemplates`: zh-TW acknowledgement / fallback wording. High-confidence
-  single candidates can auto-fill; uncertain speech routes to retry, touch, or
-  staff review.
+- `confirmationTemplates`: retained schema name for zh-TW acknowledgement /
+  fallback wording. High-confidence single candidates can auto-fill; uncertain
+  speech routes to retry, touch, or staff review.
 
 ## Operating Rules
 

@@ -3,13 +3,13 @@
 Smart Health Cabin treats ASR text as evidence that moves through routing.
 The voice path now has an implementation boundary in `packages/voice-safety-core`
 that routes each transcript through normalization, semantic framing, and a
-clear user or staff confirmation layer before questionnaire state or RAG context
-is used.
+confidence-aware write boundary before questionnaire state or RAG context is
+used.
 
 ## Six Layers
 
 1. ASR confidence routing: uncertain, empty, or safety-sensitive speech routes
-   to 重新錄音, confirmation, 觸控完成, or staff review.
+   to 重新錄音, 觸控完成, or staff review.
 2. N-best / beam capability interface: the contract supports provider N-best,
    and top-1 providers report `nBestAvailable=false` so capability stays
    explicit.
@@ -67,7 +67,8 @@ for terms the cabin already expects, such as:
   `左耳`, `聽得到`, `聽不到`.
 
 Hotwords support recognition and normalization. The write path uses an active
-SurveyJS option, a mapped candidate, and user confirmation.
+SurveyJS option, a mapped candidate, and a high-confidence single-candidate
+route before writing.
 
 ## Extension Workflow
 
@@ -80,12 +81,12 @@ When adding a new domain questionnaire or Q&A surface:
    `domainPackIdsForContext`.
 5. Add unit tests for hotwords, ASR repairs, bounded answer aliases, semantic
    slots, safety flags, and low-confidence routing.
-6. Confirm kiosk UI receives a candidate draft and writes after explicit user
-   confirmation.
+6. Confirm kiosk UI auto-fills only high-confidence single candidates and routes
+   uncertain speech to retry, touch completion, or staff review.
 
 This keeps the six-layer safety pipeline stable while allowing each future
 questionnaire, measurement module, or kiosk FAQ domain to carry its own
-vocabulary and confirmation language.
+vocabulary, acknowledgement language, and fallback language.
 
 ## MVP Rules
 
@@ -101,17 +102,18 @@ vocabulary and confirmation language.
 ## Operational Events
 
 The voice-safety path now emits retryable outbox evidence for the same
-confirmation-controlled workflow:
+confidence-routed workflow:
 
 - `voice.asr.completed.v1` records completed ASR turns.
 - `voice.routing_decided.v1` records deterministic routing when the reranker is
   not part of the turn.
-- `voice.confirmation_required.v1` records turns that need explicit user or
-  staff confirmation before questionnaire state is written.
+- `voice.confirmation_required.v1` remains the compatibility event for turns
+  that cannot auto-fill and need retry, touch completion, or staff review
+  before any questionnaire state is written.
 - `reranker.rerank.completed.v1` records bounded option-ranking evidence.
 - `reranker.unavailable.v1` records the deterministic fallback path when the
   reranker boundary is unavailable.
 
 These events publish to `shc.voice.safety.v1` and `shc.reranker.events.v1`
 through the Redpanda outbox worker. The questionnaire write remains governed by
-the active SurveyJS option, mapped candidate, and confirmation layer.
+the active SurveyJS option, mapped candidate, and high-confidence write route.

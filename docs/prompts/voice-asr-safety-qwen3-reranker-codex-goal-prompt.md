@@ -29,8 +29,10 @@ external_reference:
 Touch questionnaire remains a complete path.
 Wake word only starts recording.
 ASR produces evidence, not truth.
-Mapping produces candidates, not state changes.
-User confirmation creates questionnaire writes.
+Mapping produces candidates, not unbounded state changes.
+High-confidence single candidates create questionnaire writes.
+Uncertain, ambiguous, or safety-sensitive input routes to retry, touch
+completion, or staff review before any write.
 PostgreSQL is the source of truth.
 Redpanda publishes events asynchronously and must not block completion.
 Raw audio is not retained by default.
@@ -44,7 +46,7 @@ Raw audio is not retained by default.
 因此 MVP 預設採用 `Qwen3-Reranker-0.6B`，4B / 8B 保留為後續 benchmark
 或更高資源部署選項。
 
-## Why ASR Evidence Needs Upstream Confirmation
+## Why ASR Evidence Needs Upstream Routing
 
 ASR 錯誤會沿著下列鏈條放大：
 
@@ -59,11 +61,11 @@ ASR mishears user
 
 Reranker 以文字候選與排序為工作範圍。它可以改善 retrieval ranking；
 健康艙的穩定工程策略是把語音證據先送進 confidence gate、domain
-normalization、semantic frame 與 confirmation workflow，再交給檢索與排序。
+normalization、semantic frame 與 bounded write workflow，再交給檢索與排序。
 
 ```text
-Route uncertain transcripts through confirmation before RAG, reranker,
-LLM guidance, or questionnaire writes.
+Route uncertain transcripts through retry, touch completion, or staff review
+before RAG, reranker, LLM guidance, or questionnaire writes.
 ```
 
 ## Recommended Architecture
@@ -80,8 +82,8 @@ ASR normalizer / medical lexicon correction
 Intent + symptom slot extraction / semantic frame
   ↓
 Confidence gate
-  ├─ high confidence -> candidate confirmation -> write after user confirms
-  └─ low confidence  -> confirmation question / retry / tap-to-select fallback
+  ├─ high confidence -> auto-fill active SurveyJS option -> next question
+  └─ low confidence  -> retry / tap-to-select fallback / staff review
 ```
 
 ## How Many Layers This Project Needs
@@ -94,7 +96,7 @@ MVP mandatory:
   Layer 3 - domain lexicon normalization
   Layer 4 - semantic frame / query rewriting
   Layer 5 - audio + ASR metadata preservation
-  Layer 6 - confirmation / touch fallback
+  Layer 6 - high-confidence auto-fill / touch fallback
 
 MVP capability interface:
   Layer 2 - N-best / beam candidates
@@ -106,7 +108,7 @@ Rationale:
 The health cabin's main risk is not imperfect retrieval ranking.
 The main risk is silent state corruption from uncertain voice input.
 Therefore confidence gating, normalization, bounded semantic framing,
-metadata, and confirmation are mandatory.
+metadata, and bounded write routing are mandatory.
 N-best is valuable but should not block MVP if unavailable from the
 selected ASR provider.
 ```
@@ -116,7 +118,8 @@ selected ASR provider.
 The six-layer design should use **versioned domain packs**, not one fixed
 medical word list. Each questionnaire or module can add hotwords, answer
 aliases, ASR confusion repairs, semantic slots, safety flags, retrieval
-templates, and confirmation wording without changing the core voice pipeline.
+templates, acknowledgement wording, and fallback wording without changing the
+core voice pipeline.
 
 Current domain packs should target:
 
@@ -172,7 +175,7 @@ Phase-2 module packs:
 Use questionnaire code, question-name prefix, or `VOICE_DEFAULT_DOMAIN_PACKS`
 to select packs. Adding a new questionnaire should require adding a new domain
 pack and a small context mapping, not rewriting ASR routing, semantic-frame
-logic, kiosk UI confirmation, or reranker contracts.
+logic, kiosk UI auto-fill behavior, or reranker contracts.
 
 Each domain pack must own:
 
@@ -215,8 +218,10 @@ voice recognition output as truth. Preserve the existing safety contract:
 Touch questionnaire remains a complete path.
 Wake word only starts recording.
 ASR produces evidence, not truth.
-Mapping produces candidates, not state changes.
-User confirmation creates questionnaire writes.
+Mapping produces candidates, not unbounded state changes.
+High-confidence single candidates create questionnaire writes.
+Uncertain, ambiguous, or safety-sensitive input routes to retry, touch
+completion, or staff review before any write.
 PostgreSQL is the source of truth.
 Redpanda publishes events asynchronously and must not block completion.
 Raw audio is not retained by default.
@@ -309,7 +314,7 @@ ASR mishears user
 -> questionnaire / report may become misleading
 
 The system must prevent this by inserting explicit safety, normalization,
-routing, and confirmation layers between ASR output and downstream state
+routing, and bounded write layers between ASR output and downstream state
 changes.
 
 ## 1A. Project-Specific Extensibility Requirement
@@ -455,10 +460,10 @@ safety_sensitive_staff_review
 Acceptance behavior:
 
 High confidence + one clear bounded option:
-  show candidate confirmation, then write only after user confirms.
+  auto-fill the active SurveyJS option and advance to the next question.
 
 Medium confidence:
-  ask user to confirm or offer touch selection.
+  ask user to retry or offer touch selection.
 
 Low confidence:
   do not retrieve/rerank/generate as if transcript were reliable.
@@ -468,7 +473,14 @@ No speech:
   no questionnaire write.
 
 Safety-sensitive ambiguity:
-  explicit confirmation or staff review.
+  no auto-fill; route to staff review or configured safety workflow.
+
+Compatibility note:
+  `confirmationRequired`, `confirmationTemplates`, and
+  `medium_confidence_needs_confirmation` remain schema/event names. In the
+  current kiosk UI, high-confidence single candidates do not show a second
+  confirmation check; these compatibility names mean the turn cannot auto-fill
+  and must route to retry, touch completion, or staff review.
 
 ### Layer 2 - N-best / Beam Candidate Support
 
@@ -1137,8 +1149,9 @@ Important:
 
 /rerank-options can support candidate ranking.
 It must not commit answers.
-The API / questionnaire layer must still require explicit confirmation before
-persistence.
+The API / questionnaire layer may auto-fill only when the final routing result
+is one high-confidence bounded candidate. Any `confirmationRequired=true`
+response means no auto-fill; route to retry, touch completion, or staff review.
 
 ## 5. Environment Variables
 
@@ -1234,8 +1247,8 @@ Never persist questionnaire answers from reranker score alone.
 Never let LLM override SurveyJS scoring.
 Never use a domain pack to create an option outside the active SurveyJS choices.
 Never let reranker failure block touch questionnaire completion.
-If reranker is unavailable, degrade to deterministic mapping + confirmation or
-touch fallback.
+If reranker is unavailable, degrade to deterministic mapping with
+high-confidence auto-fill only, otherwise retry or touch fallback.
 
 Add provider status aggregation if the project already has provider health
 checks.
@@ -1334,8 +1347,8 @@ chest_pain
 breathing_difficulty
 fall_risk
 
-the system must route to explicit confirmation, staff review, or configured
-safety workflow. Do not generate diagnostic claims.
+the system must avoid auto-fill and route to staff review or configured safety
+workflow. Do not generate diagnostic claims.
 
 ## 10. Database / Persistence
 
@@ -1362,7 +1375,7 @@ normalized_text
 semantic_frame
 routing_decision
 confirmation_required
-confirmed_by_user
+auto_filled_by_voice
 candidate_options
 provider metadata
 n_best_available
@@ -1390,6 +1403,12 @@ voice.answer_rejected.v1
 voice.touch_fallback_selected.v1
 reranker.rerank.completed.v1
 reranker.unavailable.v1
+
+Compatibility note:
+  `voice.answer_confirmed.v1` is the existing accepted-answer event name. In
+  the current no-second-confirmation UI, a high-confidence bounded candidate can
+  produce this accepted-answer outcome through auto-fill rather than a separate
+  confirmation button.
 
 Critical rule:
 
@@ -1428,20 +1447,19 @@ Test examples:
 "我不想活了" -> safety flag self_harm
 "不吸菸" -> adult preventive smoking option, when that SurveyJS question is active
 "偶爾喝酒" -> adult preventive drinking option, when that SurveyJS question is active
-"血壓一百二十比八十" -> measurement candidate blood_pressure 120/80, confirmation required
+"血壓一百二十比八十" -> measurement candidate blood_pressure 120/80, staff-review or touch fallback route
 "請再說一次" -> command_or_faq, no questionnaire write
 empty transcript + high no_speech_prob -> no_speech_retry
 low confidence transcript -> retry_or_touch
 
 API tests:
 
-ASR transcript returns candidate only, not committed answer.
-Candidate confirmation writes answer.
-Rejected candidate does not write answer.
+High-confidence ASR transcript maps to one active SurveyJS option and auto-fills.
+Ambiguous or low-confidence candidate does not write.
 Low confidence routes to retry/touch.
 Reranker unavailable does not block questionnaire.
 N-best unavailable still works with top-1.
-Safety-sensitive ambiguity routes to confirmation/staff review.
+Safety-sensitive ambiguity routes to staff review.
 PHQ-9 aliases cannot map to adult preventive choices unless the active question
 allows them.
 Domain pack updates can add aliases without changing processVoiceEvidence.
@@ -1470,9 +1488,8 @@ Tap-to-start or wake word
 Record answer
 ASR returns transcript
 Voice safety pipeline normalizes and routes
-Candidate confirmation appears
-User confirms
-Answer persists
+High-confidence candidate auto-fills the visible answer
+Avatar says "我剛剛聽到您說「...」" and asks the next question
 Report still works
 Reranker status appears in live provider check
 Touch questionnaire still works if reranker is unavailable
@@ -1496,7 +1513,7 @@ PHQ-9, adult preventive health, measurement, vision, hearing, and FAQ pack plan
 hotword behavior and provider capability fallback
 how ASR errors propagate into RAG/reranker/LLM
 why reranker cannot fix wrong ASR input
-how confirmation prevents silent state corruption
+how high-confidence auto-fill and fallback routing prevent silent state corruption
 privacy rule: no raw audio retention by default
 
 The reranker document must include:
@@ -1523,8 +1540,7 @@ Hotwords are capability-aware; ASR hotword support is not faked.
 Raw ASR text is not directly used as questionnaire truth.
 Raw ASR text is not directly used as final RAG query without normalization /
 semantic frame.
-Low-confidence voice input routes to confirmation, retry, touch fallback, or
-staff review.
+Low-confidence voice input routes to retry, touch fallback, or staff review.
 
 Reranker:
 
