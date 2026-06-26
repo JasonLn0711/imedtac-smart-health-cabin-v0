@@ -20,6 +20,10 @@ The previous batch run proved batch grouping and batch/per-item logging, but sta
 - Ordered reconstructed WAV files are saved under `audio/reconstructed/`.
 - Runtime mode is inferred from real segment start/end timestamps and overlap, not mocked timing.
 - P2 proves the first two segment jobs start together; P3 proves up to three segment jobs start together.
+- PD2 and PD3 now use the strict BreezyVoice D_hybrid token/audio streaming
+  runtime inside each parallel segment worker. They are not P2/P3 aliases:
+  event traces must include `first_speech_token`, `first_pcm_chunk`, and
+  `pcm_chunk` events with `segment_index`.
 
 ## Files Changed
 
@@ -137,11 +141,74 @@ Process snapshot:
 | P3_parallel_segment_batch3 | 36 | true_parallel_workers:36 | 36 | 7371.461 | 7416.005 | 0.664 | 0.998 |
 | S_serial_segment_baseline | 36 | serial_baseline:36 | 36 | 4324.753 | 7053.978 | 0.0 | 1.0 |
 
+### PD hybrid probe
+
+- Run ID: `pd_hybrid_parallel_probe_full`
+- Status: `TRUE_PARALLEL_RUNTIME_READY`
+- Local started: `2026-06-26T15:24:56.284+08:00`
+- Local ended: `2026-06-26T15:28:50.708+08:00`
+- UTC started: `2026-06-26T07:24:56.284Z`
+- UTC ended: `2026-06-26T07:28:50.708Z`
+- Command: `BREEZYVOICE_BASE_URL=http://localhost:9003/v1 /home/jnclaw/every_on_git_jnclaw/BreezyVoice/.venv/bin/python scripts/tts-benchmark/probe_true_parallel_batch_runtime.py --mode probe --variants PD2_parallel_hybrid_batch2,PD3_parallel_hybrid_batch3 --output experiments/pd_hybrid_parallel_probe_full`
+- Batch summary rows: `6`
+- Reconstructed WAV files: `6`
+- Segment WAV files: `16`
+- Event evidence: `first_speech_token:16`, `first_pcm_chunk:16`,
+  `pcm_chunk:143`, `speech_token_chunk:3414`.
+
+| Variant | Rows | Runtime modes | Valid rows | Reconstructed WAV | PCM chunks | First PCM ms values | Total ms values |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| PD2_parallel_hybrid_batch2 | 3 | true_parallel_workers:3 | 3 | 3 | 73 | 3571.133, 3282.149, 3513.312 | 40814.364, 22945.156, 57271.140 |
+| PD3_parallel_hybrid_batch3 | 3 | true_parallel_workers:3 | 3 | 3 | 70 | 4177.142, 4945.231, 5143.175 | 21532.318, 37915.609, 53674.536 |
+
+### Full PD hybrid minimum matrix
+
+- Run ID: `pd_hybrid_parallel_minimum_r3`
+- Status: `LIVE_BATCH_MINIMUM_COMPLETED`
+- Local started: `2026-06-26T15:49:07.806+08:00`
+- Local ended: `2026-06-26T16:45:48.261+08:00`
+- UTC started: `2026-06-26T07:49:07.806Z`
+- UTC ended: `2026-06-26T08:45:48.261Z`
+- Command: `BREEZYVOICE_BASE_URL=http://localhost:9003/v1 /home/jnclaw/every_on_git_jnclaw/BreezyVoice/.venv/bin/python scripts/tts-benchmark/probe_true_parallel_batch_runtime.py --mode minimum --repeats 3 --variants S_serial_segment_baseline,P2_parallel_segment_batch2,P3_parallel_segment_batch3,PD2_parallel_hybrid_batch2,PD3_parallel_hybrid_batch3 --output experiments/pd_hybrid_parallel_minimum_r3`
+- Batch summary rows: `180`
+- Event trace rows: `45513`
+- GPU metric rows: `180`
+- Error rows: `0`
+- Reconstructed WAV files: `180`
+- Segment WAV files: `495`
+- BreezyVoice runtime branch/commit:
+  `feat/breezyvoice-true-streaming-runtime` / `d592c9d`
+- Runtime Python: `/home/jnclaw/every_on_git_jnclaw/BreezyVoice/.venv/bin/python`
+  / `3.10.20`
+- GPU snapshot at run start: `NVIDIA GeForce RTX 4090 Laptop GPU`,
+  driver `580.159.03`, memory total `16376 MB`, temperature `49 C`,
+  power draw `30.17 W`, utilization `45 %`.
+
+| Variant | Rows | Runtime modes | Valid rows | Reconstructed WAV | First ordered p95 ms | Total p95 ms | Overlap median | Speedup median |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| S_serial_segment_baseline | 36 | serial_baseline:36 | 36 | 36 | 4437.115 | 7279.241 | 0.0 | 1.0 |
+| P2_parallel_segment_batch2 | 36 | true_parallel_workers:36 | 36 | 36 | 7043.776 | 7282.483 | 0.495 | 0.997 |
+| P3_parallel_segment_batch3 | 36 | true_parallel_workers:36 | 36 | 36 | 7515.056 | 7628.449 | 0.663 | 0.975 |
+| PD2_parallel_hybrid_batch2 | 36 | true_parallel_workers:33; true_parallel_dispatch_low_overlap:3 | 36 | 36 | 45936.001 | 45989.325 | 0.431 | 0.168 |
+| PD3_parallel_hybrid_batch3 | 36 | true_parallel_workers:33; true_parallel_dispatch_low_overlap:3 | 36 | 36 | 50909.348 | 52327.288 | 0.582 | 0.159 |
+
+PD streaming event evidence:
+
+| Variant | first_speech_token | speech_token_chunk | first_pcm_chunk | first_audio_chunk_sent | pcm_chunk |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| PD2_parallel_hybrid_batch2 | 99 | 19222 | 99 | 99 | 811 |
+| PD3_parallel_hybrid_batch3 | 99 | 20142 | 99 | 99 | 856 |
+
 ## Required Event Coverage
 
 Both probe and minimum run event traces include: `batch_received`, `segment_dispatch_start`, `segment_request_sent`, `segment_synthesis_start`, `segment_first_audio_ready`, `segment_synthesis_end`, `segment_audio_saved`, `ordered_reconstruction_start`, `ordered_reconstruction_end`, and `batch_end`.
 
 Every batch summary row now carries `local_started_at`, `utc_started_at`, `local_ended_at`, and `utc_ended_at`. The event trace also records `t_wall`, `t_wall_utc`, and `t_monotonic_ns` per event.
+
+PD hybrid runs additionally include `llm_start`, `first_speech_token`,
+`speech_token_chunk`, `first_mel_chunk`, `first_pcm_chunk`,
+`first_audio_chunk_sent`, and `pcm_chunk` events. These events prove PD2/PD3
+are not skipped and are not renamed P2/P3 full-segment WAV synthesis.
 
 ## Artifact Paths
 
@@ -157,20 +224,48 @@ Every batch summary row now carries `local_started_at`, `utc_started_at`, `local
 - `experiments/true_parallel_segment_batch_minimum/reports/batch_latency_report.md`
 - `experiments/true_parallel_segment_batch_minimum/reports/batch_failure_analysis.md`
 - `experiments/true_parallel_segment_batch_minimum/reports/batch_final_decision.md`
+- `experiments/pd_hybrid_parallel_probe_full/logs/batch_request_summary.jsonl`
+- `experiments/pd_hybrid_parallel_probe_full/logs/batch_event_trace.jsonl`
+- `experiments/pd_hybrid_parallel_probe_full/audio/segments/`
+- `experiments/pd_hybrid_parallel_probe_full/audio/reconstructed/`
+- `experiments/pd_hybrid_parallel_minimum_r3/logs/batch_request_summary.jsonl`
+- `experiments/pd_hybrid_parallel_minimum_r3/logs/batch_event_trace.jsonl`
+- `experiments/pd_hybrid_parallel_minimum_r3/audio/segments/`
+- `experiments/pd_hybrid_parallel_minimum_r3/audio/reconstructed/`
+- `experiments/pd_hybrid_parallel_minimum_r3/reports/parallel_runtime_validity_report.md`
+- `experiments/pd_hybrid_parallel_minimum_r3/reports/batch_latency_report.md`
+- `experiments/pd_hybrid_parallel_minimum_r3/reports/batch_failure_analysis.md`
+- `experiments/pd_hybrid_parallel_minimum_r3/reports/batch_final_decision.md`
 
 ## Hard-Gate Decision
 
-The runtime gate is satisfied for the minimum matrix: `P2_parallel_segment_batch2` and `P3_parallel_segment_batch3` both recorded `true_parallel_workers`, all 108 batch rows were `ok`, all 108 reconstructed WAV files exist, and event traces prove concurrent dispatch.
+The runtime gate is satisfied for the expanded minimum matrix:
+`P2_parallel_segment_batch2`, `P3_parallel_segment_batch3`,
+`PD2_parallel_hybrid_batch2`, and `PD3_parallel_hybrid_batch3` all produced
+valid rows. The expanded matrix recorded `180` successful batch rows, `180`
+reconstructed WAV files, `495` segment WAV files, `45513` event trace rows,
+and `0` error rows.
 
-Production selection remains gated: p95 first ordered audio is still above the 1500 ms short-sample interaction target, and human audio seam review has not been completed. No production default changes in this evidence layer.
+Production selection remains gated: p95 first ordered audio is still above the
+1500 ms short-sample interaction target for every variant, PD2/PD3 are much
+slower than P2/P3, and human audio seam review has not been completed. No
+production default changes in this evidence layer.
 
 ## Final Decision
 
 - Production default: `none`
 - Operational fallback: `S_serial_segment_baseline`
-- Research candidate: `P2_parallel_segment_batch2`, `P3_parallel_segment_batch3`
-- Next optimization candidate: reduce first ordered audio latency and run human seam-quality review.
+- Research candidate: `P2_parallel_segment_batch2`,
+  `P3_parallel_segment_batch3`, `PD2_parallel_hybrid_batch2`,
+  `PD3_parallel_hybrid_batch3`
+- Next optimization candidate: reduce first ordered audio latency and run human
+  seam-quality review. PD2/PD3 are valid hybrid implementations, but their p95
+  latency confirms the prefix/window streaming cost remains too high for the
+  current product path.
 
 ## Next Patch
 
-Keep the true-parallel segment runner, then optimize queue strategy and audio playback policy. If product latency remains above gate, prioritize cache-aware BreezyVoice/CosyVoice2 streaming rather than expanding batch size.
+Keep the true-parallel segment runner, then optimize queue strategy and audio
+playback policy for P2/P3. Keep PD2/PD3 as research evidence until
+cache-aware BreezyVoice/CosyVoice2 streaming can reduce prefix/window
+recomputation cost.

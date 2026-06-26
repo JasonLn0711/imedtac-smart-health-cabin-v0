@@ -154,3 +154,24 @@ python3 scripts/tts-benchmark/probe_true_parallel_batch_runtime.py \
 The runtime target is `true_parallel_workers` or
 `true_parallel_dispatch_low_overlap`. `serial_fallback` remains baseline
 evidence only.
+
+Expanded PD hybrid minimum matrix after applying the strict BreezyVoice
+streaming runtime patch:
+
+```bash
+BREEZYVOICE_BASE_URL=http://localhost:9003/v1 \
+/home/jnclaw/every_on_git_jnclaw/BreezyVoice/.venv/bin/python \
+  scripts/tts-benchmark/probe_true_parallel_batch_runtime.py \
+  --mode minimum \
+  --repeats 3 \
+  --variants S_serial_segment_baseline,P2_parallel_segment_batch2,P3_parallel_segment_batch3,PD2_parallel_hybrid_batch2,PD3_parallel_hybrid_batch3 \
+  --output experiments/pd_hybrid_parallel_minimum_r3
+```
+
+`PD2_parallel_hybrid_batch2` and `PD3_parallel_hybrid_batch3` require the
+patched BreezyVoice runtime branch and the BreezyVoice virtual environment.
+They run the strict `D_hybrid` token/audio streaming path inside each parallel
+segment worker and must emit `first_speech_token`, `first_pcm_chunk`, and
+`pcm_chunk` events. System `python3` may be valid for the HTTP-only P2/P3 path,
+but the PD path needs the BreezyVoice environment because it imports `torch`,
+`torchaudio`, and the patched runtime directly.
