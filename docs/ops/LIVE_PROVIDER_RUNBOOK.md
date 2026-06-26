@@ -28,8 +28,9 @@ VOICE_CONVERSATION_PRIMARY questionnaire
 
 The BreezyVoice commands below preserve the existing Sprint 5 live path and
 fallback/reference lane. They are not the new production real-time TTS target.
-Do not claim CosyVoice3 live validation until the provider sidecar, streaming
-transport, benchmark, and real-room voice acceptance evidence exist.
+Do not claim CosyVoice3 live provider validation until the provider sidecar,
+streaming transport, and benchmark evidence exist. Do not claim real-room
+voice readiness until the physical-room acceptance evidence exists.
 
 CosyVoice3 sidecar preflight command:
 
@@ -48,6 +49,38 @@ COSYVOICE3_BACKEND_URL=http://localhost:8017 \
 COSYVOICE3_STREAMING_BACKEND_WS=ws://localhost:8017/v1/audio/stream \
 python3 -m uvicorn server:app --host 0.0.0.0 --port 8015
 ```
+
+Local official CosyVoice3 backend setup:
+
+```bash
+uv python install 3.10
+git clone --recursive https://github.com/FunAudioLLM/CosyVoice.git .local/CosyVoice
+uv venv .local/cosyvoice-venv --python 3.10
+uv pip install --python .local/cosyvoice-venv/bin/python --index-strategy unsafe-best-match -r .local/CosyVoice/requirements.txt
+uv pip install --python .local/cosyvoice-venv/bin/python 'setuptools<81'
+.local/cosyvoice-venv/bin/python - <<'PY'
+from huggingface_hub import snapshot_download
+snapshot_download(
+    'FunAudioLLM/Fun-CosyVoice3-0.5B-2512',
+    local_dir='.local/CosyVoice/pretrained_models/Fun-CosyVoice3-0.5B',
+)
+PY
+```
+
+Local live sidecar command:
+
+```bash
+cd apps/model-sidecars/cosyvoice-service
+COSYVOICE3_PROVIDER_MODE=live \
+COSYVOICE3_REPO_PATH=/home/jnclaw/every_on_git_jnclaw/phd-life-system/imedtac-smart-health-cabin-v0/.local/CosyVoice \
+COSYVOICE3_MODEL_DIR=/home/jnclaw/every_on_git_jnclaw/phd-life-system/imedtac-smart-health-cabin-v0/.local/CosyVoice/pretrained_models/Fun-CosyVoice3-0.5B \
+COSYVOICE3_PROMPT_WAV=/home/jnclaw/every_on_git_jnclaw/phd-life-system/imedtac-smart-health-cabin-v0/.local/CosyVoice/asset/zero_shot_prompt.wav \
+COSYVOICE3_COMPUTE_BACKEND=gpu \
+/home/jnclaw/every_on_git_jnclaw/phd-life-system/imedtac-smart-health-cabin-v0/.local/cosyvoice-venv/bin/python -m uvicorn server:app --host 127.0.0.1 --port 8015
+```
+
+The official `asset/zero_shot_prompt.wav` is acceptable for smoke testing only.
+Production acceptance still needs a Taiwan Mandarin healthcare prompt wav.
 
 Port `8015` is reserved for the CosyVoice sidecar so it does not collide with
 the wakeword service on `8013`.

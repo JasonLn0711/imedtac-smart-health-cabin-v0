@@ -46,10 +46,11 @@ Co., Ltd.）Smart Health Cabin collaboration project.
 | `apps/kiosk-web/src/features/avatar/StreamingAudioPlayer.ts` | Kiosk playback adapter for completed WAV fallback and CosyVoice WebSocket PCM16 chunk playback. Uses native Web Audio; AudioWorklet is deferred until measured jitter requires it. |
 | `apps/kiosk-web/src/features/avatar/VoiceConversationController.ts` | Voice-first questionnaire command helper for retry, touch fallback, staff assist, and answer utterance routing. |
 | `apps/model-sidecars/cosyvoice-service/` | CosyVoice3 streaming sidecar boundary for `/healthz`, `/readyz`, `/v1/audio/speech`, `WS /v1/audio/stream`, Taiwan healthcare normalization, and prompt profile handling. It reports unavailable until a real CosyVoice3 backend is configured. |
+| `apps/model-sidecars/cosyvoice-service/test_streaming.py` | Stdlib smoke checks for sidecar WebSocket event metadata and PCM16 chunk-duration calculation. |
 | `scripts/smoke-cosyvoice3.mjs` | Live-readiness smoke for the CosyVoice3 sidecar; requires `/readyz` and streaming readiness, so unavailable backends fail honestly. |
 | `scripts/smoke-voice-conversation-live.mjs` | Voice-first API smoke that checks provider status and the `/api/v1/agent-turns/tts/stream` descriptor. |
 | `scripts/tts-benchmark/run_tts_provider_matrix.py` | Provider matrix runner for BreezyVoice, CosyVoice2, and CosyVoice3 variants using `experiments/manifests/tts_provider_eval_manifest.jsonl`. |
-| `scripts/voice-room/run_voice_first_phq9_room_test.py` | Manual room-test template generator for voice-first PHQ-9 field acceptance. |
+| `scripts/voice-room/run_voice_first_phq9_room_test.py` | Manual room-test template generator and filled-CSV validator for voice-first PHQ-9 field acceptance gates. |
 | `scripts/tts-benchmark/` | Stdlib BreezyVoice 2x2 benchmark utilities: manifest generation, deterministic/live A/B runner, environment capture, analysis reports, hard-gate table, weighted score, and evidence-log generation. |
 | `experiments/manifests/tts_eval_manifest.jsonl` | Versioned synthetic TTS evaluation manifest for PHQ-9, Smart Cabin measurement, kiosk FAQ, and Taiwan zh-TW stress samples. |
 | `experiments/manifests/tts_provider_eval_manifest.jsonl` | Synthetic non-PHI provider benchmark manifest for CosyVoice3 streaming candidate, BreezyVoice fallback, Taiwan healthcare terms, answer acknowledgements, and recovery prompts. |

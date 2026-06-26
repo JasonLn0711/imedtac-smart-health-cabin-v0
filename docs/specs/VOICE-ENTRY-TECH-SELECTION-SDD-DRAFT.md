@@ -102,7 +102,7 @@ configuration.
 | ASR acceptance | GPU-only live acceptance; no CPU fallback for live acceptance | `.env.example`, `apps/voice-agent-server/README.md` |
 | LLM provider | Local Gemma 4 E4B through Ollama native or OpenAI-compatible runtime | `.env.example`, `docs/handoff/sprint-4.5-model-selection.md` |
 | LLM behavior | Short flow guidance, temperature `0.3`, bounded answer mapping | `.env.example`, voice Agent routes |
-| TTS provider | Current fallback/reference: BreezyVoice default voice; next production candidate: CosyVoice3 streaming | `docs/decisions/2026-06-26-voice-first-cosyvoice3-product-path.md` |
+| TTS provider | Production candidate: CosyVoice3 streaming; fallback/reference: BreezyVoice default voice | `docs/decisions/2026-06-26-voice-first-cosyvoice3-product-path.md` |
 | TTS sidecar | CosyVoice streaming sidecar on port `8015`; BreezyVoice fallback sidecar on port `8012` | `apps/model-sidecars/cosyvoice-service/README.md`, `apps/model-sidecars/tts-service/README.md` |
 | TTS voice control | Reject reference audio, voice cloning, custom voice IDs | `apps/model-sidecars/tts-service/README.md` |
 | Voice write policy | Confirmation before voice answers write to questionnaire state | `apps/voice-agent-server/README.md` |

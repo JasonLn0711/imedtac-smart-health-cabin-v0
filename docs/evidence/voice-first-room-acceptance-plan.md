@@ -30,6 +30,11 @@ with safe writes, visible recovery, touch/staff fallback, and auditable events.
   - `重新回答`
   - `改用觸控`
   - `找人協助`
+- Voice-first collapsed-touch mode:
+  - start with `voice_first_touch_collapsed`
+  - confirm touch answers are visually collapsed at the start of the run
+  - confirm `改用觸控`, low-confidence mapping, ambiguous mapping, or voice
+    capture failure restores the touch answer stage
 - No-speech and background-noise trials.
 - PHQ-9 item 9 positive path.
 
@@ -39,6 +44,7 @@ with safe writes, visible recovery, touch/staff fallback, and auditable events.
 {
   "run_id": "voice_first_room_acceptance_YYYYMMDD",
   "speaker_id": "S1",
+  "mic_permission_granted": true,
   "distance_m": 1.0,
   "noise_condition": "normal_room",
   "question_id": "phq9_01",
@@ -47,10 +53,16 @@ with safe writes, visible recovery, touch/staff fallback, and auditable events.
   "false_trigger": false,
   "asr_text": "完全沒有",
   "mapped_candidate": "not_at_all",
+  "asr_confidence_available": false,
+  "confirmation_required": true,
   "write_decision": "answer_committed",
   "fallback_reason": null,
   "turn_latency_ms": 1800,
-  "user_visible_mode": "voice_first_touch_visible"
+  "user_visible_mode": "voice_first_touch_visible",
+  "touch_initially_collapsed": false,
+  "touch_restored_by": null,
+  "critical_unsafe_auto_write": false,
+  "touch_fallback_success": true
 }
 ```
 
@@ -60,8 +72,15 @@ with safe writes, visible recovery, touch/staff fallback, and auditable events.
 - unavailable ASR confidence does not write without confirmation
 - item 9 positive route uses staff-support language
 - touch fallback success = 100%
+- `voice_first_touch_collapsed` restores touch on fallback, ambiguity, or voice
+  capture failure
 - full 9-question voice-first completion rate is measured
 - wake miss and false-trigger rates are measured
+- at least 3 speakers are recorded
+- every speaker has all 9 PHQ-9 question trials recorded
+- every template row has microphone, write-decision, latency, and visible-mode
+  evidence
+- at least one background-noise condition is recorded
 
 ## Manual Template Command
 
@@ -71,5 +90,18 @@ python3 scripts/voice-room/run_voice_first_phq9_room_test.py \
   --speakers 3
 ```
 
-The generated CSV is a field collection template. It is not field-ready
-evidence until filled from real-room runs.
+Validate a filled CSV:
+
+```bash
+python3 scripts/voice-room/run_voice_first_phq9_room_test.py \
+  --validate experiments/voice_first_room_acceptance_manual/raw_runs_template.csv
+```
+
+The generated CSV is a field collection template. The validator exits non-zero
+until real-room rows are filled and the hard gates pass.
+
+The validator also has a local self-check:
+
+```bash
+python3 scripts/voice-room/run_voice_first_phq9_room_test.py --self-test
+```
