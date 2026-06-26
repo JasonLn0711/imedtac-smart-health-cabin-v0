@@ -129,3 +129,28 @@ The current batch matrix runner records `serial_fallback` until it is wired to
 the experimental `/v1/tts/synthesize-batch` endpoint or a strict BreezyVoice
 batch adapter. `G/H/K/L` do not synthesize fake token/audio batch output; they
 record `BLOCKED_BY_TRUE_STREAMING_RUNTIME`.
+
+True parallel segment batch runtime probe:
+
+```bash
+BREEZYVOICE_BASE_URL=http://localhost:9003/v1 \
+python3 scripts/tts-benchmark/probe_true_parallel_batch_runtime.py \
+  --mode probe \
+  --output experiments/true_parallel_segment_batch_probe
+```
+
+Minimum live parallel segment batch matrix:
+
+```bash
+BREEZYVOICE_BASE_URL=http://localhost:9003/v1 \
+python3 scripts/tts-benchmark/probe_true_parallel_batch_runtime.py \
+  --mode minimum \
+  --manifest experiments/manifests/parallel_segment_tts_eval_manifest.jsonl \
+  --limit 12 \
+  --repeats 3 \
+  --output experiments/true_parallel_segment_batch_minimum
+```
+
+The runtime target is `true_parallel_workers` or
+`true_parallel_dispatch_low_overlap`. `serial_fallback` remains baseline
+evidence only.
