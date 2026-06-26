@@ -103,7 +103,7 @@ configuration.
 | LLM provider | Local Gemma 4 E4B through Ollama native or OpenAI-compatible runtime | `.env.example`, `docs/handoff/sprint-4.5-model-selection.md` |
 | LLM behavior | Short flow guidance, temperature `0.3`, bounded answer mapping | `.env.example`, voice Agent routes |
 | TTS provider | Current fallback/reference: BreezyVoice default voice; next production candidate: CosyVoice3 streaming | `docs/decisions/2026-06-26-voice-first-cosyvoice3-product-path.md` |
-| TTS sidecar | Python FastAPI sidecar on port `8012` | `apps/model-sidecars/tts-service/README.md` |
+| TTS sidecar | CosyVoice streaming sidecar on port `8015`; BreezyVoice fallback sidecar on port `8012` | `apps/model-sidecars/cosyvoice-service/README.md`, `apps/model-sidecars/tts-service/README.md` |
 | TTS voice control | Reject reference audio, voice cloning, custom voice IDs | `apps/model-sidecars/tts-service/README.md` |
 | Voice write policy | Confirmation before voice answers write to questionnaire state | `apps/voice-agent-server/README.md` |
 | Critical path rule | Redpanda failure must not block kiosk completion | `apps/outbox-worker/README.md` |
@@ -218,6 +218,25 @@ into the main system design.
 | Formal wake phrase | Frozen as `你好小慧` | sherpa-onnx generated keyword token file; tap-to-start remains fallback |
 | Diarization | Not in Phase 1 | None; OpenAI diarize; pyannote; vendor diarization |
 | Hardware mic | To be selected onsite | USB directional mic; kiosk array mic; headset; built-in mic |
+
+## CosyVoice3 Provider Gate
+
+The CosyVoice3 path is accepted only when `cosyvoice3_streaming` provides real
+audio-out streaming through WebSocket PCM16 chunks. A sidecar process, status
+route, or completed WAV response is preflight evidence only.
+
+Required provider fields:
+
+```text
+provider=cosyvoice3_streaming
+streaming=true
+audioTransport=ws_pcm16
+fallbackProvider=breezyvoice_default
+acceptanceEligible=true
+```
+
+If these fields are unavailable or the room test is not complete, keep touch
+and staff fallback visible enough for recovery.
 | Taigi support | Confirmation-first support | Mandarin only; mixed Mandarin/Taigi support; separate Taigi validation |
 
 ## Enterprise Pain Points And Controls

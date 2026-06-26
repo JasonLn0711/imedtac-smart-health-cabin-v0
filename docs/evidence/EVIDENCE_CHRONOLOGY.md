@@ -51,6 +51,8 @@ claim.
 | `2026-06-26` | `docs/evidence/2026-06-26-breezyvoice-true-parallel-segment-batch-experiment-log.md` | accepted evidence | True parallel segment batch and PD hybrid batch matrix evidence. |
 | `2026-06-26` | `docs/evidence/2026-06-26-expert-review-product-path-analysis.md` | expert review evidence | First post-TTS-matrix expert recommendation; superseded as product default by the later voice-first/CosyVoice3 recommendation. |
 | `2026-06-26` | `docs/evidence/2026-06-26-expert-review-voice-first-cosyvoice3-update.md` | expert review evidence | Updated expert recommendation adopted as current product direction: voice-first questionnaire conversation, CosyVoice3 streaming as production candidate, BreezyVoice fallback/research. |
+| `2026-06-26` | `docs/evidence/cosyvoice3-streaming-provider-validation.md` | smoke/preflight evidence | CosyVoice3 provider boundary, sidecar, scripts, manifest, and validation gates. Live backend is not yet proven. |
+| `2026-06-26` | `docs/evidence/voice-first-room-acceptance-plan.md` | planning/reference | Physical-room voice-first PHQ-9 acceptance plan and manual data template command. Not field-ready evidence until real-room runs are recorded. |
 
 ## Planning, Handoff, Or Future-Dated Documents
 

@@ -31,6 +31,38 @@ fallback/reference lane. They are not the new production real-time TTS target.
 Do not claim CosyVoice3 live validation until the provider sidecar, streaming
 transport, benchmark, and real-room voice acceptance evidence exist.
 
+CosyVoice3 sidecar preflight command:
+
+```bash
+cd apps/model-sidecars/cosyvoice-service
+COSYVOICE3_PROVIDER_MODE=unavailable \
+python3 -m uvicorn server:app --host 0.0.0.0 --port 8015
+```
+
+Live validation requires replacing `COSYVOICE3_PROVIDER_MODE=unavailable` with
+a real backend:
+
+```bash
+COSYVOICE3_PROVIDER_MODE=live \
+COSYVOICE3_BACKEND_URL=http://localhost:8017 \
+COSYVOICE3_STREAMING_BACKEND_WS=ws://localhost:8017/v1/audio/stream \
+python3 -m uvicorn server:app --host 0.0.0.0 --port 8015
+```
+
+Port `8015` is reserved for the CosyVoice sidecar so it does not collide with
+the wakeword service on `8013`.
+
+Kiosk streaming playback gate:
+
+```bash
+VITE_TTS_STREAMING=true
+```
+
+With this flag, kiosk-web requests `/api/v1/agent-turns/tts/stream`, sends the
+text payload to the returned WebSocket URL, and plays PCM16 chunks with Web
+Audio. Keep `VITE_TTS_STREAMING=false` only for fallback tests that intentionally
+exercise completed WAV playback.
+
 ## Strict Sprint 5 Provider Set
 
 AI model inference is GPU-only for Sprint 5 acceptance. Do not start ASR, LLM,

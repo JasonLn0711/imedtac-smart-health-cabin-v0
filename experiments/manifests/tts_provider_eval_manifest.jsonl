@@ -1,0 +1,6 @@
+{"schema_version":"tts-provider-eval-v1","sample_id":"voice_first_001","category":"wake_greeting","input_text":"您好，我是慧誠智醫健康互動助理。接下來我會用語音帶您完成問卷。","phi_status":"synthetic_non_phi","expected_keywords":["慧誠智醫","語音","問卷"]}
+{"schema_version":"tts-provider-eval-v1","sample_id":"voice_first_002","category":"phq9_question","input_text":"接下來是第一題。最近兩週，做事時提不起勁或沒有樂趣？選項是完全沒有、有幾天、一半以上的天數、幾乎每天。","phi_status":"synthetic_non_phi","expected_keywords":["最近兩週","完全沒有","幾乎每天"]}
+{"schema_version":"tts-provider-eval-v1","sample_id":"voice_first_003","category":"answer_ack","input_text":"我剛剛聽到您說「有幾天」。接下來是第二題，請用語音回答。","phi_status":"synthetic_non_phi","expected_keywords":["有幾天","第二題"]}
+{"schema_version":"tts-provider-eval-v1","sample_id":"voice_first_004","category":"asr_confusion_recovery","input_text":"我聽到的可能是「完全沒有」。請說是、重新回答，或改用觸控。","phi_status":"synthetic_non_phi","expected_keywords":["完全沒有","重新回答","觸控"]}
+{"schema_version":"tts-provider-eval-v1","sample_id":"voice_first_005","category":"taiwan_health_terms","input_text":"血壓 128/76、血氧 97%、HbA1c 6.5% 會保留原始單位，交由現場流程確認。","phi_status":"synthetic_non_phi","expected_keywords":["128/76","97%","HbA1c"]}
+{"schema_version":"tts-provider-eval-v1","sample_id":"voice_first_006","category":"safety_staff_route","input_text":"這題需要現場人員關心與協助，您可以請現場人員一起完成。","phi_status":"synthetic_non_phi","expected_keywords":["現場人員","協助"]}

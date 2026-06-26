@@ -27,6 +27,16 @@ candidate. BreezyVoice remains the operational fallback, regression baseline,
 research lane, and Taiwan Mandarin quality reference until CosyVoice3 passes
 live provider and real-room voice acceptance gates.
 
+To rollback TTS while preserving the voice-first questionnaire code path:
+
+```bash
+TTS_PROVIDER=breezyvoice_default
+TTS_SERVICE_URL=http://localhost:8012
+TTS_SYNTHESIZE_PATH=/v1/tts/synthesize
+```
+
+This rollback is continuity behavior, not CosyVoice3 live acceptance evidence.
+
 ## Rollback Path
 
 1. Set `VOICE_PROVIDER_MODE=mock` to restore deterministic local testing.

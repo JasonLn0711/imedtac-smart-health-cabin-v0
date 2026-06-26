@@ -26,7 +26,8 @@ The API server owns the Phase 1 questionnaire spine and voice-provider boundary.
 | `POST /api/v1/agent-sessions` | Create voice-agent session. |
 | `POST /api/v1/agent-turns/asr` | Live/mock ASR transcript capture. |
 | `POST /api/v1/agent-turns/respond` | Live/mock question guidance. |
-| `POST /api/v1/agent-turns/tts` | Live/mock TTS audio generation, default BreezyVoice only. |
+| `POST /api/v1/agent-turns/tts` | Live/mock TTS audio generation through the provider router. Current production candidate is CosyVoice3 streaming; BreezyVoice remains fallback/reference. |
+| `POST /api/v1/agent-turns/tts/stream` | TTS streaming descriptor for WebSocket PCM16 playback. Does not by itself prove live streaming validity. |
 | `POST /api/v1/agent-turns/map-answer` | Deterministic transcript-to-SurveyJS choice candidate. |
 | `GET /api/v1/providers/status` | Provider runtime status and Sprint 5 acceptance eligibility. |
 
@@ -35,6 +36,10 @@ returning nested `providers` and `sprint5Acceptance`. ASR, LLM, and TTS status
 also expose GPU-only controls: `computeBackend=gpu`, `gpuRequired=true`,
 `cpuOffload=false`, and `cpuFallbackAllowed=false` are required for strict
 Sprint 5 acceptance.
+
+TTS provider status also exposes `streaming`, `audioTransport`, and
+`fallbackProvider`. A provider is product-eligible only when the configured
+live backend passes readiness and the matching benchmark/room evidence exists.
 
 `@shc/voice-agent-server` runs as a thin live-service boundary on port `3004`.
 It exposes `GET /healthz`, `GET /readyz`, and proxies
