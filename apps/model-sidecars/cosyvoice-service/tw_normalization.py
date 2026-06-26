@@ -2,10 +2,16 @@ import re
 
 
 TERM_REPLACEMENTS = {
+    "数据": "資料",
+    "资料": "資料",
+    "质量": "品質",
     "信息": "資訊",
     "質量": "品質",
     "屏幕": "螢幕",
+    "身份证": "身分證",
     "身份證": "身分證",
+    "視頻": "影片",
+    "程序": "程式",
     "心跳": "心率",
     "抑郁": "憂鬱",
 }
@@ -26,10 +32,10 @@ def normalize_taiwan_healthcare_text(text: str) -> str:
     for source, target in TERM_REPLACEMENTS.items():
         value = value.replace(source, target)
     for source, target in ACRONYM_READINGS.items():
-        value = value.replace(source, target)
-    value = re.sub(r"(\d{2,3})/(\d{2,3})", r"\1 比 \2", value)
+        value = re.sub(re.escape(source), target, value, flags=re.IGNORECASE)
+    value = re.sub(r"(\d{4})[-/](\d{1,2})[-/](\d{1,2})", r"\1 年 \2 月 \3 日", value)
+    value = re.sub(r"(\d{2,3})\s*[/／]\s*(\d{2,3})", r"\1 比 \2", value)
     value = re.sub(r"(\d+(?:\.\d+)?)%", r"\1 %", value)
-    value = re.sub(r"(\d{4}) 年 (\d{1,2}) 月 (\d{1,2}) 日", r"\1 年 \2 月 \3 日", value)
     return value
 
 

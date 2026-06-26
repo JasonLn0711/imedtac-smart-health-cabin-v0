@@ -5,7 +5,7 @@ from pydantic import BaseModel
 import websockets
 
 from provider import ProviderUnavailable, provider
-from streaming import event
+from streaming import event, pcm16_duration_ms
 
 
 app = FastAPI(title="Smart Health Cabin CosyVoice Streaming Sidecar")
@@ -78,17 +78,17 @@ async def audio_stream(socket: WebSocket):
         chunk_index = 0
         try:
             for chunk, sample_rate in provider.stream_local_pcm_chunks(normalized_text):
-                metadata_name = "first_audio_chunk" if first_chunk else "audio_chunk"
-                await socket.send_json(
-                    event(
-                        metadata_name,
-                        chunk_index=chunk_index,
-                        sample_rate=sample_rate,
-                        format="pcm16",
-                        bytes=len(chunk),
-                        is_final=False,
-                    )
-                )
+                fields = {
+                    "chunk_index": chunk_index,
+                    "sample_rate": sample_rate,
+                    "format": "pcm16",
+                    "duration_ms": pcm16_duration_ms(len(chunk), sample_rate),
+                    "bytes": len(chunk),
+                    "is_final": False,
+                }
+                if first_chunk:
+                    await socket.send_json(event("first_audio_chunk", **fields))
+                await socket.send_json(event("audio_chunk", **fields))
                 await socket.send_bytes(chunk)
                 first_chunk = False
                 chunk_index += 1
@@ -124,18 +124,18 @@ async def audio_stream(socket: WebSocket):
                         except json.JSONDecodeError:
                             await socket.send_json(event("backend_message", message=message))
                         continue
-                    metadata_name = "first_audio_chunk" if first_chunk else "audio_chunk"
-                    await socket.send_json(
-                        event(
-                            metadata_name,
-                            chunk_index=chunk_index,
-                            sample_rate=24000,
-                            format="pcm16",
-                            bytes=len(message),
-                            is_final=False,
-                            proxied=True,
-                        )
-                    )
+                    fields = {
+                        "chunk_index": chunk_index,
+                        "sample_rate": 24000,
+                        "format": "pcm16",
+                        "duration_ms": pcm16_duration_ms(len(message), 24000),
+                        "bytes": len(message),
+                        "is_final": False,
+                        "proxied": True,
+                    }
+                    if first_chunk:
+                        await socket.send_json(event("first_audio_chunk", **fields))
+                    await socket.send_json(event("audio_chunk", **fields))
                     await socket.send_bytes(message)
                     first_chunk = False
                     chunk_index += 1

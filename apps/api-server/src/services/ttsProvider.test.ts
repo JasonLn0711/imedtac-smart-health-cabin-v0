@@ -16,6 +16,16 @@ afterEach(() => {
 });
 
 describe("tts provider config", () => {
+  it("defaults to CosyVoice3 streaming with BreezyVoice fallback", () => {
+    const config = getTtsProviderConfig();
+
+    expect(config).toMatchObject({
+      provider: "cosyvoice3_streaming",
+      streaming: true,
+      fallbackProvider: "breezyvoice_default"
+    });
+  });
+
   it("selects CosyVoice3 streaming with BreezyVoice fallback", () => {
     process.env.TTS_PROVIDER = "cosyvoice3_streaming";
     process.env.TTS_FALLBACK_PROVIDER = "breezyvoice_default";

@@ -30,7 +30,7 @@ export function joinUrl(baseUrl: string, path: string): string {
 }
 
 export function getTtsProviderConfig(source: NodeJS.ProcessEnv = process.env): TtsProviderConfig {
-  const provider = env(source, "TTS_PROVIDER", defaultBreezyVoiceProvider);
+  const provider = env(source, "TTS_PROVIDER", defaultCosyVoice3Provider);
   const fallbackProvider = env(source, "TTS_FALLBACK_PROVIDER", defaultBreezyVoiceProvider);
 
   if (provider === defaultCosyVoice3Provider) {
