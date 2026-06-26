@@ -23,6 +23,19 @@ This draft records the current selected technology stack and the Sprint 5.6
 Voice Entry Activation Gate decision for the Smart Health Cabin voice entry
 layer.
 
+The latest accepted expert update moves the next product path from further
+BreezyVoice runtime modification to:
+
+```text
+VOICE_CONVERSATION_PRIMARY questionnaire
++ CosyVoice3 real-time streaming TTS production candidate
++ BreezyVoice fallback / baseline / research lane
+```
+
+Touch remains a safety and recovery path. "No touch" means touch answers may be
+collapsed or hidden in the default UI; it does not mean deleting touch or staff
+fallback code paths.
+
 The voice entry layer owns a controlled path from user speech to reviewable
 questionnaire input:
 
@@ -89,7 +102,7 @@ configuration.
 | ASR acceptance | GPU-only live acceptance; no CPU fallback for live acceptance | `.env.example`, `apps/voice-agent-server/README.md` |
 | LLM provider | Local Gemma 4 E4B through Ollama native or OpenAI-compatible runtime | `.env.example`, `docs/handoff/sprint-4.5-model-selection.md` |
 | LLM behavior | Short flow guidance, temperature `0.3`, bounded answer mapping | `.env.example`, voice Agent routes |
-| TTS provider | BreezyVoice default voice only | `docs/handoff/sprint-4.5-model-selection.md` |
+| TTS provider | Current fallback/reference: BreezyVoice default voice; next production candidate: CosyVoice3 streaming | `docs/decisions/2026-06-26-voice-first-cosyvoice3-product-path.md` |
 | TTS sidecar | Python FastAPI sidecar on port `8012` | `apps/model-sidecars/tts-service/README.md` |
 | TTS voice control | Reject reference audio, voice cloning, custom voice IDs | `apps/model-sidecars/tts-service/README.md` |
 | Voice write policy | Confirmation before voice answers write to questionnaire state | `apps/voice-agent-server/README.md` |

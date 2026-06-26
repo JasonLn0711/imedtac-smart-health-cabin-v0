@@ -19,8 +19,13 @@ the stable product spine.
 | --- | --- | --- |
 | ASR | Touch input remains available. | Useful for continuity, not Sprint 5 live proof. |
 | LLM | Deterministic guidance / rejection and touch input remain available. | Useful for safety, not Sprint 5 live proof. |
-| TTS | Text-only question display remains available. | Useful for continuity, not Sprint 5 live proof. |
+| TTS | BreezyVoice default voice / cached fixed prompts / text-only display remain available. | Useful for continuity and reference, not CosyVoice3 live proof. |
 | Redpanda | Outbox rows remain pending and retryable. | Useful for recovery, not publish proof. |
+
+Current product path: CosyVoice3 streaming is the next production TTS
+candidate. BreezyVoice remains the operational fallback, regression baseline,
+research lane, and Taiwan Mandarin quality reference until CosyVoice3 passes
+live provider and real-room voice acceptance gates.
 
 ## Rollback Path
 

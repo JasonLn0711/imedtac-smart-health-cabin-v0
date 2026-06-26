@@ -13,6 +13,24 @@ Sprint 5 live acceptance runs the questionnaire spine with real local services:
 PostgreSQL, API, kiosk, admin, SurveyJS, static Avatar state, ASR, LLM, TTS,
 outbox worker, Redpanda, provider status, and public report access.
 
+## Current Product Path Update
+
+The current accepted product path is documented in
+`docs/decisions/2026-06-26-voice-first-cosyvoice3-product-path.md`.
+
+Next provider work should move the product mainline to:
+
+```text
+VOICE_CONVERSATION_PRIMARY questionnaire
++ CosyVoice3 real-time streaming TTS production candidate
++ BreezyVoice fallback / baseline / research reference
+```
+
+The BreezyVoice commands below preserve the existing Sprint 5 live path and
+fallback/reference lane. They are not the new production real-time TTS target.
+Do not claim CosyVoice3 live validation until the provider sidecar, streaming
+transport, benchmark, and real-room voice acceptance evidence exist.
+
 ## Strict Sprint 5 Provider Set
 
 AI model inference is GPU-only for Sprint 5 acceptance. Do not start ASR, LLM,
