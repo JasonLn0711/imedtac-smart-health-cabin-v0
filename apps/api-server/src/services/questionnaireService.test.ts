@@ -180,6 +180,7 @@ afterEach(() => {
   delete process.env.TTS_HEALTH_PATH;
   delete process.env.TTS_REQUEST_TIMEOUT_MS;
   delete process.env.TTS_REQUEST_STYLE;
+  delete process.env.TTS_FALLBACK_PROVIDER;
   delete process.env.RERANKER_PROVIDER;
   delete process.env.RERANKER_MODEL;
   delete process.env.RERANKER_ENABLED;
@@ -201,6 +202,15 @@ afterEach(() => {
   delete process.env.BREEZYVOICE_CPU_OFFLOAD;
   delete process.env.BREEZYVOICE_CPU_OFFLOAD_GB;
   delete process.env.BREEZYVOICE_ALLOW_CPU_FALLBACK;
+  delete process.env.COSYVOICE3_BASE_URL;
+  delete process.env.COSYVOICE3_HEALTH_PATH;
+  delete process.env.COSYVOICE3_MODEL_ID;
+  delete process.env.COSYVOICE3_STREAMING;
+  delete process.env.COSYVOICE3_TW_PROMPT_PROFILE;
+  delete process.env.COSYVOICE3_DEVICE;
+  delete process.env.COSYVOICE3_CPU_OFFLOAD;
+  delete process.env.COSYVOICE3_CPU_OFFLOAD_GB;
+  delete process.env.COSYVOICE3_ALLOW_CPU_FALLBACK;
   delete process.env.REDPANDA_ADMIN_URL;
   delete process.env.REDPANDA_READY_PATH;
   delete process.env.SPRINT5_ALLOWED_LLM_PROVIDERS;

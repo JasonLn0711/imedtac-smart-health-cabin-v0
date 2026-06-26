@@ -193,6 +193,18 @@ export async function registerQuestionnaireRoutes(
     }
   );
 
+  app.post<{ Body: { agent_session_id?: string; session_id?: string; question_name?: string; text?: string } }>(
+    "/api/v1/agent-turns/tts/stream",
+    async (request, reply) => {
+      try {
+        return await questionnaireService.describeTtsStream(request.body);
+      } catch (error) {
+        const response = toErrorResponse(error);
+        return reply.status(response.statusCode).send(response.body);
+      }
+    }
+  );
+
   app.post<{
     Body: {
       agent_session_id?: string;

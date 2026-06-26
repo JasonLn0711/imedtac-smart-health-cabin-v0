@@ -28,6 +28,14 @@ import {
   processVoiceEvidence
 } from "@shc/voice-safety-core";
 import type { QuestionnaireRepository } from "../repositories/questionnaireRepository";
+import {
+  defaultBreezyVoiceProvider,
+  getTtsProviderConfig,
+  joinUrl,
+  type TtsProviderConfig,
+  ttsRuntimeStatusPatch,
+  ttsStreamUrl
+} from "./ttsProvider";
 
 const seedPath = "modules/questionnaire/seed/phq9.zh-TW.surveyjs.json";
 const scoringConfigPath = "modules/questionnaire/scoring/phq9.public-scoring-config.json";
@@ -37,7 +45,7 @@ const defaultAsrProvider = "faster_whisper_breeze_asr_26";
 const defaultAsrModel = "Breeze-ASR-26-CT2-int8";
 const defaultLlmProvider = "ollama_native";
 const defaultLlmModel = "gemma4:e4b";
-const defaultTtsProvider = "breezyvoice_default";
+const defaultTtsProvider = defaultBreezyVoiceProvider;
 const defaultTtsModel = "/models/breezyvoice";
 const defaultTtsVoice = "default";
 const defaultRerankerProvider = "qwen3_reranker_0_6b";
@@ -75,10 +83,6 @@ function env(name: string, fallback: string): string {
 
 function trimSlash(value: string): string {
   return value.replace(/\/$/, "");
-}
-
-function joinUrl(baseUrl: string, path: string): string {
-  return `${trimSlash(baseUrl)}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
 function llmBaseUrl(): string {
@@ -519,9 +523,16 @@ export class ProviderStatusService {
       cpuFallbackEnv: ["LLM_ALLOW_CPU_FALLBACK", "VLLM_ALLOW_CPU_FALLBACK"]
     });
     const ttsRuntimeScope = modelRuntimeScope({
-      backendEnv: ["TTS_COMPUTE_BACKEND", "TTS_DEVICE", "BREEZYVOICE_DEVICE"],
-      cpuOffloadEnv: ["TTS_CPU_OFFLOAD", "TTS_CPU_OFFLOAD_GB", "BREEZYVOICE_CPU_OFFLOAD", "BREEZYVOICE_CPU_OFFLOAD_GB"],
-      cpuFallbackEnv: ["TTS_ALLOW_CPU_FALLBACK", "BREEZYVOICE_ALLOW_CPU_FALLBACK"]
+      backendEnv: ["TTS_COMPUTE_BACKEND", "TTS_DEVICE", "BREEZYVOICE_DEVICE", "COSYVOICE3_DEVICE"],
+      cpuOffloadEnv: [
+        "TTS_CPU_OFFLOAD",
+        "TTS_CPU_OFFLOAD_GB",
+        "BREEZYVOICE_CPU_OFFLOAD",
+        "BREEZYVOICE_CPU_OFFLOAD_GB",
+        "COSYVOICE3_CPU_OFFLOAD",
+        "COSYVOICE3_CPU_OFFLOAD_GB"
+      ],
+      cpuFallbackEnv: ["TTS_ALLOW_CPU_FALLBACK", "BREEZYVOICE_ALLOW_CPU_FALLBACK", "COSYVOICE3_ALLOW_CPU_FALLBACK"]
     });
     const rerankerRuntimeScope = modelRuntimeScope({
       backendEnv: ["RERANKER_COMPUTE_BACKEND", "RERANKER_DEVICE"],
@@ -548,13 +559,12 @@ export class ProviderStatusService {
         fallback: "deterministic rejection / touch input",
         ...llmRuntimeScope
       });
+      const ttsConfig = getTtsProviderConfig();
       const tts = withAcceptance({
-        provider: env("TTS_PROVIDER", defaultTtsProvider),
-        model: env("TTS_MODEL_PATH", defaultTtsModel),
+        ...ttsRuntimeStatusPatch(ttsConfig),
         mode: "mock",
         ready: true,
-        endpoint: env("TTS_SERVICE_URL", "http://localhost:8012"),
-        fallback: "text-only question display",
+        fallback: ttsConfig.fallbackProvider,
         ...ttsRuntimeScope
       });
       const redpanda = withAcceptance({
@@ -604,9 +614,8 @@ export class ProviderStatusService {
             max_tokens: 4,
             temperature: 0
           });
-    const ttsBaseUrl = process.env.BREEZYVOICE_BASE_URL ?? env("TTS_SERVICE_URL", "http://localhost:8012");
-    const ttsHealthPath = process.env.BREEZYVOICE_BASE_URL ? "/models" : env("TTS_HEALTH_PATH", "/healthz");
-    const ttsProbe = await getProviderReady(joinUrl(ttsBaseUrl, ttsHealthPath));
+    const ttsConfig = getTtsProviderConfig();
+    const ttsProbe = await getProviderReady(joinUrl(ttsConfig.baseUrl, ttsConfig.healthPath));
     const redpandaEndpoint = env("REDPANDA_ADMIN_URL", "http://localhost:9644");
     const redpandaProbe = await getProviderReady(joinUrl(redpandaEndpoint, env("REDPANDA_READY_PATH", "/v1/status/ready")));
     const rerankerEndpoint = env("RERANKER_SERVICE_URL", "http://localhost:8014");
@@ -641,12 +650,10 @@ export class ProviderStatusService {
       error_code: llmProbe.ready && !llmProviderAllowed(env("LLM_PROVIDER", defaultLlmProvider)) ? "LLM_PROVIDER_NOT_ALLOWED" : llmProbe.error_code
     });
     const tts = withAcceptance({
-      provider: env("TTS_PROVIDER", defaultTtsProvider),
-      model: process.env.BREEZYVOICE_MODEL ?? env("TTS_MODEL_PATH", defaultTtsModel),
+      ...ttsRuntimeStatusPatch(ttsConfig),
+      fallback: ttsConfig.fallbackProvider,
       ...ttsProbe,
       mode: ttsProbe.ready ? "live" : "unavailable",
-      endpoint: ttsBaseUrl,
-      fallback: "text-only question display",
       ...ttsRuntimeScope
     });
     const redpanda = withAcceptance({
@@ -748,45 +755,62 @@ const liveLlmAdapter: LLMAdapter = {
   }
 };
 
-const liveTtsAdapter: TTSAdapter = {
-  async synthesize(text) {
-    const provider = env("TTS_PROVIDER", defaultTtsProvider);
-    const model = process.env.BREEZYVOICE_MODEL ?? env("TTS_MODEL_PATH", defaultTtsModel);
-    let audioBase64: string;
-    const voice = ttsVoiceId();
-    if (voice !== defaultTtsVoice) {
-      throw new QuestionnaireValidationError("Only BreezyVoice default voice is accepted");
-    }
-
-    if (process.env.BREEZYVOICE_BASE_URL || process.env.TTS_REQUEST_STYLE === "openai") {
-      audioBase64 = await postAudio(joinUrl(env("BREEZYVOICE_BASE_URL", "http://localhost:9003/v1"), "/audio/speech"), {
+async function synthesizeWithTtsConfig(config: TtsProviderConfig, text: string): Promise<{ audioBase64: string; voice: string }> {
+  const { provider, model } = config;
+  const voice = ttsVoiceId();
+  if (provider === defaultBreezyVoiceProvider && voice !== defaultTtsVoice) {
+    throw new QuestionnaireValidationError("Only BreezyVoice default voice is accepted");
+  }
+  if (provider === defaultBreezyVoiceProvider && (process.env.BREEZYVOICE_BASE_URL || process.env.TTS_REQUEST_STYLE === "openai")) {
+    return {
+      voice,
+      audioBase64: await postAudio(joinUrl(config.baseUrl, config.synthesizePath), {
         model,
         voice,
         input: text,
         response_format: "wav",
         speed: 1
-      });
-    } else {
-      const tts = await postJson<{ audio_base64: string; mime_type?: string }>(
-        joinUrl(env("TTS_SERVICE_URL", "http://localhost:8012"), env("TTS_SYNTHESIZE_PATH", "/v1/tts/synthesize")),
-        {
-          text,
-          voice_id: defaultTtsVoice,
-          response_format: "wav"
-        }
-      );
-      audioBase64 = tts.audio_base64;
+      })
+    };
+  }
+  const tts = await postJson<{ audio_base64: string; mime_type?: string }>(joinUrl(config.baseUrl, config.synthesizePath), {
+    text,
+    voice_id: provider === defaultBreezyVoiceProvider ? defaultTtsVoice : env("COSYVOICE3_TW_PROMPT_PROFILE", "default_tw_healthcare"),
+    prompt_profile: env("COSYVOICE3_TW_PROMPT_PROFILE", "default_tw_healthcare"),
+    response_format: "wav"
+  });
+  return { voice, audioBase64: tts.audio_base64 };
+}
+
+const liveTtsAdapter: TTSAdapter = {
+  async synthesize(text) {
+    let config = getTtsProviderConfig();
+    let fallbackUsed = false;
+    let result: { audioBase64: string; voice: string };
+    try {
+      result = await synthesizeWithTtsConfig(config, text);
+    } catch (error) {
+      if (config.provider === defaultBreezyVoiceProvider || config.fallbackProvider !== defaultBreezyVoiceProvider) {
+        throw error;
+      }
+      config = getTtsProviderConfig({ ...process.env, TTS_PROVIDER: defaultBreezyVoiceProvider });
+      result = await synthesizeWithTtsConfig(config, text);
+      fallbackUsed = true;
     }
 
-    const audioDataUrl = `data:audio/wav;base64,${audioBase64}`;
+    const audioDataUrl = `data:audio/wav;base64,${result.audioBase64}`;
     return {
-      provider,
-      model,
+      provider: config.provider,
+      model: config.model,
       audioDataUrl,
       payload: {
-        provider,
-        model,
-        voice,
+        provider: config.provider,
+        model: config.model,
+        voice: result.voice,
+        streaming: config.streaming,
+        audio_transport: config.transport,
+        fallback_provider: config.fallbackProvider,
+        fallback_used: fallbackUsed,
         customized_voice: false,
         text,
         audio_data_url: audioDataUrl
@@ -1022,6 +1046,40 @@ export class QuestionnaireService {
       payload
     });
     return { agent_turn_id: turnId, provider, model, audio_data_url: audioDataUrl };
+  }
+
+  async describeTtsStream(input: {
+    agent_session_id?: string;
+    session_id?: string;
+    question_name?: string;
+    text?: string;
+  }): Promise<AgentTurnResponse> {
+    const config = getTtsProviderConfig();
+    const streamUrl = ttsStreamUrl(config);
+    const payload = {
+      provider: config.provider,
+      model: config.model,
+      text: input.text ?? "",
+      stream_url: streamUrl,
+      audio_transport: config.transport,
+      fallback_provider: config.fallbackProvider,
+      streaming: config.streaming
+    };
+    const turnId = await this.repository.saveAgentTurn({
+      agentSessionId: input.agent_session_id,
+      sessionId: input.session_id,
+      turnType: "tts_stream",
+      questionName: input.question_name,
+      payload
+    });
+    return {
+      agent_turn_id: turnId,
+      provider: config.provider,
+      model: config.model,
+      stream_url: streamUrl,
+      audio_transport: config.transport,
+      fallback_provider: config.fallbackProvider
+    };
   }
 
   async mapVoiceAnswer(input: {

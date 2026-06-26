@@ -180,6 +180,8 @@ export const ProviderRuntimeStatusSchema = z.object({
   mode: VoiceProviderModeSchema,
   ready: z.boolean(),
   healthy: z.boolean().optional(),
+  streaming: z.boolean().optional(),
+  audioTransport: z.enum(["http_wav", "ws_pcm16", "unknown"]).optional(),
   acceptanceEligible: z.boolean().optional(),
   computeBackend: z.enum(["gpu", "cpu", "mixed", "unknown"]).optional(),
   gpuRequired: z.boolean().optional(),
@@ -189,6 +191,8 @@ export const ProviderRuntimeStatusSchema = z.object({
   latencyMs: z.number().optional(),
   lastError: z.string().nullable().optional(),
   fallback: z.string().optional(),
+  fallbackProvider: z.string().optional(),
+  blockerReason: z.string().optional(),
   error_code: z.string().optional()
 });
 export type ProviderRuntimeStatus = z.infer<typeof ProviderRuntimeStatusSchema>;
@@ -285,6 +289,9 @@ export interface AgentTurnResponse {
   guidance?: string;
   audio_data_url?: string;
   audio_url?: string;
+  stream_url?: string;
+  audio_transport?: "http_wav" | "ws_pcm16" | "unknown";
+  fallback_provider?: string;
 }
 
 export interface VoiceAnswerCandidate {

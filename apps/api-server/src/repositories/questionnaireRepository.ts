@@ -57,7 +57,7 @@ export interface CreateVersionInput {
 export interface SaveAgentTurnInput {
   agentSessionId?: string;
   sessionId?: string;
-  turnType: "asr" | "respond" | "tts" | "map_answer";
+  turnType: "asr" | "respond" | "tts" | "tts_stream" | "map_answer";
   questionName?: string;
   transcript?: string;
   payload: Record<string, unknown>;
