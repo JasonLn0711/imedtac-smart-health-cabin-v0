@@ -12,3 +12,4 @@ coverage/
 experiments/*
 !experiments/manifests/
 !experiments/manifests/*.jsonl
+G2PWModel/
