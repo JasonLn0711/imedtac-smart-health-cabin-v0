@@ -212,6 +212,8 @@ export async function registerQuestionnaireRoutes(
       question_name: string;
       transcript: string;
       asr_confidence?: number;
+      voice_mode?: string;
+      touch_visible?: boolean;
     };
   }>(
     "/api/v1/agent-turns/map-answer",

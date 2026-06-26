@@ -45,8 +45,6 @@ const defaultAsrProvider = "faster_whisper_breeze_asr_26";
 const defaultAsrModel = "Breeze-ASR-26-CT2-int8";
 const defaultLlmProvider = "ollama_native";
 const defaultLlmModel = "gemma4:e4b";
-const defaultTtsProvider = defaultBreezyVoiceProvider;
-const defaultTtsModel = "/models/breezyvoice";
 const defaultTtsVoice = "default";
 const defaultRerankerProvider = "qwen3_reranker_0_6b";
 const defaultRerankerModel = "Qwen3-Reranker-0.6B";
@@ -209,6 +207,28 @@ function gpuOnlyEligible(input: {
     input.gpuRequired !== true ||
     (input.computeBackend === "gpu" && input.cpuOffload === false && input.cpuFallbackAllowed === false)
   );
+}
+
+function voiceWriteDecision(input: {
+  routingDecision?: string;
+  confirmationRequired?: boolean;
+  hasCandidate: boolean;
+}): { writeDecision: string; fallbackReason?: string } {
+  const decision = input.routingDecision;
+  if (decision === "safety_sensitive_staff_review") {
+    return { writeDecision: "staff_review", fallbackReason: decision };
+  }
+  if (!input.hasCandidate || decision === "low_confidence_retry" || decision === "no_speech_retry") {
+    return { writeDecision: "no_write_retry", fallbackReason: decision ?? "no_candidate" };
+  }
+  if (input.confirmationRequired || decision === "medium_confidence_needs_confirmation" || decision === "ambiguous_multiple_candidates") {
+    return { writeDecision: "confirmation_required", fallbackReason: decision };
+  }
+  return { writeDecision: "answer_committed_candidate" };
+}
+
+function isPhq9Item9Positive(questionName: string, candidate: { value: number } | null): boolean {
+  return questionName === "phq9_09" && candidate !== null && candidate.value > 0;
 }
 
 async function postJson<T>(url: string, body: unknown, timeoutMs = voiceModelTimeoutMs()): Promise<T> {
@@ -420,15 +440,21 @@ function withAcceptance(input: {
   gpuRequired?: boolean;
   cpuOffload?: boolean;
   cpuFallbackAllowed?: boolean;
+  blockerReason?: string;
 }) {
   const runtimeEligible = input.mode === "live" && input.ready && (input.healthy ?? input.ready);
   const gpuControlError = input.mode === "live" && !gpuOnlyEligible(input) ? "GPU_ONLY_REQUIRED" : undefined;
+  const blockerReason =
+    input.blockerReason ??
+    gpuControlError ??
+    (input.mode === "unavailable" ? input.lastError ?? input.error_code ?? "PROVIDER_UNAVAILABLE" : undefined);
   return {
     ...input,
     healthy: input.healthy ?? input.ready,
     acceptanceEligible: (input.acceptanceEligible ?? runtimeEligible) && !gpuControlError,
     lastError: gpuControlError ?? input.lastError ?? null,
-    error_code: gpuControlError ?? input.error_code
+    error_code: gpuControlError ?? input.error_code,
+    blockerReason
   };
 }
 
@@ -1088,6 +1114,8 @@ export class QuestionnaireService {
     question_name: string;
     transcript: string;
     asr_confidence?: number;
+    voice_mode?: string;
+    touch_visible?: boolean;
   }): Promise<VoiceAnswerMappingResponse> {
     const active = await this.repository.getActiveQuestionnaire();
     const question = getSurveyQuestionContexts(active.surveyjsJson).find(
@@ -1124,6 +1152,43 @@ export class QuestionnaireService {
       questionId: question.name,
       options: question.choices
     });
+    const routingDecision = isPhq9Item9Positive(question.name, candidate)
+      ? "safety_sensitive_staff_review"
+      : safety.routingDecision;
+    const confirmationRequired = isPhq9Item9Positive(question.name, candidate) ? true : safety.confirmationRequired;
+    const writeAudit = voiceWriteDecision({
+      routingDecision,
+      confirmationRequired,
+      hasCandidate: candidate !== null
+    });
+    const voiceTurnAudit = {
+      transcript: input.transcript,
+      normalized_transcript: safety.normalizedText,
+      candidate_answer: candidate,
+      asr_confidence: input.asr_confidence ?? null,
+      asr_confidence_available: input.asr_confidence !== undefined,
+      candidate_confidence: candidate?.confidence ?? null,
+      write_decision: writeAudit.writeDecision,
+      fallback_reason: writeAudit.fallbackReason ?? null,
+      active_question_id: question.name,
+      voice_mode: input.voice_mode ?? "unknown",
+      touch_visible: input.touch_visible ?? null,
+      provider_metrics: {
+        asr: {
+          provider: env("ASR_PROVIDER", defaultAsrProvider),
+          model: env("ASR_MODEL", defaultAsrModel),
+          confidence: input.asr_confidence ?? null
+        },
+        reranker: rerankerTrace
+          ? {
+              provider: rerankerTrace.provider,
+              model: rerankerTrace.model,
+              mode: rerankerTrace.mode
+            }
+          : null,
+        tts: ttsRuntimeStatusPatch(getTtsProviderConfig())
+      }
+    };
     await this.repository.saveAgentTurn({
       agentSessionId: input.agent_session_id,
       sessionId: input.session_id,
@@ -1133,7 +1198,9 @@ export class QuestionnaireService {
       payload: {
         candidate,
         normalized_transcript: safety.normalizedText,
-        routing_decision: safety.routingDecision,
+        routing_decision: routingDecision,
+        confirmation_required: confirmationRequired,
+        voice_turn_audit: voiceTurnAudit,
         semantic_frame: safety.semanticFrame,
         voice_evidence_metadata: safety.metadata,
         reranker_trace: rerankerTrace
@@ -1143,8 +1210,8 @@ export class QuestionnaireService {
       candidate,
       transcript: input.transcript,
       normalized_transcript: safety.normalizedText,
-      routing_decision: safety.routingDecision,
-      confirmation_required: safety.confirmationRequired,
+      routing_decision: routingDecision,
+      confirmation_required: confirmationRequired,
       semantic_frame: safety.semanticFrame,
       voice_evidence_metadata: safety.metadata,
       reranker_trace: rerankerTrace

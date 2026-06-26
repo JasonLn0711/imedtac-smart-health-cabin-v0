@@ -46,12 +46,16 @@ export async function mapVoiceAnswerTurn(input: {
   questionName: string;
   transcript: string;
   asrConfidence?: number;
+  voiceMode?: string;
+  touchVisible?: boolean;
 }): Promise<VoiceAnswerMappingResponse> {
   return postJson<VoiceAnswerMappingResponse>("/api/v1/agent-turns/map-answer", {
     agent_session_id: input.agentSessionId,
     question_name: input.questionName,
     transcript: input.transcript,
-    asr_confidence: input.asrConfidence
+    asr_confidence: input.asrConfidence,
+    voice_mode: input.voiceMode,
+    touch_visible: input.touchVisible
   });
 }
 

@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import type { ActiveQuestionnaireResponse, CompletedQuestionnaireResponse, PublicSummary } from "@shc/contracts";
 import { AvatarPanel } from "../avatar/AvatarPanel";
+import { isTouchVisible, normalizeVoiceConversationMode } from "../avatar/voiceConversationMode";
 import { fetchActiveQuestionnaire, submitQuestionnaireResponse } from "./questionnaireApi";
 import { SurveyJsQuestionnaireRenderer } from "./SurveyJsQuestionnaireRenderer";
 
 type LoadState = "loading" | "ready" | "submitting" | "complete" | "error";
+
+const configuredVoiceMode = normalizeVoiceConversationMode(import.meta.env.VITE_VOICE_CONVERSATION_MODE);
 
 export function QuestionnairePage() {
   const [loadState, setLoadState] = useState<LoadState>("loading");
@@ -12,6 +15,7 @@ export function QuestionnairePage() {
   const [publicSummary, setPublicSummary] = useState<PublicSummary | null>(null);
   const [completedResponse, setCompletedResponse] = useState<CompletedQuestionnaireResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [touchVisible, setTouchVisible] = useState(isTouchVisible(configuredVoiceMode));
 
   useEffect(() => {
     let alive = true;
@@ -80,7 +84,14 @@ export function QuestionnairePage() {
             <SurveyJsQuestionnaireRenderer
               surveyJson={questionnaire.surveyjs_json}
               onComplete={handleComplete}
-              renderSidecar={(model) => <AvatarPanel model={model} />}
+              touchCollapsed={!touchVisible}
+              renderSidecar={(model) => (
+                <AvatarPanel
+                  model={model}
+                  touchVisible={touchVisible}
+                  onRequestTouchFallback={() => setTouchVisible(true)}
+                />
+              )}
             />
           </>
         )}

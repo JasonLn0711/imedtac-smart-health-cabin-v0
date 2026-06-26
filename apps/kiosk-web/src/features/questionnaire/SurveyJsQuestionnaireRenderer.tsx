@@ -7,6 +7,7 @@ interface SurveyJsQuestionnaireRendererProps {
   surveyJson: unknown;
   onComplete: (rawAnswers: Record<string, unknown>) => void;
   renderSidecar?: (model: Model) => ReactNode;
+  touchCollapsed?: boolean;
 }
 
 export function createKioskSurveyModel(surveyJson: unknown): Model {
@@ -29,7 +30,8 @@ export function createKioskSurveyModel(surveyJson: unknown): Model {
 export function SurveyJsQuestionnaireRenderer({
   surveyJson,
   onComplete,
-  renderSidecar
+  renderSidecar,
+  touchCollapsed = false
 }: SurveyJsQuestionnaireRendererProps) {
   const model = useMemo(() => createKioskSurveyModel(surveyJson), [surveyJson]);
 
@@ -45,7 +47,7 @@ export function SurveyJsQuestionnaireRenderer({
   }, [model, onComplete]);
 
   return (
-    <div className="survey-experience">
+    <div className={`survey-experience${touchCollapsed ? " survey-experience-touch-collapsed" : ""}`}>
       {renderSidecar && <div className="survey-avatar-rail">{renderSidecar(model)}</div>}
       <div className="survey-question-stage">
         <Survey model={model} />

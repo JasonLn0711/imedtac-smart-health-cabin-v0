@@ -344,18 +344,64 @@ describe("QuestionnaireService", () => {
     expect(mapped.voice_evidence_metadata?.rawAudioStored).toBe(false);
   });
 
+  it("routes positive PHQ-9 item 9 voice answers to staff review", async () => {
+    const repository = new InMemoryQuestionnaireRepository();
+    const service = new QuestionnaireService(repository);
+
+    const mapped = await service.mapVoiceAnswer({
+      question_name: "phq9_09",
+      transcript: "幾乎每天"
+    });
+
+    expect(mapped.candidate).toMatchObject({ value: 3, text: "幾乎每天" });
+    expect(mapped.routing_decision).toBe("safety_sensitive_staff_review");
+    expect(mapped.confirmation_required).toBe(true);
+    expect(repository.savedTurns[0]?.payload).toMatchObject({
+      routing_decision: "safety_sensitive_staff_review",
+      confirmation_required: true,
+      voice_turn_audit: {
+        write_decision: "staff_review",
+        fallback_reason: "safety_sensitive_staff_review",
+        active_question_id: "phq9_09"
+      }
+    });
+  });
+
   it("routes low-confidence mapped speech to retry instead of treating it as answer truth", async () => {
-    const service = new QuestionnaireService(new InMemoryQuestionnaireRepository());
+    const repository = new InMemoryQuestionnaireRepository();
+    const service = new QuestionnaireService(repository);
 
     const mapped = await service.mapVoiceAnswer({
       question_name: "phq9_01",
       transcript: "幾乎每天",
-      asr_confidence: 0.4
+      asr_confidence: 0.4,
+      voice_mode: "voice_first_touch_collapsed",
+      touch_visible: false
     });
 
     expect(mapped.candidate).toMatchObject({ value: 3 });
     expect(mapped.routing_decision).toBe("low_confidence_retry");
     expect(mapped.confirmation_required).toBe(false);
+    expect(repository.savedTurns[0]?.payload).toMatchObject({
+      confirmation_required: false,
+      voice_turn_audit: {
+        transcript: "幾乎每天",
+        normalized_transcript: "幾乎每天",
+        candidate_answer: { value: 3, text: "幾乎每天" },
+        asr_confidence: 0.4,
+        asr_confidence_available: true,
+        candidate_confidence: 0.92,
+        write_decision: "no_write_retry",
+        fallback_reason: "low_confidence_retry",
+        active_question_id: "phq9_01",
+        voice_mode: "voice_first_touch_collapsed",
+        touch_visible: false,
+        provider_metrics: {
+          asr: { provider: "faster_whisper_breeze_asr_26", model: "Breeze-ASR-26-CT2-int8", confidence: 0.4 },
+          reranker: null
+        }
+      }
+    });
   });
 
   it("stores reranker option trace without letting reranker choose the answer", async () => {
@@ -604,6 +650,7 @@ describe("QuestionnaireService", () => {
 
   it("rejects a configured customized BreezyVoice voice", async () => {
     process.env.VOICE_MODEL_MODE = "real";
+    process.env.TTS_PROVIDER = "breezyvoice_default";
     process.env.BREEZYVOICE_BASE_URL = "http://breezy.local/v1";
     process.env.TTS_VOICE = "jason-custom";
 
@@ -631,7 +678,7 @@ describe("QuestionnaireService", () => {
     await expect(service.getProviderStatus()).resolves.toMatchObject({
       asr: { provider: "faster_whisper_breeze_asr_26", mode: "mock", ready: true, acceptanceEligible: false },
       llm: { provider: "ollama_native", model: "gemma4:e4b", mode: "mock", ready: true, acceptanceEligible: false },
-      tts: { provider: "breezyvoice_default", mode: "mock", ready: true, acceptanceEligible: false },
+      tts: { provider: "cosyvoice3_streaming", mode: "mock", ready: true, acceptanceEligible: false },
       redpanda: { provider: "redpanda", mode: "mock", ready: true, acceptanceEligible: false },
       sprint5Acceptance: { allRequiredLive: false, eligible: false }
     });
@@ -671,7 +718,7 @@ describe("QuestionnaireService", () => {
     });
     expect(fetchMock).toHaveBeenCalledWith("http://asr.local/healthz", expect.any(Object));
     expect(fetchMock).toHaveBeenCalledWith("http://ollama.local/api/chat", expect.any(Object));
-    expect(fetchMock).toHaveBeenCalledWith("http://tts.local/healthz", expect.any(Object));
+    expect(fetchMock).toHaveBeenCalledWith("http://tts.local/readyz", expect.any(Object));
     expect(fetchMock).toHaveBeenCalledWith("http://reranker.local/status", expect.any(Object));
     expect(fetchMock).toHaveBeenCalledWith("http://redpanda.local/v1/status/ready", expect.any(Object));
   });
@@ -794,7 +841,8 @@ describe("QuestionnaireService", () => {
           ready: true,
           acceptanceEligible: false,
           computeBackend: "cpu",
-          error_code: "GPU_ONLY_REQUIRED"
+          error_code: "GPU_ONLY_REQUIRED",
+          blockerReason: "GPU_ONLY_REQUIRED"
         },
         llm: {
           mode: "live",
@@ -802,14 +850,16 @@ describe("QuestionnaireService", () => {
           acceptanceEligible: false,
           computeBackend: "gpu",
           cpuOffload: true,
-          error_code: "GPU_ONLY_REQUIRED"
+          error_code: "GPU_ONLY_REQUIRED",
+          blockerReason: "GPU_ONLY_REQUIRED"
         },
         tts: {
           mode: "live",
           ready: true,
           acceptanceEligible: false,
           computeBackend: "mixed",
-          error_code: "GPU_ONLY_REQUIRED"
+          error_code: "GPU_ONLY_REQUIRED",
+          blockerReason: "GPU_ONLY_REQUIRED"
         }
       },
       sprint5Acceptance: { allRequiredLive: true, eligible: false }
@@ -824,10 +874,10 @@ describe("QuestionnaireService", () => {
     const service = new QuestionnaireService(new InMemoryQuestionnaireRepository());
 
     await expect(service.getProviderStatus()).resolves.toMatchObject({
-      asr: { mode: "unavailable", ready: false, error_code: "HTTP_503" },
-      llm: { mode: "unavailable", ready: false, error_code: "HTTP_503" },
-      tts: { mode: "unavailable", ready: false, error_code: "HTTP_503" },
-      redpanda: { mode: "unavailable", ready: false, error_code: "HTTP_503" },
+      asr: { mode: "unavailable", ready: false, error_code: "HTTP_503", blockerReason: "HTTP_503" },
+      llm: { mode: "unavailable", ready: false, error_code: "HTTP_503", blockerReason: "HTTP_503" },
+      tts: { mode: "unavailable", ready: false, error_code: "HTTP_503", blockerReason: "HTTP_503" },
+      redpanda: { mode: "unavailable", ready: false, error_code: "HTTP_503", blockerReason: "HTTP_503" },
       sprint5Acceptance: { allRequiredLive: false, eligible: false }
     });
   });

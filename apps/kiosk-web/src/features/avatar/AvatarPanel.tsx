@@ -16,6 +16,7 @@ import {
   synthesizeTtsTurn
 } from "./voiceAgentApi";
 import { confirmVoiceAnswerAndMoveNext, getCurrentSurveyQuestion } from "./voiceQuestionnaireController";
+import { commandFromTranscript } from "./VoiceConversationController";
 import {
   isTouchVisible,
   isVoicePrimary,
@@ -25,6 +26,8 @@ import {
 
 interface AvatarPanelProps {
   model: Model;
+  touchVisible?: boolean;
+  onRequestTouchFallback?: () => void;
 }
 
 type StopReason = "VAD_END_SILENCE" | "MAX_UTTERANCE_REACHED" | "NO_SPEECH_TIMEOUT";
@@ -62,7 +65,7 @@ function speechRms(data: Uint8Array): number {
   return Math.sqrt(sum / data.length);
 }
 
-export function AvatarPanel({ model }: AvatarPanelProps) {
+export function AvatarPanel({ model, touchVisible, onRequestTouchFallback }: AvatarPanelProps) {
   const [snapshot, send] = useMachine(avatarStateMachine);
   const [transcript, setTranscript] = useState("完全沒有");
   const [draft, setDraft] = useState<VoiceAnswerDraft | null>(null);
@@ -83,6 +86,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
   const cancelRecordingRef = useRef(false);
   const cleanupRef = useRef<(() => void) | null>(null);
   const state = snapshot.value as AvatarState;
+  const effectiveTouchVisible = touchVisible ?? isTouchVisible(voiceConversationMode);
 
   useEffect(() => {
     stateRef.current = state;
@@ -323,11 +327,42 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
     setTranscript(heardText);
     send({ type: "ASR_DONE" });
 
+    const command = commandFromTranscript(heardText);
+    if (command === "retry") {
+      const retryText = "好的，請重新回答這一題。";
+      setMessage(retryText);
+      send({ type: "ASR_LOW_CONFIDENCE" });
+      await speakText({ agentSessionId, questionName: question.name, text: retryText });
+      return "continue";
+    }
+    if (command === "touch_fallback") {
+      const touchText = "好的，已改用觸控填答。您可以直接在螢幕上點選答案。";
+      setMessage(touchText);
+      onRequestTouchFallback?.();
+      setContinuousVoiceActive(false);
+      continuousVoiceRef.current = false;
+      send({ type: "ASR_LOW_CONFIDENCE" });
+      send({ type: "TOUCH_SELECTED" });
+      await speakText({ agentSessionId, questionName: question.name, text: touchText });
+      return "hold";
+    }
+    if (command === "staff_assist") {
+      const staffText = "好的，這一題會請現場人員協助您完成。";
+      setMessage(staffText);
+      setContinuousVoiceActive(false);
+      continuousVoiceRef.current = false;
+      send({ type: "STAFF_REVIEW" });
+      await speakText({ agentSessionId, questionName: question.name, text: staffText });
+      return "hold";
+    }
+
     const mapped = await mapVoiceAnswerTurn({
       agentSessionId,
       questionName: question.name,
       transcript: heardText,
-      asrConfidence: asr.confidence
+      asrConfidence: asr.confidence,
+      voiceMode: voiceConversationMode,
+      touchVisible: effectiveTouchVisible
     });
     send({ type: "ASR_DONE" });
     send({ type: "ASR_DONE" });
@@ -335,6 +370,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
     if (!mapped.candidate || mapped.routing_decision === "low_confidence_retry" || mapped.routing_decision === "no_speech_retry") {
       const retryText = `我聽到：「${mapped.normalized_transcript ?? heardText}」。請用螢幕確認最接近的選項，或重新錄音一次。`;
       setMessage(retryText);
+      onRequestTouchFallback?.();
       send({ type: "ASR_LOW_CONFIDENCE" });
       await speakText({ agentSessionId, questionName: question.name, text: retryText });
       return "continue";
@@ -362,6 +398,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
     if (mapped.confirmation_required || mapped.routing_decision === "ambiguous_multiple_candidates") {
       const retryText = `我聽到：「${mapped.normalized_transcript ?? heardText}」。請重新錄音一次，或直接用觸控填答。`;
       setMessage(retryText);
+      onRequestTouchFallback?.();
       send({ type: "ASR_LOW_CONFIDENCE" });
       await speakText({ agentSessionId, questionName: question.name, text: retryText });
       return "continue";
@@ -374,6 +411,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
   async function startRecording(options: { continuous?: boolean; startEvent?: StartRecordingEvent } = {}) {
     if (!navigator.mediaDevices || typeof MediaRecorder === "undefined") {
       send({ type: "VOICE_SERVICE_DOWN" });
+      onRequestTouchFallback?.();
       setMessage("此瀏覽器目前提供觸控與文字模擬填答。");
       return;
     }
@@ -421,6 +459,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
         .catch((error) => {
           continuousVoiceRef.current = false;
           setContinuousVoiceActive(false);
+          onRequestTouchFallback?.();
           send({ type: "VOICE_SERVICE_DOWN" });
           setMessage(error instanceof Error ? error.message : "語音回覆流程已交由觸控填答接續。");
         });
@@ -452,7 +491,9 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
       const mapped = await mapVoiceAnswerTurn({
         agentSessionId,
         questionName: currentQuestion.name,
-        transcript: transcript.trim()
+        transcript: transcript.trim(),
+        voiceMode: voiceConversationMode,
+        touchVisible: effectiveTouchVisible
       });
       send({ type: "ASR_DONE" });
       send({ type: "ASR_DONE" });
@@ -461,6 +502,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
       if (!mapped.candidate || mapped.routing_decision === "low_confidence_retry" || mapped.routing_decision === "no_speech_retry") {
         setDraft(null);
         setMessage("請用螢幕確認最接近的選項，或重新錄音一次。");
+        onRequestTouchFallback?.();
         send({ type: "ASR_LOW_CONFIDENCE" });
         return;
       }
@@ -481,12 +523,14 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
       }
       if (mapped.confirmation_required || mapped.routing_decision === "ambiguous_multiple_candidates") {
         setMessage("請重新錄音一次，或直接用觸控填答。");
+        onRequestTouchFallback?.();
         send({ type: "ASR_LOW_CONFIDENCE" });
         return;
       }
       await commitVoiceAnswer(currentQuestion, voiceDraft);
     } catch (error) {
       send({ type: "VOICE_SERVICE_DOWN" });
+      onRequestTouchFallback?.();
       setMessage(error instanceof Error ? error.message : "語音流程已交由觸控填答接續。");
     }
   }
@@ -523,6 +567,9 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
 
     setMessage(replyText);
     await speakText({ agentSessionId, questionName: ttsQuestionName, text: replyText });
+    if (!nextQuestion) {
+      model.doComplete();
+    }
     send({ type: "RESET" });
     if (nextQuestion && continuousVoiceRef.current) {
       restartContinuousListening("MANUAL_START");
@@ -619,7 +666,7 @@ export function AvatarPanel({ model }: AvatarPanelProps) {
           </div>
         )}
         <p className="touch-fallback">
-          {isTouchVisible(voiceConversationMode)
+          {effectiveTouchVisible
             ? "觸控填答：下方問卷可隨時直接完成。"
             : "觸控填答目前收合；重新回答、改用觸控或現場人員協助仍可恢復。"}
         </p>
