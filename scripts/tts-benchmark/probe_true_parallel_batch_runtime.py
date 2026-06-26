@@ -179,11 +179,12 @@ def has_overlap(results: list[SegmentResult], batch_size: int) -> bool:
 def runtime_mode_for(variant: str, results: list[SegmentResult], total_wall_ms: float) -> tuple[str, float]:
     if not VARIANTS[variant]["parallel"]:
         return "serial_baseline", 0.0
+    proof_results = sorted(results, key=lambda result: result.segment_id)[: VARIANTS[variant]["batch_size"]]
     sum_segment_ms = sum(result.duration_ms for result in results)
     overlap_ratio = round(1 - (total_wall_ms / max(sum_segment_ms, 1)), 3)
-    window = dispatch_window_ms(results)
+    window = dispatch_window_ms(proof_results)
     threshold = 250 if VARIANTS[variant]["batch_size"] == 2 else 500
-    concurrent_dispatch = window is not None and window <= threshold and has_overlap(results, VARIANTS[variant]["batch_size"])
+    concurrent_dispatch = window is not None and window <= threshold and has_overlap(proof_results, VARIANTS[variant]["batch_size"])
     if concurrent_dispatch and overlap_ratio > 0.30:
         return "true_parallel_workers", overlap_ratio
     if concurrent_dispatch:
@@ -248,6 +249,7 @@ def run_batch(output: Path, args: argparse.Namespace, run_id: str, batch_index: 
 
     total_wall_ms = round((time.monotonic_ns() - started_ns) / 1_000_000, 3)
     batch_runtime_mode, overlap_ratio = runtime_mode_for(variant, results, total_wall_ms)
+    proof_results = sorted(results, key=lambda result: result.segment_id)[: VARIANTS[variant]["batch_size"]]
     if status == "ok" and batch_runtime_mode == "serial_fallback" and VARIANTS[variant]["parallel"]:
         status = "invalid_parallel_runtime"
     append_jsonl(trace, trace_row(run_id, batch_id, variant, sample, repeat_idx, None, "batch_end", started_ns, {"bytes": reconstruction_path.stat().st_size if reconstruction_path else None}))
@@ -275,7 +277,8 @@ def run_batch(output: Path, args: argparse.Namespace, run_id: str, batch_index: 
         "max_segment_synthesis_ms": max((result.duration_ms for result in results), default=None),
         "parallel_speedup_vs_serial": None,
         "overlap_ratio": overlap_ratio,
-        "dispatch_window_ms": dispatch_window_ms(results),
+        "dispatch_window_ms": dispatch_window_ms(proof_results),
+        "all_segment_start_window_ms": dispatch_window_ms(results),
         "segment_audio_paths": [result.audio_path for result in results],
         "reconstructed_audio_path": str(reconstruction_path.relative_to(output)) if reconstruction_path else None,
         "reconstructed_audio_duration_sec": wav_duration_sec(reconstruction_path) if reconstruction_path else None,

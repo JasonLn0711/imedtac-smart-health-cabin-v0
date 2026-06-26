@@ -39,7 +39,7 @@ Live segment requests are dispatched concurrently to the BreezyVoice OpenAI-comp
 
 | Variant | Rows | Runtime modes | Reconstructed WAV |
 | --- | --- | --- | --- |
-| P2_parallel_segment_batch2 | 3 | serial_fallback,true_parallel_workers | 3 |
+| P2_parallel_segment_batch2 | 3 | true_parallel_workers | 3 |
 | P3_parallel_segment_batch3 | 3 | true_parallel_workers | 3 |
 
 ## Decision
