@@ -16,13 +16,23 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from streaming_runtime_probe import (
+    DEFAULT_BREEZYVOICE_ROOT,
+    DEFAULT_PROMPT_TEXT,
+    SAMPLE_RATE,
+    load_breezyvoice_runtime,
+    sha256_file,
+    tensor_to_wav_bytes,
+)
 from tts_benchmark_lib import append_jsonl, audio_metrics, collect_environment, concat_wavs, iso_local, iso_utc, read_jsonl, repo_root_from_script
 
 
 VARIANTS = {
-    "S_serial_segment_baseline": {"batch_size": 1, "parallel": False},
-    "P2_parallel_segment_batch2": {"batch_size": 2, "parallel": True},
-    "P3_parallel_segment_batch3": {"batch_size": 3, "parallel": True},
+    "S_serial_segment_baseline": {"batch_size": 1, "parallel": False, "hybrid": False},
+    "P2_parallel_segment_batch2": {"batch_size": 2, "parallel": True, "hybrid": False},
+    "P3_parallel_segment_batch3": {"batch_size": 3, "parallel": True, "hybrid": False},
+    "PD2_parallel_hybrid_batch2": {"batch_size": 2, "parallel": True, "hybrid": True},
+    "PD3_parallel_hybrid_batch3": {"batch_size": 3, "parallel": True, "hybrid": True},
 }
 
 PROBE_SAMPLES = [
@@ -55,6 +65,13 @@ class SegmentResult:
     duration_ms: float
     audio_path: str
     audio_duration_sec: float | None
+    chunk_count: int = 1
+    token_event_count: int = 0
+    pcm_event_count: int = 0
+    streaming_validity: bool | None = None
+    first_speech_token_ms: float | None = None
+    first_pcm_chunk_ms: float | None = None
+    first_audio_chunk_sent_ms: float | None = None
 
 
 def parse_args() -> argparse.Namespace:
@@ -68,6 +85,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--repeats", type=int, default=1)
     parser.add_argument("--seed", type=int, default=20260626)
     parser.add_argument("--timeout-sec", type=int, default=90)
+    parser.add_argument("--breezyvoice-root", default=os.getenv("BREEZYVOICE_ROOT", DEFAULT_BREEZYVOICE_ROOT))
+    parser.add_argument("--model-path", default=os.getenv("BREEZYVOICE_MODEL", "MediaTek-Research/BreezyVoice"))
+    parser.add_argument("--prompt-audio", default=os.getenv("BREEZYVOICE_PROMPT_AUDIO", "data/example.wav"))
+    parser.add_argument("--prompt-text", default=os.getenv("BREEZYVOICE_PROMPT_TEXT", DEFAULT_PROMPT_TEXT))
+    parser.add_argument("--token-hop-len", type=int, default=int(os.getenv("BREEZYVOICE_TOKEN_HOP_LEN", "25")))
     return parser.parse_args()
 
 
@@ -92,6 +114,38 @@ def split_segments(text: str) -> list[str]:
             if chunk:
                 segments.append(chunk)
     return segments
+
+
+def load_hybrid_runtime(args: argparse.Namespace) -> dict[str, Any]:
+    breezyvoice_root = Path(args.breezyvoice_root).resolve()
+    torch, torchaudio, G2PWConverter, load_wav, CustomCosyVoice, get_bopomofo_rare = load_breezyvoice_runtime(breezyvoice_root)
+    old_cwd = Path.cwd()
+    os.chdir(breezyvoice_root)
+    try:
+        converter = G2PWConverter()
+    finally:
+        os.chdir(old_cwd)
+    cosyvoice = CustomCosyVoice(args.model_path)
+    prompt_audio = breezyvoice_root / args.prompt_audio
+    prompt_speech_16k = load_wav(str(prompt_audio), 16000)
+    prompt_normalized = cosyvoice.frontend.text_normalize_new(args.prompt_text, split=False)
+    prompt_bopomofo = get_bopomofo_rare(prompt_normalized, converter)
+    return {
+        "torch": torch,
+        "torchaudio": torchaudio,
+        "cosyvoice": cosyvoice,
+        "converter": converter,
+        "prompt_speech_16k": prompt_speech_16k,
+        "prompt_bopomofo": prompt_bopomofo,
+        "get_bopomofo_rare": get_bopomofo_rare,
+        "breezyvoice_root": breezyvoice_root,
+        "prompt_audio_hash": sha256_file(prompt_audio),
+    }
+
+
+def hybrid_text(runtime: dict[str, Any], text: str) -> tuple[str, str]:
+    normalized = runtime["cosyvoice"].frontend.text_normalize_new(text, split=False)
+    return normalized, runtime["get_bopomofo_rare"](normalized, runtime["converter"])
 
 
 def wav_duration_sec(path: Path) -> float | None:
@@ -207,13 +261,131 @@ def run_segment(output: Path, args: argparse.Namespace, run_id: str, batch_id: s
     return SegmentResult(segment_id, text, audio, start_ms, end_ms, round(end_ms - start_ms, 3), str(segment_path.relative_to(output)), duration)
 
 
-def run_batch(output: Path, args: argparse.Namespace, run_id: str, batch_index: int, variant: str, sample: dict[str, Any], repeat_idx: int) -> dict[str, Any]:
+def run_hybrid_segment(output: Path, args: argparse.Namespace, runtime: dict[str, Any], run_id: str, batch_id: str, variant: str, sample: dict[str, Any], repeat_idx: int, segment_id: int, text: str, bopomofo_text: str, started_ns: int) -> SegmentResult:
+    torch = runtime["torch"]
+    torchaudio = runtime["torchaudio"]
+    trace = output / "logs" / "batch_event_trace.jsonl"
+    append_jsonl(trace, trace_row(run_id, batch_id, variant, sample, repeat_idx, segment_id, "segment_request_sent", started_ns, {"text": text, "char_count": len(text), "segment_index": segment_id}))
+    start_ms = round((time.monotonic_ns() - started_ns) / 1_000_000, 3)
+    append_jsonl(trace, trace_row(run_id, batch_id, variant, sample, repeat_idx, segment_id, "segment_synthesis_start", started_ns, {"text": text, "char_count": len(text), "segment_index": segment_id}))
+    append_jsonl(trace, trace_row(run_id, batch_id, variant, sample, repeat_idx, segment_id, "llm_start", started_ns, {"text": text, "segment_index": segment_id}))
+
+    chunks = []
+    chunk_count = 0
+    token_events = 0
+    pcm_events = 0
+    first_speech_token_ms = None
+    first_mel_chunk_ms = None
+    first_pcm_chunk_ms = None
+    first_audio_chunk_sent_ms = None
+
+    stream = runtime["cosyvoice"].inference_zero_shot_no_normalize_stream(
+        bopomofo_text,
+        runtime["prompt_bopomofo"],
+        runtime["prompt_speech_16k"],
+        segment_streaming=False,
+        token_hop_len=args.token_hop_len,
+    )
+    for item in stream:
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+        event = item.get("event", "pcm_chunk")
+        elapsed_ms = round((time.monotonic_ns() - started_ns) / 1_000_000, 3)
+        tts_speech = item.get("tts_speech")
+        bytes_len = None
+        duration_ms = None
+
+        if event in {"first_speech_token", "speech_token_chunk"}:
+            token_events += 1
+            if first_speech_token_ms is None:
+                first_speech_token_ms = elapsed_ms
+
+        if tts_speech is not None:
+            if first_mel_chunk_ms is None:
+                first_mel_chunk_ms = elapsed_ms
+                append_jsonl(trace, trace_row(run_id, batch_id, variant, sample, repeat_idx, segment_id, "first_mel_chunk", started_ns, {
+                    "segment_index": segment_id,
+                    "chunk_index": item.get("chunk_index"),
+                    "token_start": item.get("token_start"),
+                    "token_end": item.get("token_end"),
+                }))
+            if first_pcm_chunk_ms is None:
+                first_pcm_chunk_ms = elapsed_ms
+                append_jsonl(trace, trace_row(run_id, batch_id, variant, sample, repeat_idx, segment_id, "first_pcm_chunk", started_ns, {
+                    "segment_index": segment_id,
+                    "chunk_index": item.get("chunk_index"),
+                    "token_start": item.get("token_start"),
+                    "token_end": item.get("token_end"),
+                }))
+            wav_bytes = tensor_to_wav_bytes(torchaudio, tts_speech)
+            bytes_len = len(wav_bytes)
+            duration_ms = round((tts_speech.shape[1] / SAMPLE_RATE) * 1000, 3)
+            chunks.append(tts_speech.cpu())
+            pcm_events += 1
+            chunk_count += 1
+            if first_audio_chunk_sent_ms is None:
+                first_audio_chunk_sent_ms = elapsed_ms
+                append_jsonl(trace, trace_row(run_id, batch_id, variant, sample, repeat_idx, segment_id, "first_audio_chunk_sent", started_ns, {
+                    "segment_index": segment_id,
+                    "chunk_index": item.get("chunk_index"),
+                    "token_start": item.get("token_start"),
+                    "token_end": item.get("token_end"),
+                    "audio_chunk_duration_ms": duration_ms,
+                    "bytes": bytes_len,
+                    "is_final": item.get("is_final"),
+                }))
+
+        append_jsonl(trace, trace_row(run_id, batch_id, variant, sample, repeat_idx, segment_id, event, started_ns, {
+            "segment_index": segment_id,
+            "chunk_index": item.get("chunk_index"),
+            "token_start": item.get("token_start"),
+            "token_end": item.get("token_end"),
+            "audio_chunk_duration_ms": duration_ms,
+            "bytes": bytes_len,
+            "is_final": item.get("is_final"),
+        }))
+
+    if not chunks:
+        raise ValueError(f"hybrid segment produced no audio chunks: {sample['sample_id']} segment {segment_id}")
+    audio = tensor_to_wav_bytes(torchaudio, torch.concat(chunks, dim=1))
+    end_ms = round((time.monotonic_ns() - started_ns) / 1_000_000, 3)
+    append_jsonl(trace, trace_row(run_id, batch_id, variant, sample, repeat_idx, segment_id, "segment_synthesis_end", started_ns, {"text": text, "char_count": len(text), "bytes": len(audio), "segment_index": segment_id}))
+    segment_path = save_segment(output, variant, sample["sample_id"], repeat_idx, segment_id, audio)
+    duration = wav_duration_sec(segment_path)
+    append_jsonl(trace, trace_row(run_id, batch_id, variant, sample, repeat_idx, segment_id, "segment_audio_saved", started_ns, {"text": text, "char_count": len(text), "audio_duration_sec": duration, "bytes": len(audio), "segment_index": segment_id}))
+    streaming_validity = first_speech_token_ms is not None and first_pcm_chunk_ms is not None and first_pcm_chunk_ms < end_ms and chunk_count > 0
+    return SegmentResult(
+        segment_id,
+        text,
+        audio,
+        start_ms,
+        end_ms,
+        round(end_ms - start_ms, 3),
+        str(segment_path.relative_to(output)),
+        duration,
+        chunk_count,
+        token_events,
+        pcm_events,
+        streaming_validity,
+        first_speech_token_ms,
+        first_pcm_chunk_ms,
+        first_audio_chunk_sent_ms,
+    )
+
+
+def run_batch(output: Path, args: argparse.Namespace, stream_runtime: dict[str, Any] | None, run_id: str, batch_index: int, variant: str, sample: dict[str, Any], repeat_idx: int) -> dict[str, Any]:
     batch_id = f"batch_{batch_index:06d}"
     started_ns = time.monotonic_ns()
     local_started_at = iso_local()
     utc_started_at = iso_utc()
     trace = output / "logs" / "batch_event_trace.jsonl"
     segments = split_segments(sample["input_text"])
+    hybrid = bool(VARIANTS[variant]["hybrid"])
+    if hybrid and stream_runtime is None:
+        raise ValueError(f"{variant} requires the BreezyVoice hybrid streaming runtime")
+    hybrid_inputs = []
+    if hybrid and stream_runtime is not None:
+        hybrid_inputs = [hybrid_text(stream_runtime, text) for text in segments]
     append_jsonl(trace, trace_row(run_id, batch_id, variant, sample, repeat_idx, None, "batch_received", started_ns, {"char_count": len(sample["input_text"])}))
     results: list[SegmentResult] = []
     error = None
@@ -225,7 +397,11 @@ def run_batch(output: Path, args: argparse.Namespace, run_id: str, batch_index: 
                 futures = []
                 for segment_id, text in enumerate(segments):
                     append_jsonl(trace, trace_row(run_id, batch_id, variant, sample, repeat_idx, segment_id, "segment_dispatch_start", started_ns, {"text": text, "char_count": len(text)}))
-                    futures.append(pool.submit(run_segment, output, args, run_id, batch_id, variant, sample, repeat_idx, segment_id, text, started_ns))
+                    if hybrid and stream_runtime is not None:
+                        _, bopomofo_text = hybrid_inputs[segment_id]
+                        futures.append(pool.submit(run_hybrid_segment, output, args, stream_runtime, run_id, batch_id, variant, sample, repeat_idx, segment_id, text, bopomofo_text, started_ns))
+                    else:
+                        futures.append(pool.submit(run_segment, output, args, run_id, batch_id, variant, sample, repeat_idx, segment_id, text, started_ns))
                 all_dispatched_ms = round((time.monotonic_ns() - started_ns) / 1_000_000, 3)
                 for future in concurrent.futures.as_completed(futures):
                     results.append(future.result())
@@ -235,7 +411,7 @@ def run_batch(output: Path, args: argparse.Namespace, run_id: str, batch_index: 
                 append_jsonl(trace, trace_row(run_id, batch_id, variant, sample, repeat_idx, segment_id, "segment_dispatch_start", started_ns, {"text": text, "char_count": len(text)}))
                 all_dispatched_ms = round((time.monotonic_ns() - started_ns) / 1_000_000, 3)
                 results.append(run_segment(output, args, run_id, batch_id, variant, sample, repeat_idx, segment_id, text, started_ns))
-    except (urllib.error.URLError, TimeoutError, OSError, ValueError) as exc:
+    except (urllib.error.URLError, TimeoutError, OSError, RuntimeError, ValueError) as exc:
         status = "failed"
         error = repr(exc)
         append_jsonl(output / "logs" / "error_log.jsonl", {"run_id": run_id, "batch_id": batch_id, "variant": variant, "sample_id": sample["sample_id"], "error": error})
@@ -254,6 +430,9 @@ def run_batch(output: Path, args: argparse.Namespace, run_id: str, batch_index: 
     proof_results = sorted(results, key=lambda result: result.segment_id)[: VARIANTS[variant]["batch_size"]]
     if status == "ok" and batch_runtime_mode == "serial_fallback" and VARIANTS[variant]["parallel"]:
         status = "invalid_parallel_runtime"
+    streaming_validity = all(result.streaming_validity is True for result in results) if hybrid else None
+    if status == "ok" and hybrid and not streaming_validity:
+        status = "invalid_hybrid_streaming"
     append_jsonl(trace, trace_row(run_id, batch_id, variant, sample, repeat_idx, None, "batch_end", started_ns, {"bytes": reconstruction_path.stat().st_size if reconstruction_path else None}))
     sum_segment_ms = round(sum(result.duration_ms for result in results), 3)
     first_ready = min((result.end_ms for result in results), default=None)
@@ -272,6 +451,14 @@ def run_batch(output: Path, args: argparse.Namespace, run_id: str, batch_index: 
         "sample_id": sample["sample_id"],
         "repeat_idx": repeat_idx,
         "segment_count": len(segments),
+        "hybrid_streaming": hybrid,
+        "streaming_validity": streaming_validity,
+        "token_event_count": sum(result.token_event_count for result in results),
+        "pcm_event_count": sum(result.pcm_event_count for result in results),
+        "chunk_count": sum(result.chunk_count for result in results),
+        "first_speech_token_ms": min((result.first_speech_token_ms for result in results if result.first_speech_token_ms is not None), default=None),
+        "first_pcm_chunk_ms": min((result.first_pcm_chunk_ms for result in results if result.first_pcm_chunk_ms is not None), default=None),
+        "first_audio_chunk_sent_ms": min((result.first_audio_chunk_sent_ms for result in results if result.first_audio_chunk_sent_ms is not None), default=None),
         "segment_ids": [result.segment_id for result in results],
         "all_segments_dispatched_ms": all_dispatched_ms,
         "first_segment_audio_ready_ms": first_ready,
@@ -335,7 +522,12 @@ def write_reports(output: Path, run_id: str, rows: list[dict[str, Any]], mode: s
         modes = sorted({row["batch_runtime_mode"] for row in selected})
         ok = [row for row in selected if row["status"] == "ok"]
         reconstructed = sum(1 for row in selected if row.get("reconstructed_audio_path"))
-        valid = bool(ok) and all(row["batch_runtime_mode"] in {"serial_baseline", "true_parallel_workers", "true_parallel_dispatch_low_overlap"} for row in selected)
+        hybrid = bool(VARIANTS[variant]["hybrid"])
+        valid = (
+            bool(ok)
+            and all(row["batch_runtime_mode"] in {"serial_baseline", "true_parallel_workers", "true_parallel_dispatch_low_overlap"} for row in selected)
+            and (not hybrid or all(row.get("streaming_validity") is True and row.get("pcm_event_count", 0) > 0 for row in selected))
+        )
         if any(row["batch_runtime_mode"] in {"true_parallel_workers", "true_parallel_dispatch_low_overlap"} for row in selected):
             has_parallel_runtime = True
         validity_rows.append([variant, len(selected), len(ok), reconstructed, ",".join(modes), valid])
@@ -354,9 +546,10 @@ def write_reports(output: Path, run_id: str, rows: list[dict[str, Any]], mode: s
     (reports / "batch_latency_report.md").write_text("# Batch Latency Report\n\n" + table(["Variant", "First ordered p50", "First ordered p95", "Total p50", "Total p95", "Overlap p50", "Speedup p50"], latency_rows) + "\n", encoding="utf-8")
     (reports / "batch_failure_analysis.md").write_text("# Batch Failure Analysis\n\n" + table(["Variant", "Rows", "OK", "Failed", "Errors"], failure_rows) + "\n", encoding="utf-8")
 
-    minimum_done = mode == "minimum" and len(rows) >= 108 and has_parallel_runtime
-    status = "LIVE_BATCH_MINIMUM_COMPLETED" if minimum_done else ("TRUE_PARALLEL_RUNTIME_READY" if has_parallel_runtime else "BLOCKED_UNRESOLVED")
-    decision_name = "batch_final_decision.md" if has_parallel_runtime else "blocked_unresolved_report.md"
+    all_valid = all(row[-1] is True for row in validity_rows)
+    minimum_done = mode == "minimum" and len(rows) >= 108 and has_parallel_runtime and all_valid
+    status = "LIVE_BATCH_MINIMUM_COMPLETED" if minimum_done else ("TRUE_PARALLEL_RUNTIME_READY" if has_parallel_runtime and all_valid else "BLOCKED_UNRESOLVED")
+    decision_name = "batch_final_decision.md" if status != "BLOCKED_UNRESOLVED" else "blocked_unresolved_report.md"
     (reports / decision_name).write_text(
         "# Batch Final Decision\n\n"
         + f"Status: `{status}`\n\n"
@@ -364,14 +557,26 @@ def write_reports(output: Path, run_id: str, rows: list[dict[str, Any]], mode: s
         + table(["Variant", "Rows", "OK", "Reconstructed WAV", "Runtime modes", "Valid"], validity_rows)
         + "\n\n## Latency\n\n"
         + table(["Variant", "First ordered p50", "First ordered p95", "Total p50", "Total p95", "Overlap p50", "Speedup p50"], latency_rows)
-        + "\n\n## Decision\n\nProduction default: `none`\n\nOperational fallback: `S_serial_segment_baseline`\n\nResearch candidate: `P2_parallel_segment_batch2`, `P3_parallel_segment_batch3`\n",
+        + "\n\n## Decision\n\nProduction default: `none`\n\nOperational fallback: `S_serial_segment_baseline`\n\nResearch candidate: `"
+        + "`, `".join(row[0] for row in validity_rows if row[0] != "S_serial_segment_baseline")
+        + "`\n",
         encoding="utf-8",
     )
     return status
 
 
 def write_evidence(repo_root: Path, output: Path, run_id: str, rows: list[dict[str, Any]], status: str, commands: list[str]) -> None:
-    path = repo_root / "docs/evidence/2026-06-26-breezyvoice-true-parallel-segment-batch-experiment-log.md"
+    path = output / "reports" / "generated_evidence_snapshot.md"
+    variants = [variant for variant in VARIANTS if any(row["variant"] == variant for row in rows)]
+    research_candidates = [variant for variant in variants if variant != "S_serial_segment_baseline"]
+    hybrid_variants = [variant for variant in variants if VARIANTS[variant]["hybrid"]]
+    hybrid_note = ""
+    if hybrid_variants:
+        hybrid_note = (
+            " Hybrid variants use the strict BreezyVoice `D_hybrid` token/audio"
+            " streaming runtime inside each parallel segment worker and require"
+            " `first_speech_token`, `first_pcm_chunk`, and `pcm_chunk` events."
+        )
     validity = table(
         ["Variant", "Rows", "Runtime modes", "Reconstructed WAV"],
         [
@@ -389,7 +594,9 @@ def write_evidence(repo_root: Path, output: Path, run_id: str, rows: list[dict[s
     path.write_text(
         "# BreezyVoice True Parallel Segment Batch Experiment Log\n\n"
         + "## Previous Harness Boundary\n\nThe previous batch run proved grouping and batch/per-item logging, but stayed `serial_fallback`. This log records the true parallel segment runtime probe/benchmark.\n\n"
-        + "## New Implementation Approach\n\nLive segment requests are dispatched concurrently to the BreezyVoice OpenAI-compatible endpoint, each segment WAV is saved, and ordered reconstructed WAV is produced from real generated audio.\n\n"
+        + "## New Implementation Approach\n\nLive segment requests are dispatched concurrently to the BreezyVoice OpenAI-compatible endpoint, each segment WAV is saved, and ordered reconstructed WAV is produced from real generated audio."
+        + hybrid_note
+        + "\n\n"
         + "## Files Changed\n\n- `apps/model-sidecars/tts-service/app.py`\n- `scripts/tts-benchmark/probe_true_parallel_batch_runtime.py`\n- `experiments/manifests/parallel_segment_tts_eval_manifest.jsonl`\n- `scripts/tts-benchmark/README.md`\n- `docs/source-index.md`\n\n"
         + f"## Run ID\n\n`{run_id}`\n\n"
         + f"## Final Status\n\n`{status}`\n\n"
@@ -399,7 +606,9 @@ def write_evidence(repo_root: Path, output: Path, run_id: str, rows: list[dict[s
         + f"- `{output.relative_to(repo_root)}`\n- `{output.relative_to(repo_root)}/logs/batch_request_summary.jsonl`\n- `{output.relative_to(repo_root)}/logs/batch_event_trace.jsonl`\n- `{output.relative_to(repo_root)}/reports/parallel_runtime_validity_report.md`\n\n"
         + "## Validity Table\n\n"
         + validity
-        + "\n\n## Decision\n\nProduction default remains `none`. `P2_parallel_segment_batch2` and `P3_parallel_segment_batch3` are research candidates until hard gates and human audio seam review pass.\n",
+        + "\n\n## Decision\n\nProduction default remains `none`. Operational fallback remains `S_serial_segment_baseline`. Research candidates: `"
+        + "`, `".join(research_candidates)
+        + "`. Candidate promotion requires latency hard gates and human audio seam review.\n",
         encoding="utf-8",
     )
 
@@ -422,6 +631,7 @@ def main() -> None:
     unknown = [variant for variant in variants if variant not in VARIANTS]
     if unknown:
         raise SystemExit(f"unknown variants: {', '.join(unknown)}")
+    stream_runtime = load_hybrid_runtime(args) if any(VARIANTS[variant]["hybrid"] for variant in variants) else None
 
     output = repo_root / (args.output or default_output)
     output.mkdir(parents=True, exist_ok=True)
@@ -443,12 +653,18 @@ def main() -> None:
         "variants": variants,
         "repeats": args.repeats,
         "seed": args.seed,
+        "breezyvoice_root": args.breezyvoice_root,
+        "breezyvoice_commit": run_command(["git", "rev-parse", "--short", "HEAD"], Path(args.breezyvoice_root)) if stream_runtime else None,
+        "breezyvoice_branch": run_command(["git", "branch", "--show-current"], Path(args.breezyvoice_root)) if stream_runtime else None,
+        "model_path": args.model_path,
+        "token_hop_len": args.token_hop_len,
+        "prompt_audio_hash": stream_runtime.get("prompt_audio_hash") if stream_runtime else None,
     }
     (output / "run_metadata.json").write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     tasks = [(variant, sample, repeat_idx) for repeat_idx in range(args.repeats) for sample in samples for variant in variants]
     random.Random(args.seed).shuffle(tasks)
-    rows = [run_batch(output, args, run_id, index, variant, sample, repeat_idx) for index, (variant, sample, repeat_idx) in enumerate(tasks, start=1)]
+    rows = [run_batch(output, args, stream_runtime, run_id, index, variant, sample, repeat_idx) for index, (variant, sample, repeat_idx) in enumerate(tasks, start=1)]
     fill_speedups(rows)
     for row in rows:
         append_jsonl(output / "logs" / "batch_request_summary.jsonl", row)
