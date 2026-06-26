@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from tts_benchmark_lib import append_jsonl, audio_metrics, concat_wavs, iso_local, iso_utc, read_jsonl, repo_root_from_script
+from tts_benchmark_lib import append_jsonl, audio_metrics, collect_environment, concat_wavs, iso_local, iso_utc, read_jsonl, repo_root_from_script
 
 
 VARIANTS = {
@@ -210,6 +210,8 @@ def run_segment(output: Path, args: argparse.Namespace, run_id: str, batch_id: s
 def run_batch(output: Path, args: argparse.Namespace, run_id: str, batch_index: int, variant: str, sample: dict[str, Any], repeat_idx: int) -> dict[str, Any]:
     batch_id = f"batch_{batch_index:06d}"
     started_ns = time.monotonic_ns()
+    local_started_at = iso_local()
+    utc_started_at = iso_utc()
     trace = output / "logs" / "batch_event_trace.jsonl"
     segments = split_segments(sample["input_text"])
     append_jsonl(trace, trace_row(run_id, batch_id, variant, sample, repeat_idx, None, "batch_received", started_ns, {"char_count": len(sample["input_text"])}))
@@ -260,6 +262,10 @@ def run_batch(output: Path, args: argparse.Namespace, run_id: str, batch_index: 
         "schema_version": "tts-parallel-batch-summary-v1",
         "run_id": run_id,
         "batch_id": batch_id,
+        "local_started_at": local_started_at,
+        "utc_started_at": utc_started_at,
+        "local_ended_at": iso_local(),
+        "utc_ended_at": iso_utc(),
         "variant": variant,
         "batch_size": VARIANTS[variant]["batch_size"],
         "batch_runtime_mode": batch_runtime_mode,
@@ -431,6 +437,7 @@ def main() -> None:
         "mode": args.mode,
         "breezyvoice_base_url": args.breezyvoice_base_url,
         "repo_commit": run_command(["git", "rev-parse", "--short", "HEAD"], repo_root),
+        "environment": collect_environment(repo_root),
         "local_started_at": iso_local(),
         "utc_started_at": iso_utc(),
         "variants": variants,
