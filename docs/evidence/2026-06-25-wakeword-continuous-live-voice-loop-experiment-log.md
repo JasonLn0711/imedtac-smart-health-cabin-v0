@@ -1877,3 +1877,173 @@ corepack pnpm live:check
    `/tmp/smart-health-cabin-answer-daily.wav`.
 10. Click dev-only `模擬喚醒` and verify the UI advances across at least two
     PHQ-9 questions while TTS requests contain summary and feedback.
+
+## Experiment Run: Voice Answer Auto-Fill Without Confirmation
+
+Experiment purpose:
+
+```text
+Validate the requested behavior change:
+ASR output -> bounded answer mapping -> automatically fill the active SurveyJS
+answer -> move to the next question -> TTS says "我剛剛聽到您說「...」" and asks
+the next question, without showing the confirmation check
+"我剛剛聽到的是「...」。請確認後填入問卷。".
+```
+
+Time record:
+
+| Field | Value |
+| --- | --- |
+| Hardware / runtime snapshot | `2026-06-26T09:18:26+08:00` / `2026-06-26T01:18:26Z` |
+| Browser auto-fill smoke started | `2026-06-26T09:18:54.488+08:00` / `2026-06-26T01:18:54.488Z` |
+| Browser auto-fill smoke ended | `2026-06-26T09:18:56.322+08:00` / `2026-06-26T01:18:56.322Z` |
+
+Code state:
+
+| Field | Value |
+| --- | --- |
+| Repo | `/home/jnclaw/every_on_git_jnclaw/phd-life-system/imedtac-smart-health-cabin-v0` |
+| Branch | `main` |
+| Base commit before this change | `5c51c307f1c805d33c7812780c7b860ded48ead4` |
+| Worktree state at evidence capture | Local modified files held the auto-fill implementation, tests, and documentation updates. |
+
+Hardware and runtime snapshot:
+
+```text
+OS: Ubuntu 24.04.4 LTS noble
+Kernel: Linux 6.17.0-35-generic x86_64
+CPU: Intel(R) Core(TM) i9-14900HX
+CPU topology: 24 cores / 32 logical CPUs
+RAM: 62 GiB total, 36 GiB available at capture
+Swap: 8.0 GiB total
+GPU: NVIDIA GeForce RTX 4090 Laptop GPU
+NVIDIA driver: 580.159.03
+GPU memory: 16,376 MiB total, 9,413 MiB used at capture
+GPU temperature: 47 C
+GPU power draw: 2.65 W at capture
+GPU utilization: 0% at capture
+node: v22.23.1
+pnpm: 9.15.0
+python3: Python 3.12.3
+```
+
+Runtime services:
+
+| Port | Service | PID / role |
+| ---: | --- | --- |
+| `3010` | `@shc/api-server` live server | PID `626361` |
+| `3011` | `@shc/voice-agent-server` live readiness gate | PID `450942` |
+| `5176` | `kiosk-web` Vite server | PID `626665` |
+| `8001` | Breeze ASR sidecar | PID `86692` |
+| `8013` | sherpa-onnx wakeword sidecar | PID `358195` |
+| `9003` | BreezyVoice upstream | PID `388803` |
+| `9092` | Redpanda broker | Docker listener |
+| `9644` | Redpanda admin | Docker listener |
+| `11434` | Ollama | PID `86744` |
+
+Implementation surfaces validated:
+
+| File | Evidence |
+| --- | --- |
+| `apps/kiosk-web/src/features/avatar/AvatarPanel.tsx` | High-confidence mapped answers now call the existing SurveyJS answer helper directly, clear the draft, and play the answer-followup TTS without showing a confirmation button. |
+| `apps/kiosk-web/src/features/avatar/avatarStateMachine.ts` | Successful candidate ranking now moves to `committed` on `ASR_DONE`; low-confidence and staff-review paths remain separate. |
+| `packages/voice-safety-core/src/index.ts` | `confirmationRequired=false` for `high_confidence_clear_answer`; ambiguous, medium-confidence, and staff-review routes remain guarded. |
+| `apps/api-server/src/services/questionnaireService.ts` | Answer-followup prompt and fallback now use `我剛剛聽到您說「...」`; kiosk also prefixes live LLM output when needed. |
+| `packages/voice-safety-core/domain-packs/` | Single-candidate wording changed from confirmation wording to acknowledgement wording. |
+
+### Validation Commands
+
+```bash
+corepack pnpm test \
+  apps/kiosk-web/src/features/avatar/avatarStateMachine.test.ts \
+  apps/kiosk-web/src/features/avatar/voiceQuestionnaireController.test.ts \
+  apps/api-server/src/services/questionnaireService.test.ts \
+  packages/voice-safety-core/src/voice-safety-core.test.ts
+
+corepack pnpm --filter @shc/kiosk-web typecheck
+corepack pnpm --filter @shc/api-server typecheck
+corepack pnpm --filter @shc/voice-safety-core typecheck
+corepack pnpm validate:json
+git diff --check
+
+API_BASE_URL=http://localhost:3010 \
+VOICE_AGENT_SERVER_URL=http://localhost:3011 \
+corepack pnpm live:check
+```
+
+Observed result:
+
+```text
+Focused Vitest: 4 files passed, 60 tests passed.
+@shc/kiosk-web typecheck: passed.
+@shc/api-server typecheck: passed.
+@shc/voice-safety-core typecheck: passed.
+JSON validation: passed.
+git diff --check: passed.
+live:check: eligible=true with live ASR, LLM, TTS, Redpanda, and voice-agent.
+```
+
+API smoke:
+
+```json
+{
+  "candidate": {
+    "value": 3,
+    "text": "幾乎每天",
+    "confidence": 0.92,
+    "requires_confirmation": true,
+    "evidence_text": "幾乎每天"
+  },
+  "routing_decision": "high_confidence_clear_answer",
+  "confirmation_required": false
+}
+```
+
+Follow-up guidance smoke:
+
+```json
+{
+  "guidance": "我剛剛聽到您說「幾乎每天」。接下來請回答：「感到心情低落、沮喪或絕望」；請依照畫面選項選擇最符合的頻率。"
+}
+```
+
+Browser auto-fill smoke:
+
+```json
+{
+  "startedAt": "2026-06-26T01:18:54.488Z",
+  "endedAt": "2026-06-26T01:18:56.322Z",
+  "url": "http://localhost:5176/?t=1782436734609",
+  "visibleNextQuestion": true,
+  "hasHeardPrefix": true,
+  "confirmationUiAbsent": true,
+  "requests": [
+    { "at": "2026-06-26T01:18:55.556Z", "path": "/api/v1/agent-turns/map-answer" },
+    { "at": "2026-06-26T01:18:55.567Z", "path": "/api/v1/agent-turns/respond" },
+    { "at": "2026-06-26T01:18:56.301Z", "path": "/api/v1/agent-turns/tts" }
+  ]
+}
+```
+
+### Result And Scope Controls
+
+Confirmed capability:
+
+```text
+ASR transcript / manual transcript
+-> API maps bounded answer candidate
+-> high-confidence single candidate returns confirmation_required=false
+-> kiosk writes the active SurveyJS answer directly
+-> kiosk advances to the next visible question
+-> TTS says "我剛剛聽到您說「...」" and asks the next question
+-> no confirmation UI or "請確認後填入問卷" prompt appears
+```
+
+Scope controls:
+
+- Low-confidence, no-speech, ambiguous, and safety-sensitive speech still do
+  not auto-write questionnaire state.
+- Reranker output remains candidate-ranking evidence and does not write state.
+- The browser smoke used manual transcript input for deterministic automation;
+  the next validation layer remains a physical microphone spoken-answer pass in
+  the target room.

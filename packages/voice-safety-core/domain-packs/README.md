@@ -33,7 +33,9 @@ Each pack should define:
 - `semanticSlots`: fields that describe what the normalized transcript means.
 - `safetyRules`: terms that route to confirmation or staff review.
 - `retrievalTemplates`: normalized query templates for RAG/reranker candidates.
-- `confirmationTemplates`: zh-TW wording for safe confirmation/fallback.
+- `confirmationTemplates`: zh-TW acknowledgement / fallback wording. High-confidence
+  single candidates can auto-fill; uncertain speech routes to retry, touch, or
+  staff review.
 
 ## Operating Rules
 

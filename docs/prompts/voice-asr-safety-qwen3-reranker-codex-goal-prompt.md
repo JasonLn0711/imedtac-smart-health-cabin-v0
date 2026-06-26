@@ -923,21 +923,21 @@ type VoiceEvidenceMetadata = {
 
 All writes must be privacy-aware and enterprise-friendly.
 
-### Layer 6 - Low-Confidence Confirmation and Touch Fallback
+### Layer 6 - High-Confidence Auto-Fill, Low-Confidence Retry, and Touch Fallback
 
 Purpose:
 
-When confidence is low or ambiguity is high, switch from free generation to
-bounded confirmation.
+When confidence is high and one bounded candidate is clear, write the answer to
+the active form field and continue. When confidence is low or ambiguity is
+high, avoid writing and route to retry, touch fallback, or staff review.
 
 Required UI behavior:
 
-If one candidate is plausible:
-  "我剛剛聽到的是「胸口悶、走路會喘」。請確認後繼續。"
-  Buttons:
-    確認
-    重新錄音
-    改用觸控填答
+If one high-confidence bounded candidate is clear:
+  "我剛剛聽到您說「幾天」。接下來請回答下一題。"
+  Behavior:
+    自動填入目前題目
+    自動進到下一題
 
 If multiple candidates are plausible:
   "請選擇最接近剛剛語音內容的選項。"
@@ -948,23 +948,20 @@ If multiple candidates are plausible:
     改用觸控填答
 
 For PHQ-9 bounded answer:
-  "我剛剛聽到的是「幾天」。請確認後填入問卷。"
-  Buttons:
-    確認並填入
-    重新錄音
-    改用觸控填答
+  "我剛剛聽到您說「幾天」。接下來請回答下一題。"
+  Behavior:
+    自動填入目前題目
+    自動進到下一題
 
 For adult preventive yes/no questions:
-  "我剛剛聽到的是「有」。請確認後填入問卷。"
-  Buttons:
-    確認並填入
-    重新錄音
-    改用觸控填答
+  "我剛剛聽到您說「有」。接下來請回答下一題。"
+  Behavior:
+    自動填入目前題目
+    自動進到下一題
 
 For measurement questions:
-  "我剛剛聽到的是「血壓 120 / 80」。請確認後繼續。"
+  "我剛剛聽到您說「血壓 120 / 80」。這題會由現場人員協助處理。"
   Buttons:
-    正確
     重新錄音
     改用觸控或請工作人員協助
 
@@ -1295,8 +1292,8 @@ Recorded voice turn:
   ASR transcript
   -> /api/v1/agent-turns/map-answer
   -> safety metadata + candidate draft
-  -> confirmation UI
-  -> questionnaire write only after explicit user confirmation
+  -> high-confidence single candidate writes directly
+  -> low-confidence / ambiguous / safety-sensitive speech does not write
 ```
 
 Do not keep a browser-only raw transcript mapping path for live or continuous
@@ -1306,8 +1303,8 @@ draft.
 
 For enterprise demo, use user-friendly zh-TW language:
 
-「我剛剛聽到的是『幾天』。請確認後填入問卷。」
-「請用螢幕確認最接近的選項，或重新錄音一次。」
+「我剛剛聽到您說『幾天』。接下來請回答下一題。」
+「請重新錄音一次，或直接用觸控填答。」
 「這題也可以直接用觸控填答完成。」
 
 ## 9. Voice Agent / LLM Boundary

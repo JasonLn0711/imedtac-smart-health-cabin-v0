@@ -1,6 +1,6 @@
 # Voice ASR Safety Six-Layer Pipeline
 
-Smart Health Cabin treats ASR text as evidence that moves through confirmation.
+Smart Health Cabin treats ASR text as evidence that moves through routing.
 The voice path now has an implementation boundary in `packages/voice-safety-core`
 that routes each transcript through normalization, semantic framing, and a
 clear user or staff confirmation layer before questionnaire state or RAG context
@@ -20,8 +20,10 @@ is used.
 5. Evidence metadata: ASR text, normalized text, domain pack versions,
    hotword capability, N-best capability, semantic frame, and routing decision
    are kept as metadata with metadata-first audio retention.
-6. Confirmation / touch completion: questionnaire writes are created through
-   explicit confirmation. Reranker output stays candidate-ranking evidence.
+6. Auto-fill / touch completion: high-confidence single candidates can be
+   written directly to the active SurveyJS question. Uncertain, ambiguous, or
+   safety-sensitive speech routes to retry, touch completion, or staff review.
+   Reranker output stays candidate-ranking evidence.
 
 ## Domain Packs
 
@@ -87,11 +89,12 @@ vocabulary and confirmation language.
 
 ## MVP Rules
 
-- ASR text is evidence that moves through confirmation.
+- ASR text is evidence that moves through routing.
 - Domain packs map to active SurveyJS choices.
-- Uncertain ASR routes to 重新錄音, confirmation, 觸控完成, or staff
-  review.
-- Safety-sensitive speech routes to confirmation or staff review.
+- High-confidence single-candidate ASR can auto-fill the active SurveyJS
+  question and continue to the next TTS prompt.
+- Uncertain ASR routes to 重新錄音, 觸控完成, or staff review.
+- Safety-sensitive speech routes to staff review.
 - Touch questionnaire remains a complete path across ASR, LLM, TTS, reranker,
   and Redpanda service states.
 
