@@ -238,6 +238,220 @@ Research candidate: C_token and D_hybrid
 Next optimization candidate: D_hybrid seam quality and prefix/window recomputation cost
 ```
 
+## Source-Verified Complexity Analysis
+
+This section records the checked technical rationale behind the current C/D
+result. It separates source-backed facts from project-specific inference.
+
+### Sources Checked
+
+Primary papers and technical references checked on `2026-06-26`:
+
+- BreezyVoice paper:
+  `https://arxiv.org/html/2501.17790v1`
+- CosyVoice paper:
+  `https://arxiv.org/html/2407.05407v2`
+- CosyVoice2 paper:
+  `https://arxiv.org/html/2412.10117v1`
+- Upstream CosyVoice streaming runtime:
+  `https://raw.githubusercontent.com/FunAudioLLM/CosyVoice/main/cosyvoice/cli/model.py`
+- CosyVoice2 model card:
+  `https://huggingface.co/FunAudioLLM/CosyVoice2-0.5B`
+- Self-attention complexity paper:
+  `https://arxiv.org/abs/2209.04881`
+- HiFi-GAN paper:
+  `https://proceedings.neurips.cc/paper/2020/file/c5d736809766d46260d816d8dbc9eb44-Paper.pdf`
+- Conditional flow matching / OT-CFM references:
+  `https://openreview.net/forum?id=PqvMRDCJT9t`
+  and `https://arxiv.org/abs/2302.00482`
+- RTF metric reference:
+  `https://arxiv.org/html/2404.00569v1`
+
+### Source-Backed Architecture Facts
+
+BreezyVoice is not a single traditional acoustic model. The BreezyVoice paper
+states that its framework contains an S3 tokenizer, LLM, OT-CFM model, and g2pW
+front-end for Taiwanese Mandarin pronunciation control. The CosyVoice paper
+describes the same model family as LLM-based TTS: speech is discretized into
+semantic token sequences, the LLM performs text-to-token generation, and
+conditional flow matching performs token-to-speech synthesis.
+
+The simplified project architecture is:
+
+```text
+text / bopomofo / prompt speech
+-> normalization + G2P / bopomofo
+-> prompt and speaker conditioning
+-> LLM speech semantic tokens
+-> conditional flow matching / OT-CFM acoustic representation
+-> HiFT / HiFiGAN-style vocoder waveform
+-> audio output
+```
+
+The right sequence-length variables are:
+
+```text
+N_text = input text length
+T      = generated speech token count
+F      = acoustic / mel frame count
+S      = waveform sample count
+K      = flow matching solver / denoising steps or equivalent model passes
+h      = streaming hop size
+m      = number of emitted chunks, roughly F / h
+```
+
+The question is therefore not simply whether cost is linear in Chinese
+characters. For TTS, generated audio duration, speech token count, and acoustic
+frame count are more useful independent variables than raw text length.
+
+### Complexity Interpretation
+
+The model family is not exponential in utterance length. The more accurate
+complexity interpretation is:
+
+| Stage | Main cost driver | Practical complexity intuition |
+| --- | --- | --- |
+| Normalization / G2P | `N_text` | Usually close to `O(N_text)`; Transformer-based G2P can include attention terms. |
+| LLM token generation | `T` | Autoregressive decode with attention can include `O(T^2)` total attention work without effective caching; self-attention is widely treated as quadratic in sequence length. |
+| Flow / acoustic generation | `F`, `K` | Roughly `O(K * F)` if chunk/cache-aware; can become worse if every chunk reprocesses the full prefix. |
+| Vocoder | `F` or `S` | HiFi-GAN-style generator is convolutional upsampling from mel to waveform, usually closer to linear in generated frames/samples. |
+| Prefix recomputation streaming | `F`, `h` | Near-quadratic total work when each new chunk reruns the whole growing prefix. |
+
+RTF is interpreted as synthesis time per second of generated waveform. A system
+with `RTF = 1.0` synthesizes at real time; `RTF > 1.0` is slower than real time.
+
+### Project Data Interpretation
+
+Minimum matrix p95 metrics:
+
+| Variant | p95 TTFA server | p95 total synthesis | p95 RTF |
+| --- | ---: | ---: | ---: |
+| `A_original` | `11406.936 ms` | `11409.848 ms` | `1.135` |
+| `B_segment` | `5934.524 ms` | `12035.594 ms` | `1.101` |
+| `C_token` | `1922.483 ms` | `53910.115 ms` | `4.377` |
+| `D_hybrid` | `1932.596 ms` | `48335.129 ms` | `3.733` |
+
+Observed effect:
+
+```text
+C_token p95 TTFA is 83.1% lower than A_original.
+D_hybrid p95 TTFA is 83.1% lower than A_original.
+D_hybrid p95 TTFA is 67.4% lower than B_segment.
+
+C_token p95 total synthesis is 4.72x A_original.
+D_hybrid p95 total synthesis is 4.24x A_original.
+D_hybrid p95 total synthesis is 4.02x B_segment.
+```
+
+This supports the current interpretation:
+
+```text
+A_original: stable offline baseline, but first audio waits for full synthesis.
+B_segment: sends audio earlier by sentence-like segments, but does not perform
+           true token/audio model streaming.
+C_token:   improves first audio by emitting token/audio chunks, but its current
+           prefix/window implementation repeatedly recomputes acoustic output.
+D_hybrid:  improves over C by bounding recomputation within text segments, but
+           still pays prefix/window recomputation inside each segment.
+```
+
+### Prefix Recomputation Math
+
+If the streaming runtime is cache-aware, each chunk computes mostly the new
+region:
+
+```text
+cost_cache_aware ~= h + h + ... + h = m*h = O(F)
+```
+
+If each chunk reruns the entire growing prefix:
+
+```text
+cost_prefix ~= h + 2h + 3h + ... + mh
+            = h * m(m + 1) / 2
+            = O(F^2 / h)
+```
+
+If flow or attention inside each prefix call has additional full-sequence
+operations, the wall-clock curve can bend even more strongly for long samples.
+This is a project-specific inference from our measured C/D total time and the
+current patched code path; it is not a claim that BreezyVoice itself is
+inherently quadratic for all runtimes.
+
+### CosyVoice2 Relevance
+
+CosyVoice2 is relevant because it was designed for streaming rather than only
+wrapped as a streaming API. The CosyVoice2 paper identifies response latency and
+RTF as core interactive-experience concerns and introduces chunk-aware causal
+flow matching for both streaming and non-streaming synthesis. The public model
+card also describes bi-streaming support for text-in and audio-out streaming.
+
+Upstream CosyVoice runtime exposes the implementation pattern missing from the
+current strict BreezyVoice patch:
+
+```text
+llm_job background token generation
+token_hop_len / token_offset
+token2wav
+flow_cache or streaming/finalize flow arguments
+pre_lookahead_len
+mel / HiFT cache
+fade_in_out
+final chunk handling
+```
+
+The current strict BreezyVoice patch has true token/audio events, but it is a
+conservative prefix/window adapter. It does not yet have the full CosyVoice2
+cache-aware flow/vocoder path.
+
+### Next Measurement Gate
+
+Before another production decision, run a scaling benchmark rather than another
+same-size matrix:
+
+```text
+text lengths: 20, 50, 100, 200, 400, 800 characters
+variants: A_original, B_segment, C_token, D_hybrid
+repeats: at least 5 per length and variant
+```
+
+Required added fields:
+
+```text
+speech_token_count
+mel_frame_count
+audio_sample_count
+chunk_count
+tokens_processed_total
+unique_tokens_generated
+recompute_ratio = tokens_processed_total / unique_tokens_generated
+flow_input_frames_per_chunk
+vocoder_input_frames_per_chunk
+llm_time_ms
+flow_time_ms
+vocoder_time_ms
+```
+
+Fit both models:
+
+```text
+linear:    time = aN + b
+quadratic: time = aN^2 + bN + c
+```
+
+Use generated audio duration, speech token count, and acoustic frame count as
+`N`, not only raw text length. If `recompute_ratio` rises with utterance length
+and the quadratic fit explains C/D better than the linear fit, the bottleneck is
+confirmed as prefix recomputation. The optimization target is then:
+
+```text
+reduce recomputation
+add flow/vocoder cache
+increase stable hop size only after audio quality is acceptable
+emit only stable regions
+preserve overlap/fade/finalize handling
+```
+
 ## Validation
 
 Engineering validation commands passed on `2026-06-26`:
