@@ -62,6 +62,35 @@ timestamp, session ID or run ID, input, output, and acceptance result. Use
 Taiwan local time (`Asia/Taipei`, UTC+08:00) unless a source timestamp is
 explicitly UTC.
 
+## BreezyVoice And TTS Experiment Rules
+
+- `serial_fallback` is allowed only as a baseline.
+- Batch harness completion is not experiment completion.
+- C/D streaming cannot be faked by `StreamingResponse(BytesIO(full_wav))`.
+- True batch requires `true_model_batch` or `true_parallel_workers`.
+- True parallel workers must dispatch segment jobs before the first segment
+  fully completes, and the event trace must show overlapping or concurrently
+  dispatched work.
+- True streaming requires `first_speech_token`, `first_pcm_chunk`, and at
+  least one non-final PCM/audio chunk before full utterance completion.
+- Smoke tests, deterministic runs, source-level blocker reports, and batch
+  harnesses are preflight or infrastructure evidence only.
+- If the target runtime is blocked, status must be `BLOCKED_UNRESOLVED`.
+- If only serial fallback runs for a target-runtime task, status must be
+  `BLOCKED_UNRESOLVED`, not goal complete.
+- Final decision reports are reserved for valid target-runtime live
+  experiments. Use `blocked_unresolved_report.md` when the target runtime is
+  blocked.
+- Every BreezyVoice/TTS experiment goal prompt should start with:
+
+```text
+Read and obey ~/.codex/AGENTS.md and this repo's AGENTS.md. In this task,
+serial_fallback, batch harness, smoke tests, and source-level blocked reports
+are not completion. They are baselines or preflight only. The task is complete
+only if the live experiment runs with the target runtime, or else final status
+must be BLOCKED_UNRESOLVED.
+```
+
 ## Taiwan zh-TW Product Voice
 
 For durable docs, agent plans, kiosk UI, Avatar speech, and company-facing
