@@ -98,3 +98,34 @@ runs are routing or validity pilots only.
 Completed minimum matrix evidence is preserved under
 `experiments/strict_breezyvoice_abcd_matrix_minimum/` and summarized in
 `docs/evidence/2026-06-26-breezyvoice-true-streaming-runtime-unblock-log.md`.
+
+Batch TTS harness pilot:
+
+```bash
+python3 scripts/tts-benchmark/run_tts_matrix.py \
+  --manifest experiments/manifests/tts_eval_manifest.jsonl \
+  --variants E_batch2_original,F_batch2_segment,G_batch2_token,H_batch2_hybrid \
+  --batch-size 2 \
+  --repeats 1 \
+  --warmup 1 \
+  --randomize true \
+  --mode deterministic \
+  --limit 6 \
+  --output experiments/live_tts_batch2_pilot
+
+python3 scripts/tts-benchmark/run_tts_matrix.py \
+  --manifest experiments/manifests/tts_eval_manifest.jsonl \
+  --variants I_batch3_original,J_batch3_segment,K_batch3_token,L_batch3_hybrid \
+  --batch-size 3 \
+  --repeats 1 \
+  --warmup 1 \
+  --randomize true \
+  --mode deterministic \
+  --limit 6 \
+  --output experiments/live_tts_batch3_pilot
+```
+
+The current batch matrix runner records `serial_fallback` until it is wired to
+the experimental `/v1/tts/synthesize-batch` endpoint or a strict BreezyVoice
+batch adapter. `G/H/K/L` do not synthesize fake token/audio batch output; they
+record `BLOCKED_BY_TRUE_STREAMING_RUNTIME`.

@@ -76,6 +76,32 @@ VARIANTS: dict[str, dict[str, Any]] = {
     },
 }
 
+for batch_size, prefix, groups in [
+    (2, "batch2", [("E", 5, "A_original"), ("F", 6, "B_segment"), ("G", 7, "C_token"), ("H", 8, "D_hybrid")]),
+    (3, "batch3", [("I", 9, "A_original"), ("J", 10, "B_segment"), ("K", 11, "C_token"), ("L", 12, "D_hybrid")]),
+]:
+    for letter, group_number, base_variant in groups:
+        base = VARIANTS[base_variant]
+        variant_id = f"{letter}_{prefix}_{base_variant.split('_', 1)[1]}"
+        token_streaming = bool(base["token_streaming"])
+        VARIANTS[variant_id] = {
+            **base,
+            "display_name": f"{base['display_name']} batch size {batch_size}",
+            "base_variant": base_variant,
+            "group_number": group_number,
+            "batch_size": batch_size,
+            "batch_runtime_mode_required": "true_batch",
+            "enabled": not token_streaming,
+            "disabled_reason": (
+                "BLOCKED_BY_TRUE_STREAMING_RUNTIME: batch C/D groups require a true batch token/audio "
+                "streaming adapter. The current benchmark sidecar and strict BreezyVoice matrix runner "
+                "only expose per-request synthesis."
+                if token_streaming
+                else base.get("disabled_reason")
+            ),
+            "expected_role": f"Batch size {batch_size} {base['expected_role']}",
+        }
+
 DOMAIN_PROFILE_TEXT: dict[str, list[tuple[str, str, str, list[str]]]] = {
     "smart_cabin_measurement": [
         ("measurement_instruction", "請站上量測區，系統會依序協助量測身高、體重與 BMI。", "docs/voice-asr-safety-six-layer-pipeline.md", ["身高", "體重", "BMI"]),

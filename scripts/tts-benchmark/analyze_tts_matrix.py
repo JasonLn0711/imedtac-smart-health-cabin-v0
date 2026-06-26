@@ -55,6 +55,9 @@ def hard_gate(variant: str, rows: list[dict[str, Any]]) -> tuple[str, str]:
         return "source_blocked", VARIANTS[variant].get("disabled_reason", "capability flag is disabled")
     if not rows:
         return "not_evaluated", "no rows"
+    runtime_modes = {row.get("batch_runtime_mode") for row in rows if row.get("batch_size_configured", 1) > 1}
+    if runtime_modes and runtime_modes != {"true_batch"}:
+        return "fail", f"batch_runtime_mode={','.join(sorted(str(mode) for mode in runtime_modes))}; true_batch required"
     failed = failure_rate(rows)
     ttfa_p95 = summarize(metric(rows, "ttfa_client_ms"))["p95"]
     rtf_p95 = summarize(metric(rows, "rtf"))["p95"]
@@ -100,9 +103,39 @@ def markdown_table(headers: list[str], rows: list[list[Any]]) -> str:
     return "\n".join(lines)
 
 
+def batch_metric(rows: list[dict[str, Any]], name: str) -> list[float]:
+    values = []
+    seen_batches = set()
+    for row in rows:
+        batch_id = row.get("batch_id")
+        if not batch_id or batch_id in seen_batches:
+            continue
+        seen_batches.add(batch_id)
+        value = row.get("batch_metrics", {}).get(name)
+        if isinstance(value, (int, float)):
+            values.append(float(value))
+    return values
+
+
+def item_metric(rows: list[dict[str, Any]], name: str) -> list[float]:
+    values = []
+    for row in rows:
+        value = row.get("item_metrics", {}).get(name)
+        if isinstance(value, (int, float)):
+            values.append(float(value))
+    return values
+
+
 def write_report(path: Path, title: str, body: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(f"# {title}\n\n{body.rstrip()}\n", encoding="utf-8")
+
+
+def display_path(path: Path, repo_root: Path) -> str:
+    try:
+        return str(path.relative_to(repo_root))
+    except ValueError:
+        return str(path)
 
 
 def main() -> None:
@@ -115,13 +148,16 @@ def main() -> None:
     run_meta_path = run_dir / "run_metadata.json"
     run_meta = json.loads(run_meta_path.read_text(encoding="utf-8")) if run_meta_path.exists() else {}
     mode = run_meta.get("mode", "unknown")
-    variants = list(dict.fromkeys([*run_meta.get("variants", []), *VARIANTS.keys()]))
+    requested_variants = run_meta.get("variants", [])
+    is_batch_run = int(run_meta.get("batch_size") or 1) > 1
+    variants = list(dict.fromkeys(requested_variants if is_batch_run else [*requested_variants, *VARIANTS.keys()]))
 
     summary_rows = []
     gate_rows = []
     score_rows = []
     quality_rows = []
     streaming_rows = []
+    batch_rows = []
     baseline_rows = grouped.get("A_original", [])
     for variant in variants:
         variant_rows = grouped.get(variant, [])
@@ -134,6 +170,20 @@ def main() -> None:
         summary_rows.append([variant, ttfa["p50"], ttfa["p95"], total["p95"], rtf["p95"], failure_display, gate])
         gate_rows.append([variant, gate, reason])
         score_rows.append([variant, score, VARIANTS[variant]["expected_role"]])
+        runtime_modes = sorted({str(row.get("batch_runtime_mode")) for row in variant_rows if row.get("batch_runtime_mode")})
+        batch_rows.append(
+            [
+                variant,
+                VARIANTS[variant].get("group_number"),
+                VARIANTS[variant].get("batch_size"),
+                ",".join(runtime_modes) if runtime_modes else "",
+                len({row.get("batch_id") for row in variant_rows if row.get("batch_id")}),
+                summarize(item_metric(variant_rows, "item_queue_wait_ms"))["p95"],
+                summarize(item_metric(variant_rows, "item_ttfa_client_ms"))["p95"],
+                summarize(batch_metric(variant_rows, "batch_ttfa_spread_ms"))["p95"],
+                summarize(batch_metric(variant_rows, "batch_rtf"))["p95"],
+            ]
+        )
         if not VARIANTS[variant]["enabled"]:
             quality_rows.append([variant, None, None, None, None, None])
             streaming_rows.append([variant, None, None, None, None, None])
@@ -168,7 +218,17 @@ def main() -> None:
         ["Variant", "Chunk count p95", "Chunk jitter p95", "Max gap p95", "Underruns", "FirstAudible500 p95"],
         streaming_rows,
     )
+    batch_body = markdown_table(
+        ["Variant", "Group", "Batch size", "Runtime mode", "Batches", "Queue wait p95", "Item TTFA p95", "TTFA spread p95", "Batch RTF p95"],
+        batch_rows,
+    )
     write_report(reports / "latency_report.md", "Latency Report", latency_body)
+    write_report(
+        reports / "batch_report.md",
+        "Batch Report",
+        batch_body
+        + "\n\n`serial_fallback` validates grouping and logging only. It is not true batch TTS evidence and cannot pass the batch hard gate.",
+    )
     write_report(
         reports / "quality_report.md",
         "Quality Report",
@@ -205,9 +265,19 @@ def main() -> None:
     blocker_rows = [
         [key, value.get("disabled_reason", ""), value.get("next_patch", "")]
         for key, value in VARIANTS.items()
-        if not value["enabled"]
+        if key in variants and not value["enabled"]
     ]
     blocker_body = markdown_table(["Variant", "Source-level blocker", "Next patch"], blocker_rows)
+    factor_text = (
+        "Batch factor effects are not scored because this run used `serial_fallback`; true_batch runtime evidence is required first."
+        if is_batch_run
+        else "C_token and D_hybrid stay source-blocked until BreezyVoice exposes chunk-level token/audio streaming."
+    )
+    next_text = (
+        "Add a true batch synthesis endpoint or strict BreezyVoice batch adapter, then rerun batch2 and batch3 live pilots."
+        if is_batch_run
+        else "Optimize B_segment TTFA first, then patch BreezyVoice upstream for a real C_token inference_stream path before rerunning C/D."
+    )
     final_body = "\n\n".join(
         [
             "## Executive Summary\n\n" + default_text,
@@ -221,27 +291,28 @@ def main() -> None:
             "## Taiwan zh-TW Pronunciation And Code-Switching\n\nManifest rows include PHQ-9, Smart Cabin measurement, kiosk FAQ, and Taiwan zh-TW stress samples.",
             "## Dialogue Fluency\n\nDialogue manifests are present; browser playback timing was not part of this TTS-only smoke.",
             "## Streaming Metrics\n\n" + streaming_body,
+            "## Batch Metrics\n\n" + batch_body,
             "## Stability And Resource Use\n\nNo OOM or timeout was observed in rows marked `ok`; GPU utilization, process snapshots, and listening-port snapshots are captured in environment metadata when available.",
-            "## Factorial Effects\n\nC_token and D_hybrid stay source-blocked until BreezyVoice exposes chunk-level token/audio streaming.",
+            "## Factorial Effects\n\n" + factor_text,
             "## Source-Level Blockers\n\n" + blocker_body,
             "## Hard-Gate Decision\n\n" + markdown_table(["Variant", "Decision", "Reason"], gate_rows),
             "## Weighted Score\n\n" + markdown_table(["Variant", "Score", "Expected role"], score_rows),
             "## Recommended Default Mode\n\n" + default_text,
             "## Recommended Fallback Mode\n\nA_original remains the fallback because it matches the existing completed-WAV BreezyVoice path.",
-            "## Implementation Tasks For Next Sprint\n\nOptimize B_segment TTFA first, then patch BreezyVoice upstream for a real C_token inference_stream path before rerunning C/D.",
+            "## Implementation Tasks For Next Sprint\n\n" + next_text,
         ]
     )
     final_path = Path(args.report) if args.report else reports / "final_decision.md"
     if not final_path.is_absolute():
         final_path = repo_root / final_path
-    write_report(final_path, "Final Decision - BreezyVoice Streaming 2x2 Experiment", final_body)
+    write_report(final_path, "Final Decision - BreezyVoice Batch TTS 2x2 Experiment" if is_batch_run else "Final Decision - BreezyVoice Streaming 2x2 Experiment", final_body)
 
     evidence_path = Path(args.evidence) if args.evidence else repo_root / "docs" / "evidence" / f"{datetime.now().date()}-breezyvoice-streaming-2x2-experiment-log.md"
     if not evidence_path.is_absolute():
         evidence_path = repo_root / evidence_path
     evidence_body = "\n\n".join(
         [
-            "## Experiment Name And Purpose\n\nBreezyVoice Streaming 2x2 live pilot for Smart Health Cabin Avatar TTS latency architecture.",
+            "## Experiment Name And Purpose\n\nBreezyVoice Batch TTS 2x2 pilot for Smart Health Cabin Avatar TTS throughput and responsiveness architecture." if is_batch_run else "## Experiment Name And Purpose\n\nBreezyVoice Streaming 2x2 live pilot for Smart Health Cabin Avatar TTS latency architecture.",
             "## Date And Time\n\n" + f"Local started_at: `{run_meta.get('local_started_at')}`\n\nUTC started_at: `{run_meta.get('utc_started_at')}`\n\nLocal analyzed_at: `{iso_local()}`\n\nUTC analyzed_at: `{iso_utc()}`",
             "## Repo And Runtime\n\n" + f"Run directory: `{run_dir.relative_to(repo_root)}`\n\nCommand: `{run_meta.get('command')}`\n\nMode: `{mode}`",
             "## Provider Configuration And Services\n\nSee `manifest/environment.yaml` and `manifest/model_manifest.yaml` for hardware, GPU, service URL, process, and port snapshots.",
@@ -249,18 +320,19 @@ def main() -> None:
             + f"Main rows: `{len(rows)}`\n\nRequested variants: `{', '.join(run_meta.get('variants', []))}`\n\nRepeats: `{run_meta.get('repeats')}`\n\nWarmup: `{run_meta.get('warmup')}`",
             "## Variant Registry\n\n" + markdown_table(["Variant", "Segment", "Token", "Enabled", "Role"], [[key, value["segment_streaming"], value["token_streaming"], value["enabled"], value["expected_role"]] for key, value in VARIANTS.items()]),
             "## Result Summary\n\n" + latency_body,
+            "## Batch Summary\n\n" + batch_body,
             "## Hard Gates\n\n" + markdown_table(["Variant", "Decision", "Reason"], gate_rows),
             "## Source-Level Blockers\n\n" + blocker_body,
             "## Weighted Score\n\n" + markdown_table(["Variant", "Score", "Expected role"], score_rows),
             "## Recommended Default And Fallback\n\n" + default_text + "\n\nA_original remains fallback.",
             "## Scope Controls\n\nThis run uses synthetic/repo-owned text only. Raw patient audio and private data are outside the benchmark path. The production TTS sidecar endpoint remains unchanged.",
-            "## Next Validation Action\n\nOptimize B_segment TTFA and implement the upstream C_token inference_stream patch path before rerunning C/D.",
+            "## Next Validation Action\n\n" + next_text,
         ]
     )
-    write_report(evidence_path, "BreezyVoice Streaming 2x2 Experiment Log", evidence_body)
+    write_report(evidence_path, "BreezyVoice Batch TTS 2x2 Experiment Log" if is_batch_run else "BreezyVoice Streaming 2x2 Experiment Log", evidence_body)
     print(f"wrote reports to {reports.relative_to(repo_root)}")
-    print(f"wrote final decision to {final_path.relative_to(repo_root)}")
-    print(f"wrote evidence to {evidence_path.relative_to(repo_root)}")
+    print(f"wrote final decision to {display_path(final_path, repo_root)}")
+    print(f"wrote evidence to {display_path(evidence_path, repo_root)}")
 
 
 if __name__ == "__main__":
