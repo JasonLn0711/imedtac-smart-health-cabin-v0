@@ -1,0 +1,8 @@
+{
+  "id": "default_tw_healthcare",
+  "language": "zh-TW",
+  "style": "natural_clear_warm_professional_health_kiosk",
+  "instruction": "請用台灣華語，語氣自然、清楚、溫和、專業。不要兒化音，不要中國大陸普通話播音腔。請用台灣醫療院所健康檢測服務人員的說話方式。語速中等偏慢，句尾自然，不要誇張情緒，音量保持穩定。",
+  "speaker_prompt_policy": "Use a clean 10-30 second Taiwan Mandarin healthcare speaker prompt when available.",
+  "fallback_provider": "breezyvoice_default"
+}

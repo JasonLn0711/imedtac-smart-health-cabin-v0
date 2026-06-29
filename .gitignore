@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.vite/
+.local/
+.venv/
+__pycache__/
+coverage/
+*.log
+.env
+.env.*
+!/.env.example
+experiments/*
+!experiments/manifests/
+!experiments/manifests/*.jsonl
+G2PWModel/

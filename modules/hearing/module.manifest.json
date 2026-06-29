@@ -1,0 +1,9 @@
+{
+  "module_id": "hearing",
+  "module_version": "0.1.0",
+  "display_name": "聽力自我檢測",
+  "status": "phase_2_planned",
+  "enabled_by_default": false,
+  "depends_on": ["session", "module_registry", "report", "device_calibration"],
+  "scope_control": "Phase 1 不實作；待問卷與 Avatar MVP 跑通後再規劃固定喇叭純音反應與校準 profile。"
+}

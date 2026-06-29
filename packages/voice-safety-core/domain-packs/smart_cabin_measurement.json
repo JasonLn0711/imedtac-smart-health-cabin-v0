@@ -1,0 +1,51 @@
+{
+  "domainId": "smart_cabin_measurement",
+  "version": "0.1.0",
+  "language": "zh-TW",
+  "moduleId": "kiosk",
+  "sourceFiles": ["docs/specs/MVP-SYSTEM-SPEC.md"],
+  "hotwords": [
+    "身高",
+    "體重",
+    "BMI",
+    "腰圍",
+    "脈搏",
+    "血壓",
+    "血糖",
+    "心跳",
+    "報告",
+    "QR code",
+    "二維碼",
+    "請再說一次",
+    "重複題目",
+    "跳過",
+    "重新錄音",
+    "改用觸控",
+    "找工作人員"
+  ],
+  "canonicalTerms": [
+    { "term": "血壓", "category": "measurement", "aliases": ["血壓值"], "commonAsrErrors": [] },
+    { "term": "腰圍", "category": "measurement", "aliases": [], "commonAsrErrors": [] },
+    { "term": "改用觸控", "category": "module_command", "aliases": ["用螢幕點", "用螢幕選"], "commonAsrErrors": [] },
+    { "term": "重複題目", "category": "module_command", "aliases": ["請再說一次", "再講一次"], "commonAsrErrors": [] },
+    { "term": "找工作人員", "category": "module_command", "aliases": ["請人幫忙", "叫工作人員"], "commonAsrErrors": [] }
+  ],
+  "answerAliases": [],
+  "semanticSlots": [
+    { "slot": "measurement_value", "examples": ["血壓 120 / 80", "腰圍 82 公分"] },
+    { "slot": "command_or_faq", "examples": ["請再說一次", "改用觸控"] }
+  ],
+  "safetyRules": [
+    { "flag": "chest_pain", "triggerTerms": ["胸痛", "胸悶", "胸口悶"], "route": "confirm" },
+    { "flag": "breathing_difficulty", "triggerTerms": ["喘", "呼吸困難", "走路會喘"], "route": "confirm" }
+  ],
+  "retrievalTemplates": [
+    { "intent": "command_or_faq", "template": "智慧健康艙操作問題：{normalizedText}" }
+  ],
+  "confirmationTemplates": {
+    "singleCandidate": "我剛剛聽到您說「{candidate}」。",
+    "multipleCandidates": "請問你剛剛想表達的是哪一個？",
+    "lowConfidence": "我不太確定剛剛的內容，請重新說一次，或改用螢幕操作。",
+    "touchFallback": "你可以直接用螢幕點選，或請現場人員協助。"
+  }
+}

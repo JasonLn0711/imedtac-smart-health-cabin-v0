@@ -1,0 +1,35 @@
+{
+  "name": "imedtac-smart-health-cabin-v0",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "type": "module",
+  "scripts": {
+    "lint": "corepack pnpm -r lint",
+    "typecheck": "corepack pnpm -r typecheck",
+    "build": "corepack pnpm -r build",
+    "test": "vitest run",
+    "live:check": "node scripts/live-check.mjs",
+    "smoke:api": "node scripts/smoke-api.mjs",
+    "smoke:voice-agent": "node scripts/smoke-voice-agent.mjs",
+    "smoke:cosyvoice3": "node scripts/smoke-cosyvoice3.mjs",
+    "smoke:voice-conversation-live": "node scripts/smoke-voice-conversation-live.mjs",
+    "smoke:voice-safety": "vitest run packages/voice-safety-core/src/voice-safety-core.test.ts",
+    "smoke:reranker": "node scripts/smoke-reranker.mjs",
+    "smoke:wakeword": "node scripts/smoke-wakeword.mjs",
+    "smoke:wakeword:live": "node scripts/smoke-wakeword-live.mjs",
+    "smoke:sprint5-live-demo": "node scripts/smoke-sprint5-live-demo.mjs",
+    "smoke:redpanda": "node scripts/smoke-redpanda.mjs",
+    "smoke:tts-streaming": "python3 scripts/tts-benchmark/run_tts_matrix.py --manifest experiments/manifests/tts_eval_manifest.jsonl --variants A_original,B_segment --repeats 1 --warmup 1 --randomize true --mode deterministic --output experiments/smoke_tts_streaming",
+    "analyze:tts-streaming": "python3 scripts/tts-benchmark/analyze_tts_matrix.py --run-dir experiments/smoke_tts_streaming --report experiments/smoke_tts_streaming/reports/final_decision.md",
+    "validate:json": "find modules apps packages -name '*.json' -print0 | xargs -0 -n1 jq empty"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@vitejs/plugin-react": "^4.3.4",
+    "playwright": "1.49.1",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3",
+    "vitest": "^2.1.8"
+  }
+}

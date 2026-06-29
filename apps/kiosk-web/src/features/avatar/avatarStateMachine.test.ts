@@ -1,0 +1,88 @@
+import { describe, expect, it } from "vitest";
+import { createActor } from "xstate";
+import { avatarImageAltText, avatarImageSrc } from "./AvatarImage";
+import { avatarStateLabel, avatarStateMachine, nextAvatarState } from "./avatarStateMachine";
+
+describe("Avatar voice entry state machine", () => {
+  it("allows wake word activation and auto-commit after mapping", () => {
+    let state = nextAvatarState("idle_touch_ready", "WAKE_ARM");
+    state = nextAvatarState(state, "WAKE_DETECTED");
+    state = nextAvatarState(state, "VAD_SPEECH_START");
+    state = nextAvatarState(state, "VAD_END_SILENCE");
+    state = nextAvatarState(state, "TRANSCRIBE");
+    state = nextAvatarState(state, "ASR_DONE");
+    state = nextAvatarState(state, "ASR_DONE");
+    state = nextAvatarState(state, "ASR_DONE");
+    state = nextAvatarState(state, "ASR_DONE");
+
+    expect(state).toBe("committed");
+    expect(() => nextAvatarState("wake_detected", "CONFIRM_YES")).toThrow("Invalid Avatar event");
+  });
+
+  it("allows tap-to-start fallback when wakeword service hands off to touch", () => {
+    let state = nextAvatarState("idle_touch_ready", "VOICE_SERVICE_DOWN");
+    expect(state).toBe("voice_unavailable");
+
+    state = nextAvatarState(state, "MANUAL_START");
+    state = nextAvatarState(state, "MAX_UTTERANCE_REACHED");
+    state = nextAvatarState(state, "ASR_DONE");
+
+    expect(state).toBe("committed");
+    expect(avatarStateLabel("voice_unavailable")).toBe("觸控流程接續");
+  });
+
+  it("keeps low-confidence speech out of questionnaire writes", () => {
+    let state = nextAvatarState("recording_answer", "VAD_END_SILENCE");
+    state = nextAvatarState(state, "TRANSCRIBE");
+    state = nextAvatarState(state, "ASR_LOW_CONFIDENCE");
+
+    expect(state).toBe("retry_or_touch");
+  });
+
+  it("routes safety-sensitive mapping to staff review before writes", () => {
+    let state = nextAvatarState("transcribing", "ASR_DONE");
+    state = nextAvatarState(state, "ASR_DONE");
+    state = nextAvatarState(state, "ASR_DONE");
+    state = nextAvatarState(state, "STAFF_REVIEW");
+
+    expect(state).toBe("staff_review");
+  });
+
+  it("returns to recording after a continuous voice reply", () => {
+    let state = nextAvatarState("recording_answer", "VAD_END_SILENCE");
+    state = nextAvatarState(state, "TRANSCRIBE");
+    state = nextAvatarState(state, "LOOP_READY");
+
+    expect(state).toBe("recording_answer");
+
+    state = nextAvatarState(state, "RESET");
+    expect(state).toBe("idle_touch_ready");
+  });
+
+  it("resets to touch-ready idle after auto-commit", () => {
+    let state = nextAvatarState("ranking_candidates", "ASR_DONE");
+    state = nextAvatarState(state, "RESET");
+
+    expect(state).toBe("idle_touch_ready");
+  });
+
+  it("exposes an xstate machine for the UI shell", () => {
+    const actor = createActor(avatarStateMachine).start();
+
+    actor.send({ type: "WAKE_ARM" });
+    actor.send({ type: "WAKE_DETECTED" });
+    actor.send({ type: "VAD_SPEECH_START" });
+
+    expect(actor.getSnapshot().value).toBe("recording_answer");
+    actor.stop();
+  });
+
+  it("rejects hidden jumps", () => {
+    expect(() => nextAvatarState("idle_touch_ready", "CONFIRM_YES")).toThrow("Invalid Avatar event");
+  });
+
+  it("uses a static replaceable Avatar image with Traditional Chinese alt text", () => {
+    expect(avatarImageSrc).toBe("/avatar/default-avatar.svg");
+    expect(avatarImageAltText).toBe("AI 健康互動助理");
+  });
+});

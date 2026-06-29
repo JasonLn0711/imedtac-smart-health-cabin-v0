@@ -1,0 +1,8 @@
+fastapi==0.115.6
+httpx==0.28.1
+uvicorn[standard]==0.34.0
+numpy==2.2.6
+sherpa-onnx==1.13.3
+sentencepiece==0.2.0
+pypinyin==0.54.0
+sounddevice==0.5.1

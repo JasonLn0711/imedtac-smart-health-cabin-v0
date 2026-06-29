@@ -10,6 +10,7 @@ source:
   - ../../../imedtac-ai-triage-kiosk-v0/source/2026-06-16-imedtac-teams-question-option-adjustment/source.md
   - ../../source/2026-06-17-smart-health-cabin-expert-tutorial-note/source.md
   - ../../source/2026-06-19-wu-tomi-ai-triage-smart-health-cabin-ip-sync/meeting-record.md
+  - ../../../planning-everything-track/data/knowledge/personal/sources/2026-06-22-prowu-huashan-sarcopenia-health-cabin-sync/meeting-record.md
   - ./external-authority-verification.md
 ---
 
@@ -28,6 +29,10 @@ The meeting should cover both:
 1. current AI Triage demo/device workflow alignment;
 2. new Smart Health Cabin requirements for vision/hearing self-measurement and
    questionnaire-guided triage.
+3. Huashan sarcopenia / Health Cabin fit discovered on `2026-06-22 16:29`:
+   robot computer vision is optional, education/guidance is primary, positive
+   sarcopenia/frailty cases are required for validation, and the cabin's
+   sarcopenia measurement/data-integration role must be defined.
 
 These are adjacent lanes. They should be discussed together for context but
 recorded separately for execution control.
@@ -80,6 +85,30 @@ He likely also expects medical/device/software design discussion, especially:
 The meeting is therefore not only technical and not only medical. It is a
 product discovery meeting at the boundary between medical workflow, device
 constraints, software architecture, and project delivery.
+
+## 2026-06-22 Huashan / Sarcopenia Addendum
+
+The onsite visit should now also collect facts needed by the Huashan
+deep-cultivation lane:
+
+- whether the Health Cabin natively measures BIA, body composition, height,
+  weight, blood pressure, glucose/lipid, grip strength, calf circumference, or
+  only a subset of those fields;
+- whether sarcopenia-relevant measurements can be imported from external
+  devices, robot interaction, staff stations, or prior steps into one QR/report;
+- whether each field includes device id, timestamp, quality flag, operator
+  context, and reviewer/publisher status;
+- whether STS5, TUG, gait, grip strength, BIA, SARC-F, SPPB, or other labels
+  have an existing validated data source, and whether positive/negative case
+  counts plus age/sex distribution can be disclosed for proposal evidence;
+- whether FHIR/HIS means live integration, mapping draft, structured JSON/ERD,
+  or future-ready design only;
+- whether any intended use crosses into TFDA / SaMD / medical-device validation
+  review.
+
+The Huashan posture is practical: use the Health Cabin as the fixed measurement
+and data-integration anchor; use robot interaction mainly for education,
+guidance, and onsite support; keep computer vision as a validation-gated option.
 
 ## Agenda
 

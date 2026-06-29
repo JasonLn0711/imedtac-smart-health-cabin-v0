@@ -1,0 +1,47 @@
+{
+  "domainId": "kiosk_faq",
+  "version": "0.1.0",
+  "language": "zh-TW",
+  "moduleId": "kiosk",
+  "sourceFiles": ["docs/specs/MVP-SYSTEM-SPEC.md", "docs/dev/LOCAL_DEV.md"],
+  "hotwords": [
+    "怎麼回答",
+    "重複題目",
+    "請再說一次",
+    "重新開始",
+    "上一題",
+    "下一題",
+    "跳過",
+    "改用觸控",
+    "找工作人員",
+    "查看報告",
+    "QR code",
+    "二維碼",
+    "隱私",
+    "不想錄音"
+  ],
+  "canonicalTerms": [
+    { "term": "重複題目", "category": "module_command", "aliases": ["請再說一次", "再講一次"], "commonAsrErrors": [] },
+    { "term": "重新開始", "category": "module_command", "aliases": ["重來", "從頭開始"], "commonAsrErrors": [] },
+    { "term": "改用觸控", "category": "module_command", "aliases": ["用螢幕點", "用螢幕選"], "commonAsrErrors": [] },
+    { "term": "找工作人員", "category": "module_command", "aliases": ["請人幫忙", "叫工作人員"], "commonAsrErrors": [] },
+    { "term": "查看報告", "category": "report_access", "aliases": ["看報告", "開報告"], "commonAsrErrors": [] },
+    { "term": "不想錄音", "category": "module_command", "aliases": ["不要錄音", "關掉語音"], "commonAsrErrors": [] }
+  ],
+  "answerAliases": [],
+  "semanticSlots": [
+    { "slot": "kiosk_command", "examples": ["重複題目", "改用觸控", "找工作人員"] },
+    { "slot": "report_access", "examples": ["查看報告", "QR code"] },
+    { "slot": "privacy_preference", "examples": ["不想錄音", "關掉語音"] }
+  ],
+  "safetyRules": [],
+  "retrievalTemplates": [
+    { "intent": "command_or_faq", "template": "健康艙操作問答候選：{normalizedText}" }
+  ],
+  "confirmationTemplates": {
+    "singleCandidate": "我剛剛聽到您說「{candidate}」。",
+    "multipleCandidates": "請問你剛剛想做的是哪一個？",
+    "lowConfidence": "我不太確定剛剛的操作需求，請重新說一次，或直接用螢幕操作。",
+    "touchFallback": "你可以直接用螢幕操作，或請現場人員協助。"
+  }
+}

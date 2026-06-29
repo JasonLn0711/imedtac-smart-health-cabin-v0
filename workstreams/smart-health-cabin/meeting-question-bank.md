@@ -8,6 +8,7 @@ status: active
 source:
   - ../../source/2026-06-17-imedtac-smart-health-cabin-requirements/source.md
   - ../../source/2026-06-17-smart-health-cabin-expert-tutorial-note/source.md
+  - ../../../planning-everything-track/data/knowledge/personal/sources/2026-06-22-prowu-huashan-sarcopenia-health-cabin-sync/meeting-record.md
   - ./external-authority-verification.md
 ---
 
@@ -23,6 +24,21 @@ in method details.
 3. 在醫務室、醫院、健康中心、長照中心等不同場域，慧誠希望同一套系統維持相同流程，還是依場域調整？
 4. 慧誠目前已經有明確設計方法的部分是哪些？還只是需求目標的部分是哪些？
 5. 6/23 會後希望 NYCU 回覆的是需求釐清、架構建議、feasibility、初步報價，還是正式設計規格？
+
+## Huashan / Sarcopenia Health Cabin Questions
+
+Use these when the discussion turns to the Huashan deep-cultivation plan.
+
+1. 健康艙目前可以原生量測哪些與肌少症相關的欄位：身高、體重、BIA / 體組成、血壓、血糖、血脂、握力、小腿圍、STS5、TUG、步態，或其他項目？
+2. 哪些欄位需要從外部設備、行動量測包、機器人、工作人員 station 或前一站匯入？
+3. 健康艙是否可以把外部匯入資料與艙內量測資料合成同一份 QR/report？
+4. 每個量測欄位是否有 device id、timestamp、quality flag、量測環境、操作者、reviewer / publisher 狀態？
+5. 如果要支援肌少症 / 跌倒風險模型，現有資料庫有多少樣本、陽性與陰性各多少、年齡與性別分布如何？
+6. 現有模型是否有 AUC、敏感度、特異度、外部驗證、族群來源、reference-standard label、TFDA / IRB 狀態？
+7. 健康艙要如何承接 STS5、TUG、步態、BIA、SARC-F、SPPB、握力、小腿圍與問卷互動？
+8. HIS/FHIR-ready 在這次案子中是 live integration、mapping draft、structured JSON / ERD，還是 future activation gate？
+9. 若健康艙資料用於紅黃綠燈分流、家醫科導流、健促班或返診提醒，review owner 是誰？
+10. 機器人的 computer vision 是否只做 optional / demo / validation-gated 模組，主要工作維持衛教、導覽、流程引導與安全提醒？
 
 ## Opening Questions
 

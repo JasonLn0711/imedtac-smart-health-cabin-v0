@@ -1,0 +1,131 @@
+{
+  "title": "病人健康狀況問卷-9 (PHQ-9)",
+  "description": "在過去兩個星期，有多少時候您受到以下任何問題所困擾？本問卷僅作健康自我檢測與現場人員參考，不能替代醫護人員評估。",
+  "showQuestionNumbers": "on",
+  "pages": [
+    {
+      "name": "phq9_page_1",
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "phq9_01",
+          "title": "做事時提不起勁或沒有樂趣",
+          "isRequired": true,
+          "choices": [
+            { "value": 0, "text": "完全沒有" },
+            { "value": 1, "text": "幾天" },
+            { "value": 2, "text": "一半以上的天數" },
+            { "value": 3, "text": "幾乎每天" }
+          ]
+        },
+        {
+          "type": "radiogroup",
+          "name": "phq9_02",
+          "title": "感到心情低落、沮喪或絕望",
+          "isRequired": true,
+          "choices": [
+            { "value": 0, "text": "完全沒有" },
+            { "value": 1, "text": "幾天" },
+            { "value": 2, "text": "一半以上的天數" },
+            { "value": 3, "text": "幾乎每天" }
+          ]
+        },
+        {
+          "type": "radiogroup",
+          "name": "phq9_03",
+          "title": "入睡困難、睡不安穩或睡眠過多",
+          "isRequired": true,
+          "choices": [
+            { "value": 0, "text": "完全沒有" },
+            { "value": 1, "text": "幾天" },
+            { "value": 2, "text": "一半以上的天數" },
+            { "value": 3, "text": "幾乎每天" }
+          ]
+        },
+        {
+          "type": "radiogroup",
+          "name": "phq9_04",
+          "title": "感覺疲倦或沒有活力",
+          "isRequired": true,
+          "choices": [
+            { "value": 0, "text": "完全沒有" },
+            { "value": 1, "text": "幾天" },
+            { "value": 2, "text": "一半以上的天數" },
+            { "value": 3, "text": "幾乎每天" }
+          ]
+        },
+        {
+          "type": "radiogroup",
+          "name": "phq9_05",
+          "title": "食慾不振或吃太多",
+          "isRequired": true,
+          "choices": [
+            { "value": 0, "text": "完全沒有" },
+            { "value": 1, "text": "幾天" },
+            { "value": 2, "text": "一半以上的天數" },
+            { "value": 3, "text": "幾乎每天" }
+          ]
+        },
+        {
+          "type": "radiogroup",
+          "name": "phq9_06",
+          "title": "覺得自己很糟，或覺得自己很失敗，或讓自己或家人失望",
+          "isRequired": true,
+          "choices": [
+            { "value": 0, "text": "完全沒有" },
+            { "value": 1, "text": "幾天" },
+            { "value": 2, "text": "一半以上的天數" },
+            { "value": 3, "text": "幾乎每天" }
+          ]
+        },
+        {
+          "type": "radiogroup",
+          "name": "phq9_07",
+          "title": "對事物專注有困難，例如閱讀報紙或看電視時",
+          "isRequired": true,
+          "choices": [
+            { "value": 0, "text": "完全沒有" },
+            { "value": 1, "text": "幾天" },
+            { "value": 2, "text": "一半以上的天數" },
+            { "value": 3, "text": "幾乎每天" }
+          ]
+        },
+        {
+          "type": "radiogroup",
+          "name": "phq9_08",
+          "title": "動作或說話速度緩慢到別人已經察覺，或正好相反：煩躁或坐立不安、動來動去的情況更勝於平常",
+          "isRequired": true,
+          "choices": [
+            { "value": 0, "text": "完全沒有" },
+            { "value": 1, "text": "幾天" },
+            { "value": 2, "text": "一半以上的天數" },
+            { "value": 3, "text": "幾乎每天" }
+          ]
+        },
+        {
+          "type": "radiogroup",
+          "name": "phq9_09",
+          "title": "有不如死掉或用某種方式傷害自己的念頭",
+          "isRequired": true,
+          "choices": [
+            { "value": 0, "text": "完全沒有" },
+            { "value": 1, "text": "幾天" },
+            { "value": 2, "text": "一半以上的天數" },
+            { "value": 3, "text": "幾乎每天" }
+          ]
+        }
+      ]
+    }
+  ],
+  "calculatedValues": [
+    {
+      "name": "phq9_total_score",
+      "expression": "{phq9_01} + {phq9_02} + {phq9_03} + {phq9_04} + {phq9_05} + {phq9_06} + {phq9_07} + {phq9_08} + {phq9_09}"
+    },
+    {
+      "name": "phq9_item9_safety_flag",
+      "expression": "{phq9_09} > 0"
+    }
+  ],
+  "completedHtml": "<h3>問卷已完成</h3><p>系統已完成健康問卷整理，請依現場流程查看結果摘要。</p>"
+}

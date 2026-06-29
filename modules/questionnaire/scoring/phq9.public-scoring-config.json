@@ -1,0 +1,43 @@
+{
+  "instrument_id": "phq9_zh_tw",
+  "source": "../source/phq9.zh-TW.agent-readable.md",
+  "score": {
+    "total_key": "phq9_total_score",
+    "min": 0,
+    "max": 27,
+    "required_items": [
+      "phq9_01",
+      "phq9_02",
+      "phq9_03",
+      "phq9_04",
+      "phq9_05",
+      "phq9_06",
+      "phq9_07",
+      "phq9_08",
+      "phq9_09"
+    ]
+  },
+  "source_pdf_interpretation": [
+    { "min": 10, "max": 14, "label": "輕度憂鬱" },
+    { "min": 15, "max": 19, "label": "中度憂鬱" },
+    { "min": 20, "max": 27, "label": "重度憂鬱" }
+  ],
+  "public_report_mapping": [
+    {
+      "condition": "phq9_09 > 0",
+      "public_status_code": "CONSULT_STAFF",
+      "message": "您有填答到需要進一步關心的項目，建議洽詢現場人員或醫護人員協助。"
+    },
+    {
+      "condition": "phq9_total_score <= 9",
+      "public_status_code": "NORMAL_REFERENCE",
+      "message": "本次問卷結果可作為健康自我檢測參考，若有持續困擾，建議洽詢現場人員或醫護人員。"
+    },
+    {
+      "condition": "phq9_total_score >= 10",
+      "public_status_code": "CONSULT_STAFF",
+      "message": "本次填答結果顯示有部分狀況值得進一步關心，建議洽詢現場人員或醫護人員。"
+    }
+  ],
+  "scope_control": "Public report must not display diagnostic claims. Internal labels from the source PDF may be stored for staff review but should not be shown as a diagnosis to the public user."
+}

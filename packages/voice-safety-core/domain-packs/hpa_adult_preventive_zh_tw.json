@@ -1,0 +1,72 @@
+{
+  "domainId": "hpa_adult_preventive_zh_tw",
+  "version": "0.1.0",
+  "language": "zh-TW",
+  "moduleId": "questionnaire",
+  "sourceFiles": [
+    "source/2026-06-23-wu-line-hpa-adult-preventive-health-form/2026-06-23-hpa-adult-preventive-health-service-check-record-result-form-agent-readable.md"
+  ],
+  "hotwords": [
+    "高血壓",
+    "糖尿病",
+    "高血脂",
+    "心臟病",
+    "腦中風",
+    "腎臟病",
+    "B 型肝炎",
+    "C 型肝炎",
+    "精神疾病",
+    "長期服藥",
+    "家族史",
+    "吸菸",
+    "喝酒",
+    "檳榔",
+    "運動",
+    "一百五十分鐘",
+    "咳嗽超過二週",
+    "身高",
+    "體重",
+    "血壓",
+    "血糖",
+    "膽固醇",
+    "三酸甘油脂",
+    "肌酸酐",
+    "尿酸",
+    "陽性",
+    "陰性"
+  ],
+  "canonicalTerms": [
+    { "term": "吸菸", "category": "health_behavior", "aliases": ["抽菸"], "commonAsrErrors": ["抽煙"] },
+    { "term": "喝酒", "category": "health_behavior", "aliases": ["飲酒"], "commonAsrErrors": [] },
+    { "term": "檳榔", "category": "health_behavior", "aliases": ["嚼檳榔"], "commonAsrErrors": [] },
+    { "term": "血糖", "category": "measurement", "aliases": ["飯前血糖"], "commonAsrErrors": ["血糖值"] },
+    { "term": "膽固醇", "category": "measurement", "aliases": ["總膽固醇"], "commonAsrErrors": ["膽固存"] }
+  ],
+  "answerAliases": [
+    { "questionPattern": "smoking", "optionValue": 0, "optionText": "不吸菸", "aliases": ["不吸菸", "不抽菸", "沒有抽菸"], "confirmationRequired": true },
+    { "questionPattern": "smoking", "optionValue": 1, "optionText": "朋友敬菸或應酬才吸菸", "aliases": ["偶爾抽菸", "應酬才抽", "朋友敬菸"], "confirmationRequired": true },
+    { "questionPattern": "drinking", "optionValue": 0, "optionText": "不喝酒", "aliases": ["不喝酒", "沒有喝酒"], "confirmationRequired": true },
+    { "questionPattern": "drinking", "optionValue": 1, "optionText": "偶爾喝酒或應酬才喝", "aliases": ["偶爾喝酒", "應酬才喝"], "confirmationRequired": true },
+    { "questionPattern": "drinking", "optionValue": 2, "optionText": "經常喝酒", "aliases": ["經常喝酒", "常常喝酒"], "confirmationRequired": true },
+    { "optionValue": true, "optionText": "有", "aliases": ["有", "是"], "confirmationRequired": true },
+    { "optionValue": false, "optionText": "沒有", "aliases": ["沒有", "否"], "confirmationRequired": true }
+  ],
+  "semanticSlots": [
+    { "slot": "health_behavior", "examples": ["不吸菸", "偶爾喝酒", "經常嚼檳榔"] },
+    { "slot": "measurement_value", "examples": ["血壓一百二十比八十", "身高一百七十公分"] }
+  ],
+  "safetyRules": [
+    { "flag": "chest_pain", "triggerTerms": ["胸痛", "胸悶", "胸口悶"], "route": "confirm" },
+    { "flag": "breathing_difficulty", "triggerTerms": ["喘", "呼吸困難", "走路會喘"], "route": "confirm" },
+    { "flag": "fall_risk", "triggerTerms": ["跌倒", "站不穩"], "route": "confirm" }
+  ],
+  "retrievalTemplates": [
+    { "intent": "measurement_value", "template": "成人預防保健量測候選：{normalizedText}" }
+  ],
+  "confirmationTemplates": {
+    "singleCandidate": "我剛剛聽到您說「{candidate}」。",
+    "multipleCandidates": "請問你剛剛想表達的是哪一個？",
+    "lowConfidence": "我不太確定剛剛的回答，請重新說一次，或直接用螢幕選擇。",
+    "touchFallback": "這題也可以改用觸控或請工作人員協助。"
+  }
+}

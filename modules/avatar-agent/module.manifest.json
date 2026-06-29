@@ -1,0 +1,13 @@
+{
+  "module_id": "avatar_agent",
+  "module_version": "0.1.0",
+  "display_name": "語音 Avatar Agent",
+  "status": "phase_1_core",
+  "enabled_by_default": true,
+  "can_run_standalone": false,
+  "depends_on": ["questionnaire"],
+  "input_contract": "agent_turn_input.v1",
+  "output_contract": "agent_turn.v1",
+  "capabilities": ["asr", "llm_flow_guidance", "tts", "avatar_ui_state"],
+  "scope_control": "流程導引、題目與選項說明、答案確認；不做診斷或治療建議。"
+}

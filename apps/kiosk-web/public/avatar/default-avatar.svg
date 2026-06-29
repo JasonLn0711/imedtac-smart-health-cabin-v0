@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title desc">
+  <title id="title">健康檢測助理</title>
+  <desc id="desc">Smart Health Cabin static avatar placeholder</desc>
+  <rect width="160" height="160" rx="24" fill="#f8fbf8"/>
+  <circle cx="80" cy="68" r="34" fill="#ffffff" stroke="#244f40" stroke-width="6"/>
+  <circle cx="67" cy="63" r="5" fill="#244f40"/>
+  <circle cx="93" cy="63" r="5" fill="#244f40"/>
+  <path d="M64 82c8 8 24 8 32 0" fill="none" stroke="#244f40" stroke-width="6" stroke-linecap="round"/>
+  <path d="M43 136c7-25 22-39 37-39s30 14 37 39" fill="#dbe9df" stroke="#244f40" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M52 32h56" stroke="#6aa17f" stroke-width="8" stroke-linecap="round"/>
+</svg>

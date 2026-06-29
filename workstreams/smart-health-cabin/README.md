@@ -51,6 +51,51 @@ microservice-ready boundaries. Four modules can be selected, tested, quoted,
 and later extracted independently, while the MVP can share one backend, one
 database, and one deployment path.
 
+## 2026-06-25 MVP Pivot
+
+The 多寶 / Jason LINE follow-up narrows the Phase 1 MVP to:
+
+```text
+open questionnaire platform + ASR/LLM/TTS Avatar Agent
+```
+
+This pivot keeps the module architecture but changes delivery order. The active
+show path now proves questionnaire publishing, PHQ-9 rendering, response
+persistence, scoring/safety flags, public report/QR, and voice Avatar guidance.
+Vision and hearing are Phase 2 planned modules.
+
+Canonical pivot note:
+
+```text
+2026-06-25-questionnaire-avatar-mvp-pivot.md
+```
+
+Active sprint plan:
+
+```text
+../../docs/specs/MVP-QUESTIONNAIRE-AVATAR-SPRINT-PLAN.md
+```
+
+## 2026-06-24 Open-Source Module Research
+
+The active research packet asks whether open-source GitHub projects can be
+adapted into independent hearing, vision, questionnaire, and live Avatar
+modules. The shared data path should begin as a small module event/report layer;
+Kafka-like infrastructure remains an activation gate for replay, multiple
+consumers, durable ordering, realtime fan-out, or cross-service scale.
+
+The same date's MVP monorepo / Redpanda architecture note records Jason's
+repo-splitting question, the modular-monolith answer, the event-contract
+principle, and the conditions for future multi-repo extraction. The fast-march
+Sprint 0-4 plan compresses the MVP path into `10` working days as a thin-slice
+demo schedule, not as a full-product commitment.
+
+Packet root:
+
+```text
+../../research-packets/2026-06-24-smart-health-cabin-module-research/
+```
+
 ## Boundary
 
 This project is separate from `../imedtac-ai-triage-kiosk-v0`. It can reuse AI Triage
@@ -80,6 +125,13 @@ missing. Keep future Smart Health Cabin material here rather than inside
 | `module-a-vision-hearing-discovery.md` | Discovery plan for the vision and hearing self-measurement module. |
 | `module-b-questionnaire-triage-discovery.md` | Discovery plan for the questionnaire triage / department guidance module. |
 | `module-c-avatar-interaction-discovery.md` | Discovery note for the Avatar voice interaction module added in the `2026-06-23` onsite meeting. |
+| `2026-06-24-open-source-module-research-plan.md` | Open-source module adaptation research plan. |
+| `2026-06-24-mvp-monorepo-redpanda-architecture-note.md` | Reference architecture note for MVP monorepo, modular monolith, PostgreSQL, Redpanda, event contracts, and future repo-splitting gates. |
+| `../../docs/specs/MVP-SYSTEM-SPEC.md` | Full-system MVP reference spec for repo strategy, apps, modules, PostgreSQL, Redpanda, API, deployment, versioning, tests, and acceptance gates. |
+| `../../docs/specs/MVP-FAST-MARCH-SPRINT-PLAN.md` | Superseded fast-march Sprint 0-4 reference plan for the earlier four-module path. |
+| `../../docs/specs/MVP-QUESTIONNAIRE-AVATAR-SPRINT-PLAN.md` | Active revised sprint plan for questionnaire + Avatar MVP v0.1. |
+| `2026-06-25-questionnaire-avatar-mvp-pivot.md` | Decision record for moving vision/hearing to Phase 2 and prioritizing questionnaire + Avatar. |
+| `../../research-packets/2026-06-24-smart-health-cabin-module-research/README.md` | Independent research packets for hearing, vision, questionnaire, live Avatar, and module event-layer architecture. |
 | `hpa-adult-preventive-health-questionnaire-mvp-design-note.md` | Expert record and MVP design note for using HPA adult preventive health fields plus WHO STEPS and standardized modules. |
 | `mvp-questionnaire-system-architecture.md` | Narrow MVP questionnaire architecture, complete field registry, source metadata, disabled clinical fields, report rules, and minimum data model. |
 | `four-module-mvp-sdd-prep-spec.md` | Four-module MVP and SDD-prep specification covering architecture strategy, module contracts, APIs, ERD seed, acceptance tests, timeline, and risk matrix. |
