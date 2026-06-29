@@ -7,7 +7,9 @@ type: meeting-record
 status: active
 source:
   - ../../source/2026-06-23-imedtac-onsite-visit-smart-health-cabin/source.md
+  - ../../source/2026-06-23-expert-four-module-sdd-prep-note/source.md
   - ./post-meeting-decision-log.md
+  - ./four-module-mvp-sdd-prep-spec.md
 ---
 
 # Module C Avatar Interaction Discovery
@@ -28,6 +30,16 @@ The Avatar can ask questionnaire items, listen to the person's spoken answer,
 and help input the answer. This should be treated as a guided interaction
 surface over reviewed questionnaire content, not as autonomous clinical
 conversation or diagnosis.
+
+The SDD-prep source of truth for Avatar as a selectable module is:
+
+```text
+./four-module-mvp-sdd-prep-spec.md
+```
+
+That specification keeps Avatar as a controlled questionnaire host with touch
+fallback and assigns questionnaire scoring, branching, and report semantics to
+the questionnaire module.
 
 ## Relationship To Questionnaire Module
 

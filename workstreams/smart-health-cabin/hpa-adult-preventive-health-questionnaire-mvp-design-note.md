@@ -6,7 +6,10 @@ topic: ai-triage
 type: expert-analysis
 status: active
 source:
+  - ../../source/2026-06-23-expert-mvp-questionnaire-narrowdown-note/source.md
+  - ../../source/2026-06-23-expert-questionnaire-authority-note/source.md
   - ../../source/2026-06-23-wu-line-hpa-adult-preventive-health-form/source.md
+  - ./mvp-questionnaire-system-architecture.md
   - ./module-b-questionnaire-triage-discovery.md
   - ./post-meeting-decision-log.md
 audience:
@@ -22,6 +25,18 @@ audience:
 This note records the expert view supplied on `2026-06-23` for using the
 `健康署成人預防保健服務檢查紀錄結果表單` red-box fields inside the Smart
 Health Cabin questionnaire system.
+
+The complete expert opinion is preserved as a source artifact at:
+
+```text
+../../source/2026-06-23-expert-questionnaire-authority-note/source.md
+```
+
+The narrower implementable MVP field registry is preserved at:
+
+```text
+./mvp-questionnaire-system-architecture.md
+```
 
 The source links below are preserved as expert-cited references. They should be
 verified from official pages before company-facing quotation, formal proposal,

@@ -8,6 +8,8 @@ status: active
 source:
   - ../../source/2026-06-17-imedtac-smart-health-cabin-requirements/source.md
   - ../../source/2026-06-23-imedtac-onsite-visit-smart-health-cabin/source.md
+  - ../../source/2026-06-23-expert-four-module-sdd-prep-note/source.md
+  - ./four-module-mvp-sdd-prep-spec.md
   - ../../source/2026-06-17-smart-health-cabin-expert-tutorial-note/source.md
   - ./external-authority-verification.md
 ---
@@ -23,6 +25,16 @@ problem.
 After the `2026-06-23` onsite meeting, hearing and vision should be tracked as
 two distinct user-facing modules even though this discovery note keeps their
 shared device and screening constraints together.
+
+The SDD-prep source of truth for the four-module MVP contract is:
+
+```text
+./four-module-mvp-sdd-prep-spec.md
+```
+
+That specification separates `hearing` and `vision` as independently
+selectable modules that both emit `StandardModuleResult` into the shared report
+layer.
 
 The strongest first-release framing is:
 

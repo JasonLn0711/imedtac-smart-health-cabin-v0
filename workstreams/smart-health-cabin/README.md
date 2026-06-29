@@ -8,6 +8,9 @@ status: active
 source:
   - ../../source/2026-06-17-imedtac-smart-health-cabin-requirements/source.md
   - ../../source/2026-06-23-imedtac-onsite-visit-smart-health-cabin/source.md
+  - ../../source/2026-06-23-expert-questionnaire-authority-note/source.md
+  - ../../source/2026-06-23-expert-mvp-questionnaire-narrowdown-note/source.md
+  - ../../source/2026-06-23-expert-four-module-sdd-prep-note/source.md
   - ../../../imedtac-ai-triage-kiosk-v0/source/2026-06-16-imedtac-teams-question-option-adjustment/source.md
   - ../../source/2026-06-17-smart-health-cabin-expert-tutorial-note/source.md
   - ./external-authority-verification.md
@@ -43,6 +46,11 @@ Data integration remains a cross-module layer: integrated report, QR Code,
 HIS/API/JSON, database, and CMS connection. It is important for delivery, but
 it is not counted as a fifth user-facing module in the current meeting record.
 
+The current architecture direction is modular monolith first with
+microservice-ready boundaries. Four modules can be selected, tested, quoted,
+and later extracted independently, while the MVP can share one backend, one
+database, and one deployment path.
+
 ## Boundary
 
 This project is separate from `../imedtac-ai-triage-kiosk-v0`. It can reuse AI Triage
@@ -73,6 +81,8 @@ missing. Keep future Smart Health Cabin material here rather than inside
 | `module-b-questionnaire-triage-discovery.md` | Discovery plan for the questionnaire triage / department guidance module. |
 | `module-c-avatar-interaction-discovery.md` | Discovery note for the Avatar voice interaction module added in the `2026-06-23` onsite meeting. |
 | `hpa-adult-preventive-health-questionnaire-mvp-design-note.md` | Expert record and MVP design note for using HPA adult preventive health fields plus WHO STEPS and standardized modules. |
+| `mvp-questionnaire-system-architecture.md` | Narrow MVP questionnaire architecture, complete field registry, source metadata, disabled clinical fields, report rules, and minimum data model. |
+| `four-module-mvp-sdd-prep-spec.md` | Four-module MVP and SDD-prep specification covering architecture strategy, module contracts, APIs, ERD seed, acceptance tests, timeline, and risk matrix. |
 | `meeting-question-bank.md` | Questions to bring to Johnny, Jason Miao, imedtac engineering, and clinical/content owners. |
 | `feasibility-response-outline.md` | Draft structure for the post-visit feasibility, schedule, and budget response. |
 | `reuse-from-ai-triage.md` | Reusable AI Triage assets and boundaries that should remain separate. |
@@ -131,8 +141,18 @@ Key preserved files:
   `source/2026-06-23-imedtac-onsite-visit-smart-health-cabin/2026-06-23-imedtac-onsite-visit-smart-health-cabin-transcript-corrected-verified-agent-readable.md`
 - Prof. Wu LINE adult preventive health form:
   `source/2026-06-23-wu-line-hpa-adult-preventive-health-form/2026-06-23-hpa-adult-preventive-health-service-check-record-result-form-agent-readable.md`
+- Full expert opinion on authoritative questionnaire sources:
+  `source/2026-06-23-expert-questionnaire-authority-note/source.md`
+- Full expert narrowdown for the MVP questionnaire architecture:
+  `source/2026-06-23-expert-mvp-questionnaire-narrowdown-note/source.md`
+- Full expert planning direction for four selectable modules and SDD prep:
+  `source/2026-06-23-expert-four-module-sdd-prep-note/source.md`
 - Expert MVP design note for the adult preventive health questionnaire path:
   `workstreams/smart-health-cabin/hpa-adult-preventive-health-questionnaire-mvp-design-note.md`
+- Implementable MVP questionnaire system architecture:
+  `workstreams/smart-health-cabin/mvp-questionnaire-system-architecture.md`
+- Four-module MVP and SDD-prep spec:
+  `workstreams/smart-health-cabin/four-module-mvp-sdd-prep-spec.md`
 - Expert tutorial note:
   `source/2026-06-17-smart-health-cabin-expert-tutorial-note/source.md`
 - External authority verification:

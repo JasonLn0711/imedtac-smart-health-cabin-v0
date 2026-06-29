@@ -10,7 +10,11 @@ source:
   - ./README.md
   - ../../source/2026-06-23-imedtac-onsite-visit-smart-health-cabin/source.md
   - ../../source/2026-06-23-wu-line-hpa-adult-preventive-health-form/source.md
+  - ../../source/2026-06-23-expert-mvp-questionnaire-narrowdown-note/source.md
+  - ../../source/2026-06-23-expert-four-module-sdd-prep-note/source.md
   - ./hpa-adult-preventive-health-questionnaire-mvp-design-note.md
+  - ./mvp-questionnaire-system-architecture.md
+  - ./four-module-mvp-sdd-prep-spec.md
   - ../../source/2026-06-17-smart-health-cabin-expert-tutorial-note/source.md
   - ./external-authority-verification.md
 ---
@@ -56,11 +60,13 @@ or implementation planning.
 | Topic | Fact | Source / speaker |
 | --- | --- | --- |
 | Overall module split | The post-meeting software scope is four user-facing modules: hearing, vision, questionnaire, and Avatar interaction. Data integration remains a cross-module layer. | `2026-06-23` corrected transcript; user-provided meeting note |
+| Four-module architecture strategy | The four user-facing modules should be selectable and independently testable, but the MVP should use a modular monolith with microservice-ready boundaries rather than four separately deployed microservices. | `four-module-mvp-sdd-prep-spec.md` |
 | Hearing module | Hearing remains a self-screening / preliminary support problem because the cabin concept uses speakers rather than headphones, and left/right isolation plus cabin noise need hardware validation. | `2026-06-23` corrected transcript |
 | Vision module | Vision should stay in self-screening / reference language; the meeting favored simpler first scope such as visual acuity and color vision before stronger measurement claims. | `2026-06-23` corrected transcript |
 | Questionnaire module | The questionnaire module needs frontend and backend support, with backend form publishing / management. A first feasible path is fixed or limited screening forms such as dementia or depression questionnaires, mostly choice-based. | `2026-06-23` corrected transcript |
 | Prof. Wu adult preventive health form source | Prof. Wu sent the Health Promotion Administration adult preventive health service examination record / result form as an agent-readable Markdown source. It includes user-facing, staff/clinician, measurement, lab, counseling, result/advice, and signature fields. | `source/2026-06-23-wu-line-hpa-adult-preventive-health-form/source.md` |
 | Expert questionnaire source strategy | The expert recommendation is to avoid inventing questionnaires: use the HPA adult preventive health form as the Taiwan backbone, WHO STEPS as the international public-health backbone, and add standardized modules by age and service context. | `hpa-adult-preventive-health-questionnaire-mvp-design-note.md` |
+| Narrowed MVP questionnaire architecture | The MVP questionnaire system is fixed as an anonymous or semi-anonymous public-sector self-service flow: HPA red-box fields, WHO STEPS-lite fields, PHQ-2, height, weight, waist, blood pressure, vision, and simple hearing measurement, with staff-only physical-exam and lab fields disabled. | `mvp-questionnaire-system-architecture.md` |
 | Avatar interaction module | Avatar interaction is a fourth user-facing module. It can sit on top of the questionnaire flow, ask fixed questionnaire items, listen to spoken answers, and help input the answer. | `2026-06-23` corrected transcript; user-provided meeting note |
 | CMS / backend | Generic self-service questionnaire CMS remains a larger scope. The near-term path should clarify whether forms are fixed, limited, or truly user-configurable before committing to CMS breadth. | `2026-06-23` corrected transcript |
 | Report / QR Code | Integrated report and QR Code remain cross-module presentation needs so users can view or carry results after the session. | `2026-06-23` corrected transcript |
@@ -73,16 +79,20 @@ or implementation planning.
 | --- | --- | --- | --- |
 | Repository strategy: use `imedtac-smart-health-cabin-v0` as the standalone Smart Health Cabin workspace | Jason / NYCU | `2026-06-23` | Keep active Smart Health Cabin source and workstream material here; keep `../imedtac-ai-triage-kiosk-v0` focused on the English AI triage kiosk demo. |
 | Module split: four user-facing modules are hearing, vision, questionnaire, and Avatar interaction | NYCU / imedtac | `2026-06-23` | Keep data integration as cross-module layer, not a fifth user-facing module. |
+| Architecture strategy: modular monolith first, microservice-ready boundaries later | NYCU | `2026-06-23` | Use one backend, one database, one deployment path, and module packages for MVP; preserve contracts so modules can be extracted later. |
+| Module contract: every user-facing module outputs `StandardModuleResult` | NYCU | `2026-06-23` | Use `four-module-mvp-sdd-prep-spec.md` as the SDD-prep source for module manifest, runtime state, result levels, and acceptance criteria. |
 | Hearing and vision positioning: first-release wording should stay in self-screening / preliminary support language | NYCU / imedtac / hospital clinical owner | `2026-06-23` | Confirm exact wording with imedtac and hospital owners before external material. |
 | Questionnaire first path: favor fixed or limited reviewed forms before generic CMS breadth | NYCU / imedtac | `2026-06-23` | Identify the first forms and their owner, scoring, export, and report behavior. |
 | Official-form handling: classify each field before turning it into questionnaire UI or CMS schema | NYCU / imedtac / hospital clinical owner | `2026-06-23` | Use the adult preventive health form as a source example; separate user intake, staff/clinician entry, measured/lab data, counseling, result/advice, and signatures. |
-| MVP questionnaire stack: HPA red-box fields + WHO STEPS core + PHQ-2 + basic measurements | NYCU | `2026-06-23` | Keep output as health measurement summary and public-health risk self-assessment, not diagnosis. |
+| MVP questionnaire stack: HPA red-box fields + WHO STEPS core + PHQ-2 + basic measurements | NYCU | `2026-06-23` | Use `mvp-questionnaire-system-architecture.md` as the current field registry; keep output as health measurement summary and public-health risk self-assessment, not diagnosis. |
+| MVP deployment boundary: no hospital system connection | NYCU | `2026-06-23` | The self-service MVP does not connect to HIS, write medical records, issue physician-signed health-check documents, or present formal diagnoses. |
 | Avatar first path: pair Avatar with questionnaire interaction rather than autonomous open clinical conversation | NYCU / imedtac | `2026-06-23` | Decide fixed-script, fixed-question voice I/O, or real-time ASR/TTS scope. |
+| SDD preparation path | NYCU | `2026-06-23` | Expand the SDD from module contracts, API draft, ERD seed, test cases, risk matrix, security/privacy notes, and architecture decision records. |
 | Report / QR privacy model | TBD | TBD | TBD |
-| HIS-ready level: custom JSON, FHIR/TW Core mapping draft, or live integration | TBD | TBD | TBD |
+| Future HIS-ready level: out of MVP | TBD | later phase | Keep any custom JSON, FHIR/TW Core mapping, or live integration discussion outside the anonymous self-service MVP. |
 | Standards / regulatory validation path | TBD | TBD | TBD |
 | Standards scope: internal background, design controls, formal deliverables, or out of scope | TBD | TBD | TBD |
-| September MVP tier: narrow, expanded, or deferred | TBD | TBD | TBD |
+| September MVP tier: narrow anonymous self-service questionnaire + measurement report | NYCU | `2026-06-23` | Build the source-backed MVP first; move generic CMS breadth, HIS integration, and formal clinical workflows to later decisions. |
 
 ## Open Questions
 
@@ -126,3 +136,4 @@ the scope enters formal feasibility, quotation, prototype, or implementation.
 | Build the MVP questionnaire source registry: HPA red-box fields, WHO STEPS core, PHQ-2, and basic measurement output rules | NYCU | TBD |
 | Confirm first-release questionnaire forms and scoring/report ownership | imedtac / hospital owner | TBD |
 | Confirm whether Avatar uses fixed-script voice interaction or real-time ASR/TTS in first release | NYCU / imedtac | TBD |
+| Turn `four-module-mvp-sdd-prep-spec.md` into an SDD draft once implementation scope is approved | NYCU | TBD |

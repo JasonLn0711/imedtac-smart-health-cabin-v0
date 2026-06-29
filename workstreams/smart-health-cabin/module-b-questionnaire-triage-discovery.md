@@ -8,7 +8,12 @@ status: active
 source:
   - ../../source/2026-06-17-imedtac-smart-health-cabin-requirements/source.md
   - ../../source/2026-06-23-imedtac-onsite-visit-smart-health-cabin/source.md
+  - ../../source/2026-06-23-expert-questionnaire-authority-note/source.md
+  - ../../source/2026-06-23-expert-mvp-questionnaire-narrowdown-note/source.md
+  - ../../source/2026-06-23-expert-four-module-sdd-prep-note/source.md
   - ../../source/2026-06-23-wu-line-hpa-adult-preventive-health-form/source.md
+  - ./four-module-mvp-sdd-prep-spec.md
+  - ./mvp-questionnaire-system-architecture.md
   - ./hpa-adult-preventive-health-questionnaire-mvp-design-note.md
   - ../../source/2026-06-17-smart-health-cabin-expert-tutorial-note/source.md
   - ../../../imedtac-ai-triage-kiosk-v0/decisions/2026-05-22-api-contract-freeze-and-change-control.md
@@ -70,6 +75,25 @@ and then add standardized modules by age and service context.
 MVP scope should stay to HPA red-box fields, WHO STEPS core simplified
 risk-factor questions, PHQ-2, and basic measurement outputs for height,
 weight, waist, blood pressure, vision, and hearing.
+
+The narrowed MVP architecture and complete implementable field registry are
+preserved in:
+
+```text
+./mvp-questionnaire-system-architecture.md
+```
+
+The cross-module SDD-prep contract for how the questionnaire module plugs into
+the selectable four-module platform is preserved in:
+
+```text
+./four-module-mvp-sdd-prep-spec.md
+```
+
+That specification fixes the first-release product as an anonymous or
+semi-anonymous public-sector self-service flow, not a hospital health-check
+system, and it excludes HIS connection, medical record writeback, physician
+signature, formal diagnosis, and staff-only physical-exam fields.
 
 ## Verified Regulatory / Interoperability Implications
 

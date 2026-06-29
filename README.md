@@ -29,6 +29,12 @@ Data integration is a cross-module layer: integrated report, QR Code report
 access, structured JSON export, database/CMS connection, and future HIS-ready
 planning.
 
+The MVP architecture direction is modular monolith first with
+microservice-ready boundaries. Each user-facing module should be selectable,
+testable, replaceable, and reportable through a shared module contract, while
+the first implementation can share one backend, one database, and one
+deployment path.
+
 ## Current MVP Direction
 
 The questionnaire MVP should not invent a new medical questionnaire.
@@ -57,11 +63,16 @@ level, or live HIS writeback claims.
 | `workstreams/smart-health-cabin/README.md` | Workstream index and current post-meeting scope. |
 | `workstreams/smart-health-cabin/post-meeting-decision-log.md` | Confirmed facts, decisions, open questions, and next actions. |
 | `workstreams/smart-health-cabin/hpa-adult-preventive-health-questionnaire-mvp-design-note.md` | Expert note and MVP design rules for the questionnaire path. |
+| `workstreams/smart-health-cabin/mvp-questionnaire-system-architecture.md` | MVP questionnaire system architecture, complete field registry, options, report rules, and data tables. |
+| `workstreams/smart-health-cabin/four-module-mvp-sdd-prep-spec.md` | Four-module MVP and SDD-prep specification for modular delivery and future service extraction. |
 | `workstreams/smart-health-cabin/module-a-vision-hearing-discovery.md` | Hearing and vision discovery constraints. |
 | `workstreams/smart-health-cabin/module-b-questionnaire-triage-discovery.md` | Questionnaire/CMS/source-governance discovery. |
 | `workstreams/smart-health-cabin/module-c-avatar-interaction-discovery.md` | Avatar voice interaction discovery. |
 | `source/2026-06-23-imedtac-onsite-visit-smart-health-cabin/` | 2026-06-23 onsite meeting source package. |
 | `source/2026-06-23-wu-line-hpa-adult-preventive-health-form/` | Prof. Wu LINE HPA adult preventive health form source package. |
+| `source/2026-06-23-expert-questionnaire-authority-note/` | Full preserved expert opinion on authoritative questionnaire sources and non-diagnostic Smart Health Cabin positioning. |
+| `source/2026-06-23-expert-mvp-questionnaire-narrowdown-note/` | Full preserved expert narrowdown for the anonymous MVP questionnaire system. |
+| `source/2026-06-23-expert-four-module-sdd-prep-note/` | Full preserved planning direction for four selectable modules and SDD preparation. |
 
 ## Next Gate
 
