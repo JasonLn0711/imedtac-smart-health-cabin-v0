@@ -12,6 +12,7 @@ raw_files:
   - 2026-06-23-hpa-adult-preventive-health-service-check-record-result-form-agent-readable.md
 derived_analysis:
   - ../../workstreams/smart-health-cabin/hpa-adult-preventive-health-questionnaire-mvp-design-note.md
+  - ../2026-06-23-expert-questionnaire-authority-note/source.md
 related:
   - ../../workstreams/smart-health-cabin/module-b-questionnaire-triage-discovery.md
   - ../../workstreams/smart-health-cabin/post-meeting-decision-log.md
@@ -85,3 +86,10 @@ Its core recommendation is to avoid inventing a new questionnaire. Use the HPA
 adult preventive health service form as the Taiwan public-sector backbone,
 WHO STEPS as the international public-health backbone, and add standardized
 modules by age and service context.
+
+The complete preserved expert opinion behind that recommendation is archived
+as:
+
+```text
+../2026-06-23-expert-questionnaire-authority-note/source.md
+```
