@@ -11,6 +11,7 @@ source:
   - ../../source/2026-06-23-expert-questionnaire-authority-note/source.md
   - ../../source/2026-06-23-expert-mvp-questionnaire-narrowdown-note/source.md
   - ../../source/2026-06-23-expert-four-module-sdd-prep-note/source.md
+  - ../../source/2026-06-29-johnny-line-open-measurement-station-budget-call/source.md
   - ../../../imedtac-ai-triage-kiosk-v0/source/2026-06-16-imedtac-teams-question-option-adjustment/source.md
   - ../../source/2026-06-17-smart-health-cabin-expert-tutorial-note/source.md
   - ./external-authority-verification.md
@@ -76,6 +77,39 @@ Active sprint plan:
 ../../docs/specs/MVP-QUESTIONNAIRE-AVATAR-SPRINT-PLAN.md
 ```
 
+## 2026-06-29 Johnny Scope And Budget Call
+
+Johnny's `2026-06-29` LINE call updates the delivery context: the hardware
+presentation is now an open measurement station rather than a closed cabin
+body, imedtac needs NYCU's plan and quote range for the module scope, and
+Avatar is expected to integrate an existing related vendor service instead of
+being built fully from zero by NYCU.
+
+The active quote-prep record is:
+
+```text
+2026-06-29-johnny-call-budget-scope-note.md
+```
+
+The working response should prepare two to three scope/budget versions, a
+minimum hardware specification, and a compact-computer option list for Johnny
+and Prof. Wu to review.
+
+## 2026-06-29 Prof. Wu Internal Quote Scenarios
+
+The internal quote-prep file uses total-budget reverse calculation for the
+`NTD 1,500,000 / one station` and `NTD 1,500,000 / two stations` scenarios. It
+states that `NTD 1,500,000` is an internal budget envelope, not a verified
+imedtac public hardware price, and keeps station hardware, Avatar vendor fees,
+and compact AI compute outside NYCU's base software/integration quote unless
+Prof. Wu explicitly chooses otherwise.
+
+The internal quote-scenario record is:
+
+```text
+2026-06-29-prof-wu-internal-quote-scenarios.md
+```
+
 ## 2026-06-24 Open-Source Module Research
 
 The active research packet asks whether open-source GitHub projects can be
@@ -131,6 +165,8 @@ missing. Keep future Smart Health Cabin material here rather than inside
 | `../../docs/specs/MVP-FAST-MARCH-SPRINT-PLAN.md` | Superseded fast-march Sprint 0-4 reference plan for the earlier four-module path. |
 | `../../docs/specs/MVP-QUESTIONNAIRE-AVATAR-SPRINT-PLAN.md` | Active revised sprint plan for questionnaire + Avatar MVP v0.1. |
 | `2026-06-25-questionnaire-avatar-mvp-pivot.md` | Decision record for moving vision/hearing to Phase 2 and prioritizing questionnaire + Avatar. |
+| `2026-06-29-johnny-call-budget-scope-note.md` | Johnny call note for open measurement-station scope, budget versions, Avatar vendor integration, and compact hardware questions. |
+| `2026-06-29-prof-wu-internal-quote-scenarios.md` | Prof. Wu internal quote scenarios using total-budget reverse calculation for one-station/two-station assumptions, with recommended and floor NYCU four-module software/integration costs. |
 | `../../research-packets/2026-06-24-smart-health-cabin-module-research/README.md` | Independent research packets for hearing, vision, questionnaire, live Avatar, and module event-layer architecture. |
 | `hpa-adult-preventive-health-questionnaire-mvp-design-note.md` | Expert record and MVP design note for using HPA adult preventive health fields plus WHO STEPS and standardized modules. |
 | `mvp-questionnaire-system-architecture.md` | Narrow MVP questionnaire architecture, complete field registry, source metadata, disabled clinical fields, report rules, and minimum data model. |
@@ -199,6 +235,9 @@ Key preserved files:
   `source/2026-06-23-expert-mvp-questionnaire-narrowdown-note/source.md`
 - Full expert planning direction for four selectable modules and SDD prep:
   `source/2026-06-23-expert-four-module-sdd-prep-note/source.md`
+- Johnny LINE call on open measurement station, quote scope, Avatar vendor
+  integration, and compact hardware:
+  `source/2026-06-29-johnny-line-open-measurement-station-budget-call/source.md`
 - Expert MVP design note for the adult preventive health questionnaire path:
   `workstreams/smart-health-cabin/hpa-adult-preventive-health-questionnaire-mvp-design-note.md`
 - Implementable MVP questionnaire system architecture:

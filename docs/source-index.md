@@ -16,6 +16,7 @@ Co., Ltd.）Smart Health Cabin collaboration project.
 | `2026-06-23` | `source/2026-06-23-expert-mvp-questionnaire-narrowdown-note/` | Full preserved expert narrowdown for the MVP questionnaire system: anonymous public-sector self-service positioning, HPA + WHO STEPS + PHQ-2 field stack, options, disabled clinical fields, report rules, and minimum data tables. |
 | `2026-06-23` | `source/2026-06-23-expert-four-module-sdd-prep-note/` | Full preserved planning direction for the four selectable modules, modular-monolith MVP architecture, module contracts, platform services, API/ERD/test/risk seeds, and SDD preparation. |
 | `2026-06-25 10:44-11:06` | `source/2026-06-25-duobao-line-questionnaire-avatar-mvp/` | 多寶 / Jason LINE source that pivots Phase 1 from hearing/vision toward open questionnaire system plus ASR/LLM/TTS Avatar Agent. Includes PHQ-9 PDF and agent-readable copy for the first questionnaire seed. |
+| `2026-06-29` | `source/2026-06-29-johnny-line-open-measurement-station-budget-call/` | Johnny LINE call source confirming the open measurement-station direction, quote need, uncertain budget basis, Avatar vendor-integration assumption, compact-compute question, and next hardware/scope actions. |
 
 ## Derived Workstreams
 
@@ -26,6 +27,8 @@ Co., Ltd.）Smart Health Cabin collaboration project.
 | `workstreams/smart-health-cabin/hpa-adult-preventive-health-questionnaire-mvp-design-note.md` | Expert MVP note: HPA form + WHO STEPS + standardized modules, with non-diagnostic report boundaries. |
 | `workstreams/smart-health-cabin/mvp-questionnaire-system-architecture.md` | Implementable MVP questionnaire architecture and field registry for anonymous public-sector self-service deployment. |
 | `workstreams/smart-health-cabin/four-module-mvp-sdd-prep-spec.md` | Four-module MVP and SDD-prep specification: modular monolith, module contracts, hearing/vision/questionnaire/Avatar scope, platform services, APIs, ERD seed, test plan, and risk matrix. |
+| `workstreams/smart-health-cabin/2026-06-29-johnny-call-budget-scope-note.md` | Working call note for the open measurement-station pivot, quote-scope versions, hardware guidance, and next decisions from Johnny's 2026-06-29 LINE call. |
+| `workstreams/smart-health-cabin/2026-06-29-prof-wu-internal-quote-scenarios.md` | Internal quote-scenario note for Prof. Wu: public hardware-price verification boundary, total-budget reverse calculation, three-tier NYCU module quote, and external-quote assumptions. |
 | `docs/specs/MVP-SYSTEM-SPEC.md` | Full-system MVP reference spec covering monorepo strategy, module registry, module specs, PostgreSQL, Redpanda, API, deployment, versioning, testing, and acceptance gates. |
 | `docs/specs/MVP-FAST-MARCH-SPRINT-PLAN.md` | Superseded fast-march Sprint 0-4 schedule for the earlier four-module path. |
 | `docs/specs/MVP-QUESTIONNAIRE-AVATAR-SPRINT-PLAN.md` | Active revised sprint plan for open questionnaire system plus ASR/LLM/TTS Avatar Agent, with vision/hearing deferred to Phase 2. |

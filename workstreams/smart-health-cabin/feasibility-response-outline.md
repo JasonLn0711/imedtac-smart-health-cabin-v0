@@ -8,6 +8,9 @@ status: draft
 source:
   - ../../source/2026-06-17-imedtac-smart-health-cabin-requirements/source.md
   - ../../source/2026-06-17-smart-health-cabin-expert-tutorial-note/source.md
+  - ../../source/2026-06-29-johnny-line-open-measurement-station-budget-call/source.md
+  - ./2026-06-29-johnny-call-budget-scope-note.md
+  - ./2026-06-29-prof-wu-internal-quote-scenarios.md
   - ./external-authority-verification.md
 ---
 
@@ -58,6 +61,29 @@ Use a three-tier response rather than a single all-inclusive promise:
 | Expanded MVP | Consider only after owners and facts are confirmed: CMS draft/review/publish, richer audit log, device context capture, FHIR mapping draft, report-template versioning, and stronger validation plan. |
 | Not recommended for September | Formal medical-grade hearing diagnosis, full live HIS integration, autonomous AI medical recommendation, complex multi-site CMS workflow, unvalidated device-measurement claims, or production regulatory package. |
 
+After the `2026-06-29` Johnny call, prepare the budget response as an open
+measurement-station module quote rather than a closed cabin-body quote. The
+working options should separate:
+
+- software development manpower;
+- Avatar vendor integration effort;
+- compact-computer or cloud/vendor compute assumptions;
+- vision/hearing screening-support scope;
+- questionnaire/report/QR/admin scope;
+- onsite acceptance and support.
+
+For Prof. Wu's internal budget discussion, use the total-budget reverse
+calculation in `2026-06-29-prof-wu-internal-quote-scenarios.md`:
+
+| Scenario | Budget meaning | NYCU implication |
+| --- | --- | --- |
+| `NTD 1,500,000 / one station` inside the same total envelope | Station hardware may consume the full scenario budget. | Complete four-module NYCU software/integration cannot fit unless hardware is provided separately or scope is cut. |
+| `NTD 1,500,000 / two stations` inside the same total envelope | Two stations leave no room if the whole budget is assigned to hardware. | Treat as a hardware/vendor-funded case or reduce NYCU to feasibility/spec work. |
+| Hardware outside NYCU quote | imedtac/hospital owns station hardware and Avatar vendor fee. | NYCU can quote four-module software/integration: `NTD 1,500,000` recommended, `NTD 1,060,000` floor. |
+
+Keep `NTD 1,500,000` as an internal budget envelope, not a verified imedtac
+public list price, until Johnny provides formal hardware pricing.
+
 ### 4. Work Breakdown
 
 Use clear phases:
@@ -98,7 +124,12 @@ At minimum, distinguish:
 
 Provide ranges only after assumptions are explicit. Tie each estimate to:
 
+- one open measurement station versus multiple units;
 - number of modules included;
+- whether hardware cost is included in NYCU's quote, imedtac's station cost, or
+  a separate procurement line;
+- whether Avatar runs through a vendor-hosted service, local SDK, or local
+  GPU-capable mini PC;
 - whether CMS is built or integrated;
 - whether hearing calibration is exploratory or validated;
 - whether HIS is schema-only or live integration;
@@ -157,6 +188,9 @@ End with a table:
 | CMS ownership | imedtac / NYCU | TBD | build scope |
 | HIS standard | imedtac / hospital IT | TBD | API and ERD |
 | Source-code/license terms | imedtac / NYCU | TBD | delivery and IP boundary |
+| Open station vs cabin budget basis | imedtac / hospital / Prof. Wu | immediate | quote range and hardware assumptions |
+| Avatar vendor interface and cost model | imedtac / Avatar vendor / NYCU | immediate | integration effort and compute requirements |
+| Hardware procurement ownership | imedtac / NYCU / Prof. Wu | immediate | whether mini PC cost belongs inside the NYCU quote |
 
 ## Material To Exclude From External Version
 

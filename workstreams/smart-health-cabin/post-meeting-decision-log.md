@@ -20,6 +20,8 @@ source:
   - ../../docs/devlog/2026-06-25.md
   - ../../source/2026-06-25-duobao-line-questionnaire-avatar-mvp/source.md
   - ./2026-06-25-questionnaire-avatar-mvp-pivot.md
+  - ../../source/2026-06-29-johnny-line-open-measurement-station-budget-call/source.md
+  - ./2026-06-29-johnny-call-budget-scope-note.md
 ---
 
 # Smart Health Cabin Post-Meeting Decision Log
@@ -79,6 +81,10 @@ or implementation planning.
 | Daily sprint closeout route | The fast-march plan now uses `docs/devlog/YYYY-MM-DD.md` for actual sprint outcomes, validation evidence, blockers, and next handoff. Planning mirrors only status, capacity, blocker, and next gate. | `docs/devlog/2026-06-25.md` |
 | 2026-06-25 MVP pivot | 多寶 and Jason aligned that Phase 1 should prioritize an open questionnaire system plus real-time voice Avatar Agent. Vision and hearing remain planned modules but move to Phase 2 after the questionnaire + Avatar path works. | `source/2026-06-25-duobao-line-questionnaire-avatar-mvp/source.md`; `2026-06-25-questionnaire-avatar-mvp-pivot.md` |
 | PHQ-9 first seed | PHQ-9 is the first implemented questionnaire seed. The PDF and agent-readable copy are preserved in source and copied into `modules/questionnaire/source/`; SurveyJS and scoring seed files live under `modules/questionnaire/seed/` and `modules/questionnaire/scoring/`. | `modules/questionnaire/seed/phq9.zh-TW.surveyjs.json`; `modules/questionnaire/scoring/phq9.public-scoring-config.json` |
+| 2026-06-29 open-station clarification | Johnny clarified that the hospital-side hardware direction has shifted from a closed cabin body to an open measurement station similar to the demo station. | `source/2026-06-29-johnny-line-open-measurement-station-budget-call/source.md` |
+| 2026-06-29 quote need | imedtac needs NYCU's module plan and quote range to discuss the total budget with the hospital side. | `2026-06-29-johnny-call-budget-scope-note.md` |
+| 2026-06-29 Avatar vendor integration | Avatar should likely integrate an existing related vendor service; NYCU's likely role is frontend/module integration and interface definition rather than building a complete Avatar product from zero. | `2026-06-29-johnny-call-budget-scope-note.md` |
+| 2026-06-29 compute question | The existing measurement-station computer likely cannot support the new Avatar/AI workload; compact local compute or an alternate vendor/cloud path needs a minimum-spec decision. | `2026-06-29-johnny-call-budget-scope-note.md` |
 
 ## Decisions
 
@@ -105,6 +111,8 @@ or implementation planning.
 | Daily / weekly planning sync route | NYCU / planning repo | `2026-06-25` | Keep implementation detail in this repo; mirror W26/W27/W28 dates, capacity, validation, blocker, and next action in `../planning-everything-track`. |
 | Phase 1 MVP delivery priority: questionnaire + Avatar Agent | NYCU / Jason / 多寶 | `2026-06-25` | Use `docs/specs/MVP-QUESTIONNAIRE-AVATAR-SPRINT-PLAN.md` as the active sprint plan; keep `MVP-FAST-MARCH-SPRINT-PLAN.md` as superseded historical context. |
 | Vision and hearing are Phase 2 planned modules | NYCU / Jason / 多寶 | `2026-06-25` | Keep manifests as `phase_2_planned`; do not schedule their implementation before the questionnaire + Avatar path is validated. |
+| Open measurement station is the current hardware presentation assumption | imedtac / hospital side | `2026-06-29` | Prepare quote and hardware assumptions around the open station while explicitly flagging that Prof. Wu may still have older cabin-form-factor information. |
+| Quote should be prepared through total-budget reverse calculation | NYCU / Jason | `2026-06-29` | Treat `NTD 1,500,000` as an internal budget envelope rather than verified hardware price; show one-station/two-station remaining room, then quote NYCU software/integration separately with recommended and floor numbers. |
 
 ## Open Questions
 
@@ -121,6 +129,9 @@ or implementation planning.
 | Is voice input/output real-time or fixed-script for first release? | NYCU / imedtac engineering | immediate | Real-time ASR/TTS and lip-sync carry GPU, latency, microphone, and noise risks; fixed-script voice is a smaller first-release path. |
 | What should the post-meeting response become? | TBD | TBD | Determines whether to write feasibility memo, proposal, quotation input, or design spec. |
 | Which verified standards should appear in external material? | TBD | TBD | Determines whether FDA/IMDRF/ISO/FHIR/TW Core references remain internal background or become proposal commitments. |
+| Is the hospital budget still based on the original cabin concept or the newer open measurement-station concept? | imedtac / hospital side / Prof. Wu | immediate | Determines whether the `NTD 1,200,000-1,500,000` planning range remains useful. |
+| Does the Avatar vendor provide cloud service, local SDK, iframe/web component, API, or full frontend package? | imedtac / Avatar vendor / NYCU | immediate | Determines integration effort, hardware requirement, latency, and quote scope. |
+| Does hardware cost sit inside NYCU's quote, imedtac's station cost, or a separate procurement line? | imedtac / NYCU / Prof. Wu | immediate | Prevents software manpower, hardware procurement, and station cost from being mixed into one unclear number. |
 
 ## Implementation Decision
 
@@ -153,3 +164,5 @@ the scope enters formal feasibility, quotation, prototype, or implementation.
 | Confirm whether Avatar uses fixed-script voice interaction or real-time ASR/TTS in first release | NYCU / imedtac | TBD |
 | Turn `four-module-mvp-sdd-prep-spec.md` into an SDD draft once implementation scope is approved | NYCU | TBD |
 | Close Sprint 0 with questionnaire skeleton, PHQ-9 seed, module registry, and migration plan before marking implementation complete | NYCU engineering | `2026-06-26` |
+| Send Johnny candidate compact-computer models or a minimum hardware specification. | Jason / NYCU | immediate |
+| Prepare a total-budget reverse-calculation quote note for Prof. Wu, then convert it into an external one-page quote only after Johnny confirms hardware and Avatar vendor assumptions. | Jason / NYCU | immediate |
