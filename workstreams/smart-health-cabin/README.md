@@ -110,6 +110,24 @@ The internal quote-scenario record is:
 2026-06-29-prof-wu-internal-quote-scenarios.md
 ```
 
+## 2026-07-01 Prof. Wu Quote Meeting Analysis
+
+The corrected `2026-06-30 23:34` to `2026-07-01 00:20` Prof. Wu transcript
+updates the quotation strategy. The main accepted direction is to lead with a
+one-station / one-system first-build quote, keep hardware price provisional,
+avoid NYCU as the external delivery subject, and split the first-build fee from
+future license, maintenance, and small-customization fees.
+
+Source and analysis:
+
+```text
+../../source/2026-06-30-expert-quote-method-update/transcript-corrected.md
+2026-07-01-prof-wu-quote-meeting-deep-analysis.md
+```
+
+Immediate gate: align with Tomi on build fee, future per-set license logic,
+company subject, and IP / source-code wording before replying to 慧誠智醫.
+
 ## 2026-06-24 Open-Source Module Research
 
 The active research packet asks whether open-source GitHub projects can be
@@ -167,6 +185,7 @@ missing. Keep future Smart Health Cabin material here rather than inside
 | `2026-06-25-questionnaire-avatar-mvp-pivot.md` | Decision record for moving vision/hearing to Phase 2 and prioritizing questionnaire + Avatar. |
 | `2026-06-29-johnny-call-budget-scope-note.md` | Johnny call note for open measurement-station scope, budget versions, Avatar vendor integration, and compact hardware questions. |
 | `2026-06-29-prof-wu-internal-quote-scenarios.md` | Prof. Wu internal quote scenarios using total-budget reverse calculation for one-station/two-station assumptions, with recommended and floor NYCU four-module software/integration costs. |
+| `2026-07-01-prof-wu-quote-meeting-deep-analysis.md` | Deep analysis of Prof. Wu's quote meeting: one-system first-build quote, build/license split, Tomi review gate, company-subject wording, staffing risks, and next actions. |
 | `../../research-packets/2026-06-24-smart-health-cabin-module-research/README.md` | Independent research packets for hearing, vision, questionnaire, live Avatar, and module event-layer architecture. |
 | `hpa-adult-preventive-health-questionnaire-mvp-design-note.md` | Expert record and MVP design note for using HPA adult preventive health fields plus WHO STEPS and standardized modules. |
 | `mvp-questionnaire-system-architecture.md` | Narrow MVP questionnaire architecture, complete field registry, source metadata, disabled clinical fields, report rules, and minimum data model. |

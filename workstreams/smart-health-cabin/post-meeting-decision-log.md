@@ -22,6 +22,8 @@ source:
   - ./2026-06-25-questionnaire-avatar-mvp-pivot.md
   - ../../source/2026-06-29-johnny-line-open-measurement-station-budget-call/source.md
   - ./2026-06-29-johnny-call-budget-scope-note.md
+  - ../../source/2026-06-30-expert-quote-method-update/transcript-corrected.md
+  - ./2026-07-01-prof-wu-quote-meeting-deep-analysis.md
 ---
 
 # Smart Health Cabin Post-Meeting Decision Log
@@ -85,6 +87,10 @@ or implementation planning.
 | 2026-06-29 quote need | imedtac needs NYCU's module plan and quote range to discuss the total budget with the hospital side. | `2026-06-29-johnny-call-budget-scope-note.md` |
 | 2026-06-29 Avatar vendor integration | Avatar should likely integrate an existing related vendor service; NYCU's likely role is frontend/module integration and interface definition rather than building a complete Avatar product from zero. | `2026-06-29-johnny-call-budget-scope-note.md` |
 | 2026-06-29 compute question | The existing measurement-station computer likely cannot support the new Avatar/AI workload; compact local compute or an alternate vendor/cloud path needs a minimum-spec decision. | `2026-06-29-johnny-call-budget-scope-note.md` |
+| 2026-06-30 Prof. Wu quote meeting | The quote frame should lead with one station / one system, not the earlier two-station all-in version. First-build software/integration cost and future per-set license / maintenance / small-customization fees must be separated. | `source/2026-06-30-expert-quote-method-update/transcript-corrected.md`; `2026-07-01-prof-wu-quote-meeting-deep-analysis.md` |
+| Tomi review gate | Prof. Wu explicitly asks Jason to let Tomi review the money logic and talking path, including `NTD 900,000-1,100,000` first-build cost and future `NTD 150,000 / set` license hypothesis. | `source/2026-06-30-expert-quote-method-update/transcript-corrected.md` |
+| Company subject | External quotation wording should not present NYCU as the delivery / bidding subject; the company subject must be confirmed before external release. | `source/2026-06-30-expert-quote-method-update/transcript-corrected.md` |
+| Person-week quote basis | Quote lines should be backed by people, time, role, and a defensible `NTD 180,000 / person-month` anchor, with simple person-week equivalents. | `source/2026-06-30-expert-quote-method-update/transcript-corrected.md` |
 
 ## Decisions
 
@@ -113,6 +119,9 @@ or implementation planning.
 | Vision and hearing are Phase 2 planned modules | NYCU / Jason / 多寶 | `2026-06-25` | Keep manifests as `phase_2_planned`; do not schedule their implementation before the questionnaire + Avatar path is validated. |
 | Open measurement station is the current hardware presentation assumption | imedtac / hospital side | `2026-06-29` | Prepare quote and hardware assumptions around the open station while explicitly flagging that Prof. Wu may still have older cabin-form-factor information. |
 | Quote should be prepared through total-budget reverse calculation | NYCU / Jason | `2026-06-29` | Treat `NTD 1,500,000` as an internal budget envelope rather than verified hardware price; show one-station/two-station remaining room, then quote NYCU software/integration separately with recommended and floor numbers. |
+| Quote should now lead with one-station / one-system first-build framing | Jason / Prof. Wu | `2026-07-01` | Revise the earlier two-station framing; keep hardware provisional and separate first-build fee from later license / maintenance / small-customization economics. |
+| Tomi must review the commercial talking path before external reply | Jason / Tomi | `2026-07-01` | Ask Tomi to review build cost, future license hypothesis, company subject, source-code / IP wording, and whether the cooperation should use license, maintenance, revenue share, or per-site deployment fee. |
+| Future deployments should not be priced as full rebuilds by default | Jason / Prof. Wu | `2026-07-01` | Treat the first 北市聯醫 case as build-out; later sales should use license, maintenance, and bounded customization unless new modules or major integration are requested. |
 
 ## Open Questions
 
@@ -132,6 +141,9 @@ or implementation planning.
 | Is the hospital budget still based on the original cabin concept or the newer open measurement-station concept? | imedtac / hospital side / Prof. Wu | immediate | Determines whether the `NTD 1,200,000-1,500,000` planning range remains useful. |
 | Does the Avatar vendor provide cloud service, local SDK, iframe/web component, API, or full frontend package? | imedtac / Avatar vendor / NYCU | immediate | Determines integration effort, hardware requirement, latency, and quote scope. |
 | Does hardware cost sit inside NYCU's quote, imedtac's station cost, or a separate procurement line? | imedtac / NYCU / Prof. Wu | immediate | Prevents software manpower, hardware procurement, and station cost from being mixed into one unclear number. |
+| What company subject should appear in the external quote? | Prof. Wu / Tomi / Jason | immediate | The transcript rejects NYCU as the delivery subject but does not finalize the external company name. |
+| Is `NTD 150,000 / set` the right future license anchor, or should the model use revenue share, maintenance retainer, or per-site deployment fee? | Tomi / Prof. Wu / Jason | immediate | Determines whether the first-build cost can become a repeatable cooperation model with 慧誠智醫. |
+| Who can support validation and implementation if the quote becomes a live delivery project? | Prof. Wu / Jason | immediate | Codex acceleration does not replace human validation, device checks, and acceptance support before September. |
 
 ## Implementation Decision
 
@@ -166,3 +178,5 @@ the scope enters formal feasibility, quotation, prototype, or implementation.
 | Close Sprint 0 with questionnaire skeleton, PHQ-9 seed, module registry, and migration plan before marking implementation complete | NYCU engineering | `2026-06-26` |
 | Send Johnny candidate compact-computer models or a minimum hardware specification. | Jason / NYCU | immediate |
 | Prepare a total-budget reverse-calculation quote note for Prof. Wu, then convert it into an external one-page quote only after Johnny confirms hardware and Avatar vendor assumptions. | Jason / NYCU | immediate |
+| Revise the quote package around one station / one system, first-build fee, and future license economics. | Jason | immediate |
+| Send Tomi the commercial review ask and make the `2026-07-01` end-of-day HCT urgency explicit. | Jason | immediate |

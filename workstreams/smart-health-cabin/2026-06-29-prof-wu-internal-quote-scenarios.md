@@ -7,6 +7,7 @@ type: internal-quote-scenarios
 status: draft
 source:
   - ../../source/2026-06-29-johnny-line-open-measurement-station-budget-call/source.md
+  - ../../source/2026-06-30-expert-quote-method-update/source.md
   - ./2026-06-29-johnny-call-budget-scope-note.md
   - ./four-module-mvp-sdd-prep-spec.md
   - ./mvp-questionnaire-system-architecture.md
@@ -195,3 +196,87 @@ quote, confirm:
 | Ask Johnny for Avatar vendor integration model and cost owner. | Jason | API/interface and vendor-cost assumption. |
 | Discuss with Prof. Wu whether NYCU quote should include hardware or only software/integration. | Jason / Prof. Wu | Quote boundary decision. |
 | Prepare external one-page version after the above assumptions are locked. | Jason / NYCU | imedtac-facing quote summary. |
+
+## 2026-06-30 Expert Quote Method Update
+
+The accepted update keeps the original `NTD 1,500,000` recommended software
+anchor and `NTD 1,060,000` floor, then adds a scoped two-station all-in option
+for budget conversations.
+
+Core conclusion:
+
+```text
+兩台全包 150 萬可以報，但不能叫「完整四模組版」；只能叫「兩台部署＋四模組 MVP 精簡版」。
+```
+
+Reason:
+
+```text
+若 2 台健康量測站硬體先以 NTD 300,000/台暫估，硬體合計 NTD 600,000，
+NTD 1,500,000 總預算中只剩 NTD 900,000 可用於 NYCU 軟體。這低於
+四模組底線版 NTD 1,060,000，所以視力、聽力、Avatar 與維運範圍必須
+同步限縮。
+```
+
+Updated quote menu:
+
+| Version | Quote name | Total quote | Hardware treatment | NYCU software room | Positioning |
+| --- | --- | ---: | --- | ---: | --- |
+| A | 智慧健康量測站兩台部署暨 NYCU 四模組 MVP 精簡版 | `NTD 1,500,000` | Includes two stations at `NTD 300,000` each as a low-estimate placeholder. | `NTD 900,000` | Valid only as MVP 精簡版. |
+| B | NYCU 智慧健康量測站四模組軟體與系統整合底線版 | `NTD 1,060,000` | Excluded. | `NTD 1,060,000` | Clean floor for four-module software/integration. |
+| C | NYCU 智慧健康量測站四模組軟體與系統整合建議版 | `NTD 1,500,000` | Excluded. | `NTD 1,500,000` | Recommended software/integration package with lower delivery risk. |
+
+Use three evidence layers in the updated formal quote:
+
+1. `資訊服務委外人月法`: cite TISSA 115 年資訊服務委外經費估算原則 and use person-month back-calculation to show that `NTD 900,000` only supports about `4.5-5` effective person-months, while `NTD 1,060,000` supports about `5.5` effective person-months.
+2. `公開標案類比法`: cite healthcare information-system and IoT integration public-procurement analogs as market-range support, while making clear they are not identical projects.
+3. `健康量測站硬體類比法`: treat `NTD 300,000` per station as a low-estimate planning scenario, not as a verified imedtac hardware quote.
+
+Required exclusions for Version A:
+
+- Avatar vendor license / API usage fees;
+- AI mini PC / GPU box procurement;
+- formal HIS / EMR bidirectional integration;
+- medical-device-grade vision/hearing validation;
+- long-term maintenance after acceptance;
+- multi-site deployment beyond two stations in the same deployment context;
+- full source-code assignment or perpetual commercial IP transfer unless
+  separately contracted.
+
+## 2026-07-01 Transcript-Integrated Update
+
+The corrected Prof. Wu meeting transcript supersedes the two-station option as
+the main discussion path. Keep the two-station version as a constrained
+fallback scenario, but lead the next quote draft with:
+
+```text
+one station / one system + first-build software and integration fee + future
+license / maintenance / small-customization model.
+```
+
+Updated interpretation:
+
+| Topic | Current position |
+| --- | --- |
+| Main quote frame | One station / one system first. |
+| Hardware placeholder | `NTD 400,000 / station` is a safer provisional planning number than `NTD 300,000`, but still requires 慧誠 formal quote confirmation. |
+| First-build software fee | Use `NTD 900,000-1,100,000` as the working build-cost range, depending on whether the total envelope keeps `NTD 1,500,000` and hardware is provisionally `NTD 300,000-400,000`. |
+| Future deployments | Do not multiply the first-build fee by every future set. Discuss license fee, maintenance fee, small-customization fee, and per-site deployment support separately. |
+| Future license hypothesis | `NTD 150,000 / set` is a discussion input for Tomi, not a final price. |
+| External subject | Do not write NYCU as the commercial delivery / bidding subject. Confirm the company subject with Prof. Wu and Tomi. |
+| Cost proof | Convert each quote item into people x weeks x role x `NTD 180,000 / person-month` basis. |
+
+Source-backed analysis:
+
+```text
+../../source/2026-06-30-expert-quote-method-update/transcript-corrected.md
+2026-07-01-prof-wu-quote-meeting-deep-analysis.md
+```
+
+Immediate gate:
+
+```text
+Ask Tomi to review the build-cost range, future license structure, company
+subject, IP/source-code wording, and the response wording before replying to
+慧誠智醫.
+```
