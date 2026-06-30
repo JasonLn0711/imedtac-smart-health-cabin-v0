@@ -53,6 +53,13 @@ For company-facing material, lead with what the project can own and what the
 next decision is. State safety and validation boundaries as design controls,
 not apologies.
 
+For boss-facing or operator-facing quotation packets, use a confident executive
+decision voice. Remove internal coaching phrases such as "recommended message
+to Prof. Wu", "talking point", or "negotiation bottom line" from the released
+version. Write scope controls as included capabilities, operating focus,
+decision options, and separately activated work packages; avoid defensive or
+negation-led phrasing.
+
 ## Evidence Log Method
 
 Every experiment log must record the date, local time, timezone, command,
@@ -105,6 +112,12 @@ confirmation layer owns. For user-facing copy, prefer service-continuity
 phrasing such as `觸控填答可接續完成`, `請確認最接近的選項`,
 `現場人員會協助確認`, and `系統已整理成候選答案`. Keep clinical and safety
 boundaries as workflow controls, confirmation steps, and human-review paths.
+
+For Taiwan-facing quotation documents intended for teachers, bosses, operators,
+or company decision-makers, use Traditional Chinese with Taiwan business terms:
+`新臺幣`, `健康量測站`, `維運`, `驗收`, `另案啟動`, `營運導入`, and
+`決策建議`. Prefer affirmative headings such as `合作案定位`, `價格依據`,
+`版本比較`, `另案啟動項目`, and `建議決策`.
 
 ## File Routing
 
