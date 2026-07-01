@@ -8,6 +8,7 @@ status: source-backed-internal
 source:
   - ../../source/2026-06-30-expert-quote-method-update/transcript-corrected.md
   - ../../source/2026-06-30-expert-quote-method-update/source.md
+  - ../../source/2026-07-01-tomi-line-quote-alignment-scheduling/source.md
   - ./2026-06-29-prof-wu-internal-quote-scenarios.md
 audience:
   - Jason
@@ -105,6 +106,13 @@ license economics. That number is not accepted as final. It is a Tomi review
 input.
 
 ## Tomi Alignment Brief
+
+### Scheduling Source
+
+Jason's `2026-07-01 09:19-11:13` LINE conversation with Tomi confirms the same-day
+review path: Jason asked for quotation advice, Tomi offered evening or night
+availability, Jason proposed `22:00` for a fast `30` minute discussion with 多寶,
+and Tomi accepted.
 
 ### Message Goal
 
@@ -207,7 +215,7 @@ repeatable module, not as ad hoc student labor.
 | --- | --- | --- | --- |
 | P0 | Revise quote main version to one station / one system. | Jason | Updated internal quote and executive decision packet. |
 | P0 | Ask Tomi to review build fee, future license, company subject, and IP / source-code wording. | Jason | Tomi review notes. |
-| P0 | Explain urgency to Tomi: 慧誠 wanted an answer by `2026-07-01` Wednesday end of day. | Jason | Same-day alignment or explicit blocker. |
+| P0 | Explain urgency to Tomi: 慧誠 wanted an answer by `2026-07-01` Wednesday end of day. | Jason | Same-day `22:00` alignment with Tomi / 多寶 or explicit blocker. |
 | P1 | Add people x weeks x role logic to every quote item. | Jason | Person-week cost table. |
 | P1 | Keep public tender references but label their use. | Jason | Tender reference table with use boundary. |
 | P1 | Ask 慧誠 for formal hardware quote and whether Avatar vendor fee is inside or outside their scope. | Jason / Johnny | Hardware/vendor assumption lock. |

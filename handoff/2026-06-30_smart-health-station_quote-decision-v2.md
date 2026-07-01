@@ -14,6 +14,7 @@ audience:
 source:
   - ../source/2026-06-30-expert-quote-method-update/transcript-corrected.md
   - ../source/2026-06-30-expert-quote-method-update/source.md
+  - ../source/2026-07-01-tomi-line-quote-alignment-scheduling/source.md
   - ../source/2026-07-01-expert-backend-integration-quote-revision/source.md
   - ../workstreams/smart-health-cabin/2026-07-01-prof-wu-quote-meeting-deep-analysis.md
 supersedes:
@@ -178,6 +179,8 @@ Status: `source preserved and quote-decision v2 drafted`.
 - v2 採納一套首次建置、公司主體、建置費 / license 拆分、人週估算與 Tomi gate。
 - `2026-07-01` expert backend-integration revision 已補入慧誠前端 / 智德萬後端
   與系統整合分工版本。
+- Jason / Tomi LINE scheduling source 已保存；Tomi 接受 `2026-07-01 22:00`
+  與 Jason、多寶快速討論約 `30` 分鐘。
 - 舊版兩台全包決策稿保留為歷史版本，不再作為主建議。
 
 下一步：

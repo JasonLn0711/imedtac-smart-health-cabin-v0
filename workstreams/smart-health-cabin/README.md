@@ -122,6 +122,7 @@ Source and analysis:
 
 ```text
 ../../source/2026-06-30-expert-quote-method-update/transcript-corrected.md
+../../source/2026-07-01-tomi-line-quote-alignment-scheduling/source.md
 ../../source/2026-07-01-expert-backend-integration-quote-revision/source.md
 2026-07-01-prof-wu-quote-meeting-deep-analysis.md
 ../../handoff/2026-06-30_smart-health-station_quote-decision-v2.md
@@ -129,7 +130,8 @@ Source and analysis:
 
 Immediate gate: align with Tomi on build fee, future per-set license logic,
 company subject, 慧誠 frontend responsibility split, and IP / source-code wording
-before replying to 慧誠智醫.
+before replying to 慧誠智醫. The `2026-07-01` LINE scheduling source confirms
+Jason, 多寶, and Tomi aimed for a `22:00` fast `30` minute alignment.
 
 ## 2026-06-24 Open-Source Module Research
 
