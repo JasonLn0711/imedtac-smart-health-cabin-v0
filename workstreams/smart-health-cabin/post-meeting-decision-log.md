@@ -28,7 +28,9 @@ source:
   - ../../source/2026-07-01-prof-wu-line-call-lease-first-quote-revision/transcript.md
   - ../../source/2026-07-01-expert-mixed-service-quote-structures/source.md
   - ../../source/2026-07-01-expert-149w-mixed-service-quotation/source.md
+  - ../../source/2026-07-01-google-meet-prof-wu-tomi-doebow-commercial-model/source.md
   - ./2026-07-01-prof-wu-quote-meeting-deep-analysis.md
+  - ./2026-07-02-google-meet-commercial-model-and-johnny-action.md
   - ../../handoff/2026-06-30_smart-health-station_quote-decision-v2.md
   - ../../handoff/2026-07-01_smart-health-station_lease-first_quote-decision-v3.md
   - ../../handoff/2026-07-01_smart-health-station_mixed-service_quote-decision-v4.md
@@ -110,6 +112,8 @@ or implementation planning.
 | Jason-selected quote structure | Jason wants to adopt the first structure: a single mixed service case at `NTD 1,490,000` as the active path. | `source/2026-07-01-expert-mixed-service-quote-structures/source.md`; `handoff/2026-07-01_smart-health-station_mixed-service_quote-decision-v4.md` |
 | 149 萬 quotation source preserved | The expert quotation draft converts the adopted first structure into a complete `NTD 1,490,000` tax-included quote named `智慧健康量測站軟硬體租用暨導入維運服務案`, with TISSA person-month basis, Taiwan market references, per-work-package calculations, deliverables, payment terms, and scope-adjustment strategy. | `source/2026-07-01-expert-149w-mixed-service-quotation/source.md` |
 | 149 萬 quotation active | The active internal quotation is now `handoff/2026-07-01_smart-health-station_149w-service-quotation.md`; v4 remains the decision record and this file is the concrete quote. | `handoff/2026-07-01_smart-health-station_149w-service-quotation.md` |
+| Google Meet commercial model update | The `2026-07-01 22:00` Google Meet shifts the immediate external path from detailed development-cost release toward productized cooperation principles: 慧誠 hardware/channel/integration, 智德萬 software/IP/upgrade path, software rental/license fee, maintenance split, and revenue-sharing for upgrades. | `source/2026-07-01-google-meet-prof-wu-tomi-doebow-commercial-model/transcript-corrected-agent-readable.md`; `workstreams/smart-health-cabin/2026-07-02-google-meet-commercial-model-and-johnny-action.md` |
+| Johnny follow-up completed | Jason messaged Johnny Fang on Teams at `2026-07-01 23:03`, asking whether 余總 can meet on `2026-07-02 20:30` and offering alternate afternoon/evening slots. | `source/2026-07-01-google-meet-prof-wu-tomi-doebow-commercial-model/johnny-teams-2026-07-01-2303.md` |
 
 ## Decisions
 
@@ -150,6 +154,8 @@ or implementation planning.
 | Adopt single mixed service case as the main quote | Jason | `2026-07-01` | Present the project as `智慧健康量測服務導入、軟硬體租用暨成效資料彙整服務案` at `NTD 1,490,000`含稅, with equipment rental as one sub-item and IP / source-code retention explicit. |
 | Keep small-procurement rental as reduced-scope fallback only | Jason / Prof. Wu / Tomi | `2026-07-01` | If the hospital insists on `NTD 150,000`-under small procurement, provide only basic rental / existing product demonstration / limited maintenance, not custom development, full backend, API integration, QR report, SLA, or成效資料服務. |
 | Use the 149 萬報價單 as the active packet | Jason / Prof. Wu / Tomi | `2026-07-01` | Use `handoff/2026-07-01_smart-health-station_149w-service-quotation.md` for Tomi / Prof. Wu review; it supersedes v4 as the concrete quote while preserving v4 as decision history. |
+| Route external quotation through 余總 commercial-model alignment | Jason / Prof. Wu / Tomi / Ken / 余總 | `2026-07-01` | Keep the 149 萬報價單 as internal cost evidence; before external release, align with 余總 on hardware/software split, software rental/license fee, source-code and IP retention, maintenance split, upgrade/revenue-sharing, and September demo framing. |
+| Johnny meeting request sent | Jason | `2026-07-01 23:03` | Johnny was asked to help arrange 余總 for `2026-07-02 20:30` or another afternoon/evening time. |
 
 ## Open Questions
 
@@ -174,6 +180,7 @@ or implementation planning.
 | Should the external reply use pure software lease, bundled hardware-plus-software lease, or both options? | Tomi / Prof. Wu / Jason / 慧誠 | immediate | The afternoon call introduces `NTD 60,000/year` software lease and `NTD 140,000-149,000/year` bundled small-procurement-friendly paths; Tomi must decide which is safe to present. |
 | Which functionality belongs in base lease versus paid upgrades? | Tomi / Prof. Wu / Jason | immediate | The product strategy depends on ongoing connection and upgrade revenue, so add-on boundaries need to be clear before external wording. |
 | Can Tomi / Prof. Wu accept `NTD 1,490,000` as the main mixed-service price? | Tomi / Prof. Wu / Jason | immediate | v4 depends on treating the project as a service target rather than a one-machine rental; company subject, procurement path, and work-package wording must be cleared before external release. |
+| Which document should follow the 余總 meeting? | Tomi / Prof. Wu / Jason / 余總 | immediate | Options include a business-principle memo, software rental/license table, or revised 149 萬 service quote after role split and rights-retention terms are aligned. |
 | Which public procurement examples should be included in the external support appendix? | Tomi / Prof. Wu / Jason | immediate | The source cites health-equipment rental, AI health-promotion equipment rental, and high-value hospital software rental examples; external use should be curated to avoid overclaiming. |
 | Who can support validation and implementation if the quote becomes a live delivery project? | Prof. Wu / Jason | immediate | Codex acceleration does not replace human validation, device checks, and acceptance support before September. |
 
@@ -218,3 +225,5 @@ the scope enters formal feasibility, quotation, prototype, or implementation.
 | Replace v3 as the active path with v4 single mixed-service quote. | Jason | immediate |
 | Use the `2026-07-01 22:00` Tomi / 多寶 / 吳老師 discussion to validate `NTD 1,490,000`, eight work packages, no-IP-transfer language, and reduced-scope fallback. | Jason / Tomi / 多寶 / Prof. Wu | same day |
 | Convert v4 into an external one-page HCT reply after Tomi / Prof. Wu confirm company subject, procurement path, work-package wording, and rights-retention language. | Jason | after Tomi review |
+| Use the `2026-07-02` 余總 discussion to set cooperation principles before sending detailed quotation material. | Jason / Tomi / Prof. Wu / Ken / 余總 | immediate |
+| Prepare a market-anchor scan for software rental/license pricing in voice triage, vital-sign station, and AI medical information-system contexts. | Jason | before 余總 follow-up |

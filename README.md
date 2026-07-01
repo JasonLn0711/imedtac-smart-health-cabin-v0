@@ -63,6 +63,15 @@ truth for the lease-first correction; the lease-advice source name is confirmed
 as `余總`. The later expert recommendation is preserved as a full source and
 Jason adopted its first structure and converted it into the 149 萬報價單.
 
+The `2026-07-01 22:00` Prof. Wu / Tomi / 多寶 / Jason Google Meet updates the
+commercial model gate. The 149 萬 quote remains the internal costed service
+quotation, and external release now runs through a principle-setting path with
+余總: hardware/software split, software rental/license fee, IP/source-code
+retention, 慧誠 channel and integration role, first-line maintenance, and
+upgrade/revenue-sharing. Jason completed the immediate follow-up by messaging
+Johnny Fang at `2026-07-01 23:03` to request a `2026-07-02 20:30` discussion
+with 余總.
+
 ## 2026-06-24 Module Research Packet
 
 The active research packet asks whether open-source GitHub projects can be
@@ -187,6 +196,7 @@ docs/dev/LOCAL_DEV.md
 | `apps/outbox-worker/src/` | Redpanda outbox worker, topic mapping, and mockable publisher seam. |
 | `workstreams/smart-health-cabin/2026-06-25-questionnaire-avatar-mvp-pivot.md` | Decision record for moving vision/hearing to Phase 2 and making questionnaire + Avatar the MVP spine. |
 | `handoff/2026-07-01_smart-health-station_149w-service-quotation.md` | Current internal quotation draft: `NTD 1,490,000` tax-included 智慧健康量測站軟硬體租用暨導入維運服務案, with TISSA-based work-package calculations, Taiwan market references, 12-month維運, and use-rights / IP-retention structure. |
+| `workstreams/smart-health-cabin/2026-07-02-google-meet-commercial-model-and-johnny-action.md` | `2026-07-01 22:00` Google Meet analysis: productized commercial model, 慧誠 / 智德萬 role split, software rental/license anchor, 149 萬 quote release gate, Johnny action completion, and 余總 meeting agenda. |
 | `handoff/2026-07-01_smart-health-station_mixed-service_quote-decision-v4.md` | Historical internal quote-decision draft: single mixed service case at `NTD 1,490,000`, with導入、軟硬體租用、維運、API / 資料架構、報告、教育訓練、SLA, IP retention, and Tomi review path. Superseded by the 149 萬報價單. |
 | `handoff/2026-07-01_smart-health-station_lease-first_quote-decision-v3.md` | Historical internal quote-decision draft: lease-first pricing, IP retention, annual/monthly software lease anchor, small-procurement-friendly bundled lease ceiling, and Tomi review path. Superseded by v4. |
 | `handoff/2026-06-30_smart-health-station_quote-decision-v2.md` | Historical internal quote-decision draft: one-station first-build package, build/license split, company-subject gate, backend/frontend responsibility split, and Tomi review path. Superseded by v3 and v4. |
@@ -209,6 +219,10 @@ docs/dev/LOCAL_DEV.md
 Create the first Smart Health Cabin feasibility response only after these are
 clear:
 
+- whether the next external document is a business-principle memo, software
+  rental/license table, or the reviewed 149 萬 service quote;
+- whether 余總 / Tomi / 吳老師 confirm the hardware/software split, IP/source-code
+  retention, maintenance split, and upgrade/revenue-sharing path;
 - which MVP modules are in the September show path;
 - which questionnaire forms are first-release scope;
 - which fields are user-filled, staff-assisted, measured, lab-derived,

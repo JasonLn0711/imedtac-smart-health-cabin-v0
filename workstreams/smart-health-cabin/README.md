@@ -157,6 +157,31 @@ use-rights / IP-retention wording, and scope-adjustment strategy. The
 `2026-07-01` LINE scheduling source confirms Jason, 多寶, and Tomi aimed for a
 `22:00` fast `30` minute alignment.
 
+## 2026-07-01 22:00 Google Meet Commercial Model Gate
+
+The `2026-07-01 22:00` Prof. Wu / Tomi / 多寶 / Jason Google Meet updates the
+active commercial question. The immediate priority is a principle-setting
+discussion with 余總 before detailed quotation release. The cooperation model
+should present 慧誠's hardware, channel, system integration, and first-line
+maintenance strengths together with 智德萬's software, workflow, AI adapter,
+questionnaire/report logic, upgrade path, source code, IP, and know-how.
+
+Source and analysis:
+
+```text
+../../source/2026-07-01-google-meet-prof-wu-tomi-doebow-commercial-model/source.md
+2026-07-02-google-meet-commercial-model-and-johnny-action.md
+```
+
+Jason completed the immediate action at `2026-07-01 23:03` by messaging Johnny
+Fang on Teams and asking whether 余總 can meet on `2026-07-02 20:30`, with
+afternoon or evening alternatives available.
+
+The 149 萬報價單 remains the internal costed service quotation. Its external
+path is now gated by Tomi / 吳老師 / 余總 alignment on hardware/software split,
+software rental/license fee, source-code and IP retention, maintenance split,
+upgrade/revenue-sharing, and September demo framing.
+
 ## 2026-06-24 Open-Source Module Research
 
 The active research packet asks whether open-source GitHub projects can be
@@ -215,6 +240,7 @@ missing. Keep future Smart Health Cabin material here rather than inside
 | `2026-06-29-johnny-call-budget-scope-note.md` | Johnny call note for open measurement-station scope, budget versions, Avatar vendor integration, and compact hardware questions. |
 | `2026-06-29-prof-wu-internal-quote-scenarios.md` | Prof. Wu internal quote scenarios using total-budget reverse calculation for one-station/two-station assumptions, with recommended and floor NYCU four-module software/integration costs. |
 | `2026-07-01-prof-wu-quote-meeting-deep-analysis.md` | Deep analysis of Prof. Wu's quote meeting: one-system first-build quote, build/license split, Tomi review gate, company-subject wording, staffing risks, and next actions. |
+| `2026-07-02-google-meet-commercial-model-and-johnny-action.md` | Deep analysis of the `2026-07-01 22:00` Google Meet, including commercial-model pivot, 149 萬 quote release gate, Johnny Teams action, and 余總 agenda. |
 | `../../handoff/2026-07-01_smart-health-station_149w-service-quotation.md` | Active internal quotation draft: `NTD 1,490,000` tax-included 智慧健康量測站軟硬體租用暨導入維運服務案, with TISSA-backed work-package calculations and Taiwan market references. |
 | `../../handoff/2026-07-01_smart-health-station_mixed-service_quote-decision-v4.md` | Historical internal quote-decision draft after the expert mixed-service recommendation; adopts the single `NTD 1,490,000` service case with導入、軟硬體租用、維運、API / 資料架構、報告、教育訓練、SLA, and成效資料服務. Superseded by the 149 萬報價單. |
 | `../../handoff/2026-07-01_smart-health-station_lease-first_quote-decision-v3.md` | Historical internal quote-decision draft after the afternoon Prof. Wu call; moves the main path to lease-first pricing, IP retention, customer connection, add-on upgrades, and volume strategy. Superseded by v4. |
