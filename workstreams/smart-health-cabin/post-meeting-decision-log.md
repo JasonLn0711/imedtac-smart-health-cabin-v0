@@ -23,7 +23,9 @@ source:
   - ../../source/2026-06-29-johnny-line-open-measurement-station-budget-call/source.md
   - ./2026-06-29-johnny-call-budget-scope-note.md
   - ../../source/2026-06-30-expert-quote-method-update/transcript-corrected.md
+  - ../../source/2026-07-01-expert-backend-integration-quote-revision/source.md
   - ./2026-07-01-prof-wu-quote-meeting-deep-analysis.md
+  - ../../handoff/2026-06-30_smart-health-station_quote-decision-v2.md
 ---
 
 # Smart Health Cabin Post-Meeting Decision Log
@@ -91,6 +93,8 @@ or implementation planning.
 | Tomi review gate | Prof. Wu explicitly asks Jason to let Tomi review the money logic and talking path, including `NTD 900,000-1,100,000` first-build cost and future `NTD 150,000 / set` license hypothesis. | `source/2026-06-30-expert-quote-method-update/transcript-corrected.md` |
 | Company subject | External quotation wording should not present NYCU as the delivery / bidding subject; the company subject must be confirmed before external release. | `source/2026-06-30-expert-quote-method-update/transcript-corrected.md` |
 | Person-week quote basis | Quote lines should be backed by people, time, role, and a defensible `NTD 180,000 / person-month` anchor, with simple person-week equivalents. | `source/2026-06-30-expert-quote-method-update/transcript-corrected.md` |
+| Quote-decision v2 | The active internal quote decision now uses one-station / one-system first-build framing, `NTD 900,000-1,100,000` software build range, later `NTD 150,000 / set` license hypothesis, and Tomi review before any external HCT reply. | `handoff/2026-06-30_smart-health-station_quote-decision-v2.md` |
+| Backend / frontend responsibility split | If 慧誠 owns UI/UX and frontend, 智德萬 should keep product flow, ICD, API/data contract, session state, report/QR, integration, QA, deployment, acceptance scripts, and privacy/security boundaries. | `source/2026-07-01-expert-backend-integration-quote-revision/source.md` |
 
 ## Decisions
 
@@ -122,6 +126,8 @@ or implementation planning.
 | Quote should now lead with one-station / one-system first-build framing | Jason / Prof. Wu | `2026-07-01` | Revise the earlier two-station framing; keep hardware provisional and separate first-build fee from later license / maintenance / small-customization economics. |
 | Tomi must review the commercial talking path before external reply | Jason / Tomi | `2026-07-01` | Ask Tomi to review build cost, future license hypothesis, company subject, source-code / IP wording, and whether the cooperation should use license, maintenance, revenue share, or per-site deployment fee. |
 | Future deployments should not be priced as full rebuilds by default | Jason / Prof. Wu | `2026-07-01` | Treat the first 北市聯醫 case as build-out; later sales should use license, maintenance, and bounded customization unless new modules or major integration are requested. |
+| Quote-decision v2 is the active internal packet | Jason | `2026-07-01` | Use `handoff/2026-06-30_smart-health-station_quote-decision-v2.md` for Tomi / Prof. Wu review; keep the earlier two-station packet as historical context. |
+| 慧誠 frontend split requires ICD first | Jason / Tomi / 慧誠 | `2026-07-01` | If 慧誠 handles UI/UX and frontend, use ICD, mock API, acceptance scripts, API freeze, and change-control gates before implementation; discuss 智德萬 backend/integration pricing around `NTD 750,000-850,000`未稅. |
 
 ## Open Questions
 
@@ -180,3 +186,5 @@ the scope enters formal feasibility, quotation, prototype, or implementation.
 | Prepare a total-budget reverse-calculation quote note for Prof. Wu, then convert it into an external one-page quote only after Johnny confirms hardware and Avatar vendor assumptions. | Jason / NYCU | immediate |
 | Revise the quote package around one station / one system, first-build fee, and future license economics. | Jason | immediate |
 | Send Tomi the commercial review ask and make the `2026-07-01` end-of-day HCT urgency explicit. | Jason | immediate |
+| Convert v2 into an external one-page HCT reply after Tomi / Prof. Wu confirm company subject, build/license pricing, and IP wording. | Jason | after Tomi review |
+| If 慧誠 confirms frontend ownership, convert the v2 packet into an ICD-first backend/system-integration quote instead of a full frontend + backend build quote. | Jason / Tomi | after Tomi review |

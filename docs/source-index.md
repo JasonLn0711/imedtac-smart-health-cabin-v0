@@ -18,6 +18,7 @@ Co., Ltd.）Smart Health Cabin collaboration project.
 | `2026-06-25 10:44-11:06` | `source/2026-06-25-duobao-line-questionnaire-avatar-mvp/` | 多寶 / Jason LINE source that pivots Phase 1 from hearing/vision toward open questionnaire system plus ASR/LLM/TTS Avatar Agent. Includes PHQ-9 PDF and agent-readable copy for the first questionnaire seed. |
 | `2026-06-29` | `source/2026-06-29-johnny-line-open-measurement-station-budget-call/` | Johnny LINE call source confirming the open measurement-station direction, quote need, uncertain budget basis, Avatar vendor-integration assumption, compact-compute question, and next hardware/scope actions. |
 | `2026-06-30 23:34-2026-07-01 00:20` | `source/2026-06-30-expert-quote-method-update/transcript-corrected.md` | Corrected Prof. Wu online meeting transcript for Smart Health Cabin quotation strategy. Establishes one-station quote framing, first-build fee vs future license split, company-subject wording, TISSA person-week cost logic, Tomi review gate, staffing risk, and later ASR/Taiwanese-corpus activation path. |
+| `2026-07-01` | `source/2026-07-01-expert-backend-integration-quote-revision/source.md` | User-provided expert recommendation for revising the quote when 慧誠 owns UI/UX and frontend while 智德萬 owns backend, ICD, API/data contract, state machine, report/QR, integration, QA, deployment, and acceptance controls. |
 
 ## Derived Workstreams
 
@@ -31,6 +32,7 @@ Co., Ltd.）Smart Health Cabin collaboration project.
 | `workstreams/smart-health-cabin/2026-06-29-johnny-call-budget-scope-note.md` | Working call note for the open measurement-station pivot, quote-scope versions, hardware guidance, and next decisions from Johnny's 2026-06-29 LINE call. |
 | `workstreams/smart-health-cabin/2026-06-29-prof-wu-internal-quote-scenarios.md` | Internal quote-scenario note for Prof. Wu: public hardware-price verification boundary, total-budget reverse calculation, three-tier NYCU module quote, and external-quote assumptions. |
 | `workstreams/smart-health-cabin/2026-07-01-prof-wu-quote-meeting-deep-analysis.md` | Deep analysis of the Prof. Wu quotation meeting: accepted decisions, quote architecture, Tomi alignment brief, first-build vs future license split, staffing risks, company strategy, and immediate action plan. |
+| `handoff/2026-06-30_smart-health-station_quote-decision-v2.md` | Current internal quote-decision draft after the Tuesday-night Prof. Wu discussion: one-station / one-system first-build package, `NTD 900,000-1,100,000` software build range, backend/frontend responsibility split option, future license / maintenance / customization split, and Tomi review gate. |
 | `docs/specs/MVP-SYSTEM-SPEC.md` | Full-system MVP reference spec covering monorepo strategy, module registry, module specs, PostgreSQL, Redpanda, API, deployment, versioning, testing, and acceptance gates. |
 | `docs/specs/MVP-FAST-MARCH-SPRINT-PLAN.md` | Superseded fast-march Sprint 0-4 schedule for the earlier four-module path. |
 | `docs/specs/MVP-QUESTIONNAIRE-AVATAR-SPRINT-PLAN.md` | Active revised sprint plan for open questionnaire system plus ASR/LLM/TTS Avatar Agent, with vision/hearing deferred to Phase 2. |

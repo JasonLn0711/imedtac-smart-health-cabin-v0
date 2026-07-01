@@ -5,6 +5,8 @@ date: 2026-06-30
 topic: smart-health-cabin
 type: executive-quote
 status: draft
+superseded_by:
+  - ./2026-06-30_smart-health-station_quote-decision-v2.md
 audience:
   - 吳老師
   - 老闆決策
@@ -16,6 +18,12 @@ source:
 ---
 
 # 智慧健康量測站合作案報價決策版
+
+> Status: historical draft. The current quote-decision draft is
+> `2026-06-30_smart-health-station_quote-decision-v2.md`, which adopts the
+> `2026-06-30` Tuesday-night Prof. Wu direction: one-station / one-system
+> first-build framing, company-subject wording, and first-build fee separated
+> from future license / maintenance / small-customization economics.
 
 ## 決策摘要
 

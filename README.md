@@ -44,6 +44,20 @@ open questionnaire platform + ASR/LLM/TTS Avatar Agent
 Vision and hearing remain planned modules, but move to Phase 2 after the
 questionnaire + Avatar demo path works.
 
+The current `2026-06-30` quotation decision draft is:
+
+```text
+handoff/2026-06-30_smart-health-station_quote-decision-v2.md
+```
+
+It supersedes the earlier two-station boss-level draft as the active internal
+quote path. The current framing is one station / one system as a first-build
+package, with future deployment license, maintenance, and small customization
+handled separately after Tomi / Prof. Wu review. The `2026-07-01` backend
+integration revision adds the alternate split where 慧誠 owns UI/UX + frontend
+and 智德萬 owns ICD, backend/API, state, report/QR, integration, QA, deployment,
+and acceptance controls.
+
 ## 2026-06-24 Module Research Packet
 
 The active research packet asks whether open-source GitHub projects can be
@@ -167,6 +181,7 @@ docs/dev/LOCAL_DEV.md
 | `apps/kiosk-web/src/features/avatar/` | Avatar state UI and voice-confirmed questionnaire helpers. |
 | `apps/outbox-worker/src/` | Redpanda outbox worker, topic mapping, and mockable publisher seam. |
 | `workstreams/smart-health-cabin/2026-06-25-questionnaire-avatar-mvp-pivot.md` | Decision record for moving vision/hearing to Phase 2 and making questionnaire + Avatar the MVP spine. |
+| `handoff/2026-06-30_smart-health-station_quote-decision-v2.md` | Current internal quote-decision draft: one-station first-build package, build/license split, company-subject gate, backend/frontend responsibility split, and Tomi review path. |
 | `modules/questionnaire/seed/phq9.zh-TW.surveyjs.json` | First SurveyJS questionnaire seed. |
 | `modules/questionnaire/scoring/phq9.public-scoring-config.json` | PHQ-9 public report and safety-flag scoring configuration. |
 | `workstreams/smart-health-cabin/module-a-vision-hearing-discovery.md` | Hearing and vision discovery constraints. |

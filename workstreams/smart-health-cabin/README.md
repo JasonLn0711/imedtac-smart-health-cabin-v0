@@ -122,11 +122,14 @@ Source and analysis:
 
 ```text
 ../../source/2026-06-30-expert-quote-method-update/transcript-corrected.md
+../../source/2026-07-01-expert-backend-integration-quote-revision/source.md
 2026-07-01-prof-wu-quote-meeting-deep-analysis.md
+../../handoff/2026-06-30_smart-health-station_quote-decision-v2.md
 ```
 
 Immediate gate: align with Tomi on build fee, future per-set license logic,
-company subject, and IP / source-code wording before replying to 慧誠智醫.
+company subject, 慧誠 frontend responsibility split, and IP / source-code wording
+before replying to 慧誠智醫.
 
 ## 2026-06-24 Open-Source Module Research
 
@@ -186,6 +189,7 @@ missing. Keep future Smart Health Cabin material here rather than inside
 | `2026-06-29-johnny-call-budget-scope-note.md` | Johnny call note for open measurement-station scope, budget versions, Avatar vendor integration, and compact hardware questions. |
 | `2026-06-29-prof-wu-internal-quote-scenarios.md` | Prof. Wu internal quote scenarios using total-budget reverse calculation for one-station/two-station assumptions, with recommended and floor NYCU four-module software/integration costs. |
 | `2026-07-01-prof-wu-quote-meeting-deep-analysis.md` | Deep analysis of Prof. Wu's quote meeting: one-system first-build quote, build/license split, Tomi review gate, company-subject wording, staffing risks, and next actions. |
+| `../../handoff/2026-06-30_smart-health-station_quote-decision-v2.md` | Active internal quote-decision draft after the Tuesday-night Prof. Wu discussion; supersedes the earlier two-station boss-level draft and now includes the 慧誠 frontend / 智德萬 backend-integration split option. |
 | `../../research-packets/2026-06-24-smart-health-cabin-module-research/README.md` | Independent research packets for hearing, vision, questionnaire, live Avatar, and module event-layer architecture. |
 | `hpa-adult-preventive-health-questionnaire-mvp-design-note.md` | Expert record and MVP design note for using HPA adult preventive health fields plus WHO STEPS and standardized modules. |
 | `mvp-questionnaire-system-architecture.md` | Narrow MVP questionnaire architecture, complete field registry, source metadata, disabled clinical fields, report rules, and minimum data model. |
