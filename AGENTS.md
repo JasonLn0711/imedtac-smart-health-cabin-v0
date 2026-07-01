@@ -60,6 +60,12 @@ version. Write scope controls as included capabilities, operating focus,
 decision options, and separately activated work packages; avoid defensive or
 negation-led phrasing.
 
+Before release, rewrite human-facing documents away from 否定語氣、防守語氣,
+and 防衛語氣. Lead with the active service, retained rights, included work
+packages, activation gates, and next decision; express limits as positive scope,
+separate work packages, validation layers, and stewardship commitments. Preserve
+exact source quotes and legal / safety wording when precision requires it.
+
 ## Evidence Log Method
 
 Every experiment log must record the date, local time, timezone, command,
