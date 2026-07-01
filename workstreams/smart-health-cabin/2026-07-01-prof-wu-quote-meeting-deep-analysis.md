@@ -9,7 +9,10 @@ source:
   - ../../source/2026-06-30-expert-quote-method-update/transcript-corrected.md
   - ../../source/2026-06-30-expert-quote-method-update/source.md
   - ../../source/2026-07-01-tomi-line-quote-alignment-scheduling/source.md
+  - ../../source/2026-07-01-prof-wu-line-call-lease-first-quote-revision/transcript.md
+  - ../../source/2026-07-01-expert-mixed-service-quote-structures/source.md
   - ./2026-06-29-prof-wu-internal-quote-scenarios.md
+  - ../../handoff/2026-07-01_smart-health-station_mixed-service_quote-decision-v4.md
 audience:
   - Jason
   - Prof. Wu
@@ -235,8 +238,15 @@ Tomi，我想請你幫忙看慧誠智醫健康量測站這案子的報價談法�
 
 ## Decision State
 
-Status: `source preserved and interpreted`.
+Status: `source preserved and superseded by mixed-service quote revision`.
 
 The meeting supports a quotation revision and Tomi alignment. It does not yet
 authorize an external quote, final license price, hardware price, source-code
 transfer, or delivery commitment.
+
+Superseding updates: Prof. Wu's later `2026-07-01` afternoon LINE call moves
+the quote path from first-build fee to lease-first product pricing. The later
+expert mixed-service recommendation then upgrades the active path to a single
+`NTD 1,490,000` service case. Use
+`handoff/2026-07-01_smart-health-station_mixed-service_quote-decision-v4.md` as
+the current decision draft before external HCT reply.

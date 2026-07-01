@@ -44,19 +44,24 @@ open questionnaire platform + ASR/LLM/TTS Avatar Agent
 Vision and hearing remain planned modules, but move to Phase 2 after the
 questionnaire + Avatar demo path works.
 
-The current `2026-06-30` quotation decision draft is:
+The current quotation decision draft is:
 
 ```text
-handoff/2026-06-30_smart-health-station_quote-decision-v2.md
+handoff/2026-07-01_smart-health-station_149w-service-quotation.md
 ```
 
-It supersedes the earlier two-station boss-level draft as the active internal
-quote path. The current framing is one station / one system as a first-build
-package, with future deployment license, maintenance, and small customization
-handled separately after Tomi / Prof. Wu review. The `2026-07-01` backend
-integration revision adds the alternate split where 慧誠 owns UI/UX + frontend
-and 智德萬 owns ICD, backend/API, state, report/QR, integration, QA, deployment,
-and acceptance controls.
+It supersedes the earlier two-station boss-level draft and the `2026-06-30`
+first-build-fee v2 path, plus the `2026-07-01` lease-first v3 path, as the
+active internal quotation path. The current quotation is `NTD 1,490,000`
+tax-included for `智慧健康量測站軟硬體租用暨導入維運服務案`, with work-package
+calculations, TISSA person-month basis, Taiwan procurement-market references,
+and a 12-month service / use-rights structure. It keeps IP / know-how with our
+side, treats hardware rental as one sub-item, and prices the real value as
+導入、整合、維運、軟體使用權與成效資料服務.
+The afternoon call transcript has been corrected and is now the source of
+truth for the lease-first correction; the lease-advice source name is confirmed
+as `余總`. The later expert recommendation is preserved as a full source and
+Jason adopted its first structure and converted it into the 149 萬報價單.
 
 ## 2026-06-24 Module Research Packet
 
@@ -181,7 +186,10 @@ docs/dev/LOCAL_DEV.md
 | `apps/kiosk-web/src/features/avatar/` | Avatar state UI and voice-confirmed questionnaire helpers. |
 | `apps/outbox-worker/src/` | Redpanda outbox worker, topic mapping, and mockable publisher seam. |
 | `workstreams/smart-health-cabin/2026-06-25-questionnaire-avatar-mvp-pivot.md` | Decision record for moving vision/hearing to Phase 2 and making questionnaire + Avatar the MVP spine. |
-| `handoff/2026-06-30_smart-health-station_quote-decision-v2.md` | Current internal quote-decision draft: one-station first-build package, build/license split, company-subject gate, backend/frontend responsibility split, and Tomi review path. |
+| `handoff/2026-07-01_smart-health-station_149w-service-quotation.md` | Current internal quotation draft: `NTD 1,490,000` tax-included 智慧健康量測站軟硬體租用暨導入維運服務案, with TISSA-based work-package calculations, Taiwan market references, 12-month維運, and use-rights / IP-retention structure. |
+| `handoff/2026-07-01_smart-health-station_mixed-service_quote-decision-v4.md` | Historical internal quote-decision draft: single mixed service case at `NTD 1,490,000`, with導入、軟硬體租用、維運、API / 資料架構、報告、教育訓練、SLA, IP retention, and Tomi review path. Superseded by the 149 萬報價單. |
+| `handoff/2026-07-01_smart-health-station_lease-first_quote-decision-v3.md` | Historical internal quote-decision draft: lease-first pricing, IP retention, annual/monthly software lease anchor, small-procurement-friendly bundled lease ceiling, and Tomi review path. Superseded by v4. |
+| `handoff/2026-06-30_smart-health-station_quote-decision-v2.md` | Historical internal quote-decision draft: one-station first-build package, build/license split, company-subject gate, backend/frontend responsibility split, and Tomi review path. Superseded by v3 and v4. |
 | `modules/questionnaire/seed/phq9.zh-TW.surveyjs.json` | First SurveyJS questionnaire seed. |
 | `modules/questionnaire/scoring/phq9.public-scoring-config.json` | PHQ-9 public report and safety-flag scoring configuration. |
 | `workstreams/smart-health-cabin/module-a-vision-hearing-discovery.md` | Hearing and vision discovery constraints. |

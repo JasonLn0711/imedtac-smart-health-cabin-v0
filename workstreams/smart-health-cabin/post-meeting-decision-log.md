@@ -25,8 +25,14 @@ source:
   - ../../source/2026-06-30-expert-quote-method-update/transcript-corrected.md
   - ../../source/2026-07-01-tomi-line-quote-alignment-scheduling/source.md
   - ../../source/2026-07-01-expert-backend-integration-quote-revision/source.md
+  - ../../source/2026-07-01-prof-wu-line-call-lease-first-quote-revision/transcript.md
+  - ../../source/2026-07-01-expert-mixed-service-quote-structures/source.md
+  - ../../source/2026-07-01-expert-149w-mixed-service-quotation/source.md
   - ./2026-07-01-prof-wu-quote-meeting-deep-analysis.md
   - ../../handoff/2026-06-30_smart-health-station_quote-decision-v2.md
+  - ../../handoff/2026-07-01_smart-health-station_lease-first_quote-decision-v3.md
+  - ../../handoff/2026-07-01_smart-health-station_mixed-service_quote-decision-v4.md
+  - ../../handoff/2026-07-01_smart-health-station_149w-service-quotation.md
 ---
 
 # Smart Health Cabin Post-Meeting Decision Log
@@ -94,9 +100,16 @@ or implementation planning.
 | Tomi review gate | Prof. Wu explicitly asks Jason to let Tomi review the money logic and talking path, including `NTD 900,000-1,100,000` first-build cost and future `NTD 150,000 / set` license hypothesis. | `source/2026-06-30-expert-quote-method-update/transcript-corrected.md` |
 | Company subject | External quotation wording should not present NYCU as the delivery / bidding subject; the company subject must be confirmed before external release. | `source/2026-06-30-expert-quote-method-update/transcript-corrected.md` |
 | Person-week quote basis | Quote lines should be backed by people, time, role, and a defensible `NTD 180,000 / person-month` anchor, with simple person-week equivalents. | `source/2026-06-30-expert-quote-method-update/transcript-corrected.md` |
-| Quote-decision v2 | The active internal quote decision now uses one-station / one-system first-build framing, `NTD 900,000-1,100,000` software build range, later `NTD 150,000 / set` license hypothesis, and Tomi review before any external HCT reply. | `handoff/2026-06-30_smart-health-station_quote-decision-v2.md` |
+| Quote-decision v2 | The historical first-build quote decision uses one-station / one-system first-build framing, `NTD 900,000-1,100,000` software build range, later `NTD 150,000 / set` license hypothesis, and Tomi review before any external HCT reply. | `handoff/2026-06-30_smart-health-station_quote-decision-v2.md` |
 | Tomi alignment scheduling | Jason asked Tomi for same-day quotation advice; Tomi accepted a late discussion path, with Jason proposing `22:00` for a fast `30` minute discussion with 多寶. | `source/2026-07-01-tomi-line-quote-alignment-scheduling/source.md` |
 | Backend / frontend responsibility split | If 慧誠 owns UI/UX and frontend, 智德萬 should keep product flow, ICD, API/data contract, session state, report/QR, integration, QA, deployment, acceptance scripts, and privacy/security boundaries. | `source/2026-07-01-expert-backend-integration-quote-revision/source.md` |
+| Lease-first quote correction | Prof. Wu's corrected afternoon LINE call transcript substantially revises the quote: deep-cultivation funding likely favors leasing, a large build-fee frame may invite hospital IP claims, software lease can be anchored around `NTD 60,000/year`, and volume / upgrades / customer connection become the business logic. | `source/2026-07-01-prof-wu-line-call-lease-first-quote-revision/transcript.md`; `handoff/2026-07-01_smart-health-station_lease-first_quote-decision-v3.md` |
+| Transcript correction accepted | The corrected transcript is the repo source of truth for the afternoon call. It corrects Tomi's name, `小額採購`, `嗯，是`, and confirms the lease-advice source as `余總`. | `source/2026-07-01-prof-wu-line-call-lease-first-quote-revision/transcript.md` |
+| Mixed-service quote recommendation | The later expert recommendation says a simple one-machine three-year rental cannot reasonably return to `NTD 1,500,000`; the defensible path is a service target: 智慧健康量測服務導入、軟硬體租用、維運、成效資料服務, with no fake split procurement, fake leasing, or fake small procurement. | `source/2026-07-01-expert-mixed-service-quote-structures/source.md` |
+| Three legal quote structures recorded | The source records three legal structures: a single mixed service case at `NTD 1,490,000-1,500,000`, a three-year managed service at `900,000 + 300,000 + 300,000`, and multi-site rental plus central platform service at `NTD 1,500,000`. | `source/2026-07-01-expert-mixed-service-quote-structures/source.md` |
+| Jason-selected quote structure | Jason wants to adopt the first structure: a single mixed service case at `NTD 1,490,000` as the active path. | `source/2026-07-01-expert-mixed-service-quote-structures/source.md`; `handoff/2026-07-01_smart-health-station_mixed-service_quote-decision-v4.md` |
+| 149 萬 quotation source preserved | The expert quotation draft converts the adopted first structure into a complete `NTD 1,490,000` tax-included quote named `智慧健康量測站軟硬體租用暨導入維運服務案`, with TISSA person-month basis, Taiwan market references, per-work-package calculations, deliverables, payment terms, and scope-adjustment strategy. | `source/2026-07-01-expert-149w-mixed-service-quotation/source.md` |
+| 149 萬 quotation active | The active internal quotation is now `handoff/2026-07-01_smart-health-station_149w-service-quotation.md`; v4 remains the decision record and this file is the concrete quote. | `handoff/2026-07-01_smart-health-station_149w-service-quotation.md` |
 
 ## Decisions
 
@@ -129,8 +142,14 @@ or implementation planning.
 | Tomi must review the commercial talking path before external reply | Jason / Tomi | `2026-07-01` | Ask Tomi to review build cost, future license hypothesis, company subject, source-code / IP wording, and whether the cooperation should use license, maintenance, revenue share, or per-site deployment fee. |
 | Tomi same-day alignment was scheduled | Jason / Tomi / 多寶 | `2026-07-01` | Use the `22:00` fast discussion to review the quotation path before any external HCT reply. |
 | Future deployments should not be priced as full rebuilds by default | Jason / Prof. Wu | `2026-07-01` | Treat the first 北市聯醫 case as build-out; later sales should use license, maintenance, and bounded customization unless new modules or major integration are requested. |
-| Quote-decision v2 is the active internal packet | Jason | `2026-07-01` | Use `handoff/2026-06-30_smart-health-station_quote-decision-v2.md` for Tomi / Prof. Wu review; keep the earlier two-station packet as historical context. |
+| Quote-decision v2 is historical cost context | Jason | `2026-07-01` | Keep `handoff/2026-06-30_smart-health-station_quote-decision-v2.md` as first-build cost history; the 149 萬報價單 is now the active path. |
 | 慧誠 frontend split requires ICD first | Jason / Tomi / 慧誠 | `2026-07-01` | If 慧誠 handles UI/UX and frontend, use ICD, mock API, acceptance scripts, API freeze, and change-control gates before implementation; discuss 智德萬 backend/integration pricing around `NTD 750,000-850,000`未稅. |
+| Quote-decision v3 records the lease-first transition | Jason / Prof. Wu / Tomi | `2026-07-01` | Keep `handoff/2026-07-01_smart-health-station_lease-first_quote-decision-v3.md` as the afternoon-call transition record; the 149 萬報價單 is now the active path. |
+| Lease-first path protects IP and customer connection | Jason / Prof. Wu / Tomi | `2026-07-01` | Preserve the v3 insight inside v4: present the Smart Health Station as a productized service with retained IP, maintenance, upgrade add-ons, and volume deployment economics rather than a one-off build-fee sale. |
+| Quote-decision v4 is the adopted decision record | Jason / Prof. Wu / Tomi | `2026-07-01` | Keep `handoff/2026-07-01_smart-health-station_mixed-service_quote-decision-v4.md` as the adopted structure record; the 149 萬報價單 is now the concrete active quote. |
+| Adopt single mixed service case as the main quote | Jason | `2026-07-01` | Present the project as `智慧健康量測服務導入、軟硬體租用暨成效資料彙整服務案` at `NTD 1,490,000`含稅, with equipment rental as one sub-item and IP / source-code retention explicit. |
+| Keep small-procurement rental as reduced-scope fallback only | Jason / Prof. Wu / Tomi | `2026-07-01` | If the hospital insists on `NTD 150,000`-under small procurement, provide only basic rental / existing product demonstration / limited maintenance, not custom development, full backend, API integration, QR report, SLA, or成效資料服務. |
+| Use the 149 萬報價單 as the active packet | Jason / Prof. Wu / Tomi | `2026-07-01` | Use `handoff/2026-07-01_smart-health-station_149w-service-quotation.md` for Tomi / Prof. Wu review; it supersedes v4 as the concrete quote while preserving v4 as decision history. |
 
 ## Open Questions
 
@@ -152,6 +171,10 @@ or implementation planning.
 | Does hardware cost sit inside NYCU's quote, imedtac's station cost, or a separate procurement line? | imedtac / NYCU / Prof. Wu | immediate | Prevents software manpower, hardware procurement, and station cost from being mixed into one unclear number. |
 | What company subject should appear in the external quote? | Prof. Wu / Tomi / Jason | immediate | The transcript rejects NYCU as the delivery subject but does not finalize the external company name. |
 | Is `NTD 150,000 / set` the right future license anchor, or should the model use revenue share, maintenance retainer, or per-site deployment fee? | Tomi / Prof. Wu / Jason | immediate | Determines whether the first-build cost can become a repeatable cooperation model with 慧誠智醫. |
+| Should the external reply use pure software lease, bundled hardware-plus-software lease, or both options? | Tomi / Prof. Wu / Jason / 慧誠 | immediate | The afternoon call introduces `NTD 60,000/year` software lease and `NTD 140,000-149,000/year` bundled small-procurement-friendly paths; Tomi must decide which is safe to present. |
+| Which functionality belongs in base lease versus paid upgrades? | Tomi / Prof. Wu / Jason | immediate | The product strategy depends on ongoing connection and upgrade revenue, so add-on boundaries need to be clear before external wording. |
+| Can Tomi / Prof. Wu accept `NTD 1,490,000` as the main mixed-service price? | Tomi / Prof. Wu / Jason | immediate | v4 depends on treating the project as a service target rather than a one-machine rental; company subject, procurement path, and work-package wording must be cleared before external release. |
+| Which public procurement examples should be included in the external support appendix? | Tomi / Prof. Wu / Jason | immediate | The source cites health-equipment rental, AI health-promotion equipment rental, and high-value hospital software rental examples; external use should be curated to avoid overclaiming. |
 | Who can support validation and implementation if the quote becomes a live delivery project? | Prof. Wu / Jason | immediate | Codex acceleration does not replace human validation, device checks, and acceptance support before September. |
 
 ## Implementation Decision
@@ -187,8 +210,11 @@ the scope enters formal feasibility, quotation, prototype, or implementation.
 | Close Sprint 0 with questionnaire skeleton, PHQ-9 seed, module registry, and migration plan before marking implementation complete | NYCU engineering | `2026-06-26` |
 | Send Johnny candidate compact-computer models or a minimum hardware specification. | Jason / NYCU | immediate |
 | Prepare a total-budget reverse-calculation quote note for Prof. Wu, then convert it into an external one-page quote only after Johnny confirms hardware and Avatar vendor assumptions. | Jason / NYCU | immediate |
-| Revise the quote package around one station / one system, first-build fee, and future license economics. | Jason | immediate |
+| Preserve the v2 first-build main quote and v3 lease-first quote as historical context for v4. | Jason | immediate |
 | Send Tomi the commercial review ask and make the `2026-07-01` end-of-day HCT urgency explicit. | Jason | immediate |
-| Hold the `2026-07-01 22:00` Tomi / 多寶 fast alignment and record the review result after the discussion. | Jason / Tomi / 多寶 | same day |
-| Convert v2 into an external one-page HCT reply after Tomi / Prof. Wu confirm company subject, build/license pricing, and IP wording. | Jason | after Tomi review |
+| Hold the `2026-07-01 22:00` Tomi / 多寶 fast alignment and review the v4 mixed-service correction. | Jason / Tomi / 多寶 | same day |
+| Keep v3 out of the external reply path unless Tomi / Prof. Wu request a lower-scope pure lease fallback. | Jason | after Tomi review |
 | If 慧誠 confirms frontend ownership, convert the v2 packet into an ICD-first backend/system-integration quote instead of a full frontend + backend build quote. | Jason / Tomi | after Tomi review |
+| Replace v3 as the active path with v4 single mixed-service quote. | Jason | immediate |
+| Use the `2026-07-01 22:00` Tomi / 多寶 / 吳老師 discussion to validate `NTD 1,490,000`, eight work packages, no-IP-transfer language, and reduced-scope fallback. | Jason / Tomi / 多寶 / Prof. Wu | same day |
+| Convert v4 into an external one-page HCT reply after Tomi / Prof. Wu confirm company subject, procurement path, work-package wording, and rights-retention language. | Jason | after Tomi review |

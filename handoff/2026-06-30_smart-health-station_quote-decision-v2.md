@@ -5,7 +5,7 @@ date: 2026-06-30
 meeting_window: 2026-06-30T23:34:19+08:00/2026-07-01T00:20:50+08:00
 topic: smart-health-cabin
 type: executive-quote-decision
-status: internal-decision-draft
+status: superseded
 audience:
   - 吳老師
   - Tomi
@@ -19,9 +19,18 @@ source:
   - ../workstreams/smart-health-cabin/2026-07-01-prof-wu-quote-meeting-deep-analysis.md
 supersedes:
   - ./2026-06-30-smart-health-cabin-prof-wu-executive-quote.md
+superseded_by:
+  - ./2026-07-01_smart-health-station_lease-first_quote-decision-v3.md
 ---
 
 # 智慧健康量測站合作案報價決策版 v2
+
+> Status: historical draft. The current decision path is
+> `2026-07-01_smart-health-station_lease-first_quote-decision-v3.md`, which
+> adopts Prof. Wu's `2026-07-01` afternoon lease-first correction: deep-
+> cultivation funding likely favors lease procurement, lease protects IP/control
+> better than a large build-fee frame, and product strategy should emphasize
+> customer connection, upgrade paths, and volume deployment.
 
 ## 合作案定位
 
