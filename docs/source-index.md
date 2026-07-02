@@ -90,7 +90,16 @@ Co., Ltd.）Smart Health Cabin collaboration project.
 | `docs/phase2/activation-roadmap.md` | Phase 2 activation roadmap for provider validation, questionnaire expansion, vision/hearing activation, and integration/governance sequencing. |
 | `docs/phase2/ACTIVATION_PLAN.md` | Phase 2 activation gates after Sprint 5: provider validation, questionnaire expansion, vision/hearing activation, and integration governance. |
 | `docs/ops/LIVE_PROVIDER_RUNBOOK.md` | Sprint 5 live-provider startup and checks for Breeze-ASR-26 int8, Gemma 4 E4B, BreezyVoice default voice, Redpanda, and provider status. |
+| `docs/ops/OPEN_LLM_VTUBER_STACK_RUNBOOK.md` | Open-LLM-VTuber second voice-stack lab runbook with pinned upstream checkout, local config, upstream startup, and bridge startup commands. |
+| `docs/open-llm-vtuber/README.md` | Agent-readable index for the second Open-LLM-VTuber stack after the 2026-07-02 mainline pivot. |
+| `docs/open-llm-vtuber/UPSTREAM_SOURCE_NOTES.md` | Source notes from the official Open-LLM-VTuber docs, backend/frontend architecture, ASR/TTS docs, Live2D guide, Eikanya model reference repo, and local pinned source inspection. |
+| `docs/open-llm-vtuber/CONTRACT.md` | Runtime contract for `/client-ws`, bridge `/v1/turn`, Traditional Chinese display, ASR, TTS, Live2D, and staff-review safety boundaries. |
+| `docs/open-llm-vtuber/SDD.md` | System design document for making Open-LLM-VTuber the active second-stack design target while preserving the earlier voice stack as baseline/fallback history. |
+| `docs/open-llm-vtuber/FRONTEND_UI_SPEC.md` | UI replacement specification for a Taiwan Smart Health Cabin kiosk interface backed by the Open-LLM-VTuber WebSocket contract. |
+| `docs/open-llm-vtuber/ASR_TTS_TAIWAN_SPEC.md` | ASR/TTS provider-selection, Taiwan Mandarin listener gate, Traditional Chinese display contract, TTS-only simplification rule, and prompt-audio fidelity requirements. |
+| `docs/open-llm-vtuber/LIVE2D_CHARACTER_BACKGROUND_SPEC.md` | Live2D model/background placement, licensing, emotion/motion mapping, character prompt, and acceptance gates for the second stack. |
 | `docs/ops/ROLLBACK_AND_FALLBACK.md` | Runtime fallback and rollback controls that preserve questionnaire/report/outbox continuity without counting mock behavior as Sprint 5 acceptance. |
+| `docs/decisions/2026-07-02-open-llm-vtuber-second-stack.md` | Architecture decision making Open-LLM-VTuber the active second-stack design lane while keeping activation behind UI, ASR/TTS, Live2D, and fallback gates. |
 | `docs/api/API_SUMMARY.md` | API endpoint summary for questionnaire, report, admin CMS, voice-agent turns, and provider status. |
 | `docs/db/ERD_SUMMARY.md` | PostgreSQL entity relationship summary for questionnaire versions, responses, reports, agent turns, and outbox events. |
 | `docs/evidence/sprint-5-five-run-demo.md` | Sprint 5 five-run evidence file with current provider smoke and remaining strict live acceptance gates. |
@@ -109,6 +118,7 @@ Co., Ltd.）Smart Health Cabin collaboration project.
 | `docs/evidence/voice-first-room-acceptance-plan.md` | Physical-room voice-first PHQ-9 acceptance protocol covering real wakeword, microphone, spoken answers, recovery commands, item 9, required fields, and hard gates. |
 | `docs/evidence/2026-07-02-voice-first-room-acceptance-minimum-checklist.md` | One-speaker minimum pilot checklist for the next ASR + LLM + CosyVoice3 real-room low-latency UX gate. Connects the full room acceptance plan to executable preflight, runtime, wakeword, ASR mapping, full PHQ-9, recovery, TTS review, latency, and final evidence-report steps. |
 | `docs/evidence/2026-07-02-voice-first-room-acceptance-s1-v1.md` | Current S1 `BLOCKED_UNRESOLVED` evidence report for the one-speaker ASR + LLM + CosyVoice3 room pilot, including live provider status, real wakeword/ASR/LLM/TTS evidence, VRAM/OOM and incoherent-feedback UX evidence, empty-ASR recovery changes, and the next rerun gate. |
+| `docs/evidence/2026-07-02-open-llm-vtuber-baseline-log.md` | Lab evidence for the pinned Open-LLM-VTuber stack: isolated startup, ASR model initialization and transcription probe, Ollama Gemma LLM, Edge TTS, WebSocket turn, and bridge turn output. |
 | `docs/evidence/EVIDENCE_CHRONOLOGY.md` | Evidence chronology and interpretation policy separating actual experiment logs from planning/reference/future-dated docs, with required fields for future evidence. |
 | `docs/evidence/2026-06-25-voice-safety-reranker-current-code-live-acceptance-log.md` | Current-code live acceptance evidence for the six-layer voice-safety / reranker path, including per-experiment date/time, hardware and GPU inventory, provider status, wakeword status, reranker status, and five-run Sprint 5 demo output. |
 | `docs/evidence/raw/2026-06-25-llm-temperature-sweep-0.0-0.7.json` | Complete raw temperature-sweep artifact with 120 run-level rows, environment metadata, summaries, and full generated outputs. |
@@ -116,6 +126,7 @@ Co., Ltd.）Smart Health Cabin collaboration project.
 | `docs/devlog/2026-06-25.md` | Pivot/source devlog for the questionnaire + Avatar MVP route, PHQ-9 seed, and planning-repo coordination. |
 | `apps/model-sidecars/wakeword-service/README.md` | Sprint 5.6 wake word activation gate sidecar: sherpa-onnx KWS Zipformer zh-en 3M provider for `你好小慧`, status/event API, and test-only simulation route. |
 | `apps/model-sidecars/wakeword-service/app.py` | FastAPI implementation for `/healthz`, `/status`, `/simulate-wake`, `WS /events`, and local live microphone readiness; wake word is activation-only and never writes questionnaire answers. |
+| `apps/model-sidecars/open-llm-vtuber-bridge/` | Minimal bridge that converts Smart Health Cabin HTTP `/v1/turn` calls into Open-LLM-VTuber `/client-ws` text turns and returns cleaned Traditional Chinese display text plus audio segments. |
 | `docs/prompts/wakeword-sherpa-onnx-kws-goal-prompt.md` | Executable Codex goal prompt for installing the sherpa-onnx KWS Zipformer zh-en 3M model, generating the `你好小慧` keyword file, and running live wakeword acceptance. |
 | `apps/kiosk-web/src/features/questionnaire/SurveyJsQuestionnaireRenderer.tsx` | Kiosk SurveyJS adapter for one-question-per-page rendering and Avatar/question layout shell. |
 | `apps/kiosk-web/src/features/avatar/voiceQuestionnaireController.ts` | SurveyJS voice-answer helper that applies high-confidence API-mapped candidates to the currently visible question; live voice mapping routes through the API safety pipeline first. |
