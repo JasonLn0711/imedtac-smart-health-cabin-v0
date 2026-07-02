@@ -13,11 +13,17 @@ docs/evidence/2026-07-02-voice-first-room-acceptance-minimum-checklist.md
 ```
 
 This is a one-speaker minimum pilot checklist connected to the broader
-`voice-first-room-acceptance-plan.md`. It is planning/reference until a real
-room run produces an evidence report and run artifacts. The full field-ready
-gate remains the multi-speaker physical-room acceptance protocol.
+`voice-first-room-acceptance-plan.md`. The full field-ready gate remains the
+multi-speaker physical-room acceptance protocol.
 
-Current S1 `BLOCKED_UNRESOLVED` evidence and the next rerun gate are recorded in:
+Current S1 `LIVE_MINIMUM_COMPLETED` evidence is recorded in:
+
+```text
+docs/evidence/2026-07-02-voice-first-room-acceptance-s1-v2.md
+```
+
+The earlier blocked S1 runtime evidence remains available as the recovery
+history:
 
 ```text
 docs/evidence/2026-07-02-voice-first-room-acceptance-s1-v1.md

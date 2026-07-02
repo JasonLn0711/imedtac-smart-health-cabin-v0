@@ -55,6 +55,7 @@ claim.
 | `2026-06-26` | `docs/evidence/voice-first-room-acceptance-plan.md` | planning/reference | Physical-room voice-first PHQ-9 acceptance plan and manual data template command. Not field-ready evidence until real-room runs are recorded. |
 | `2026-07-02` | `docs/evidence/2026-07-02-voice-first-room-acceptance-minimum-checklist.md` | planning/reference | One-speaker minimum pilot checklist for the ASR + LLM + CosyVoice3 real-room UX gate. It is not completion evidence until the S1 run artifact and evidence report exist. |
 | `2026-07-02` | `docs/evidence/2026-07-02-voice-first-room-acceptance-s1-v1.md` | blocked runtime evidence | One-speaker S1 pilot evidence with live wakeword/ASR/LLM/TTS checks, ASR mapping rounds, VRAM/OOM failure, user-observed incoherent TTS feedback after OOM, and repeated empty-ASR recovery. Current status is `BLOCKED_UNRESOLVED` until the full voice-first loop completes under a clean GPU memory envelope. |
+| `2026-07-02` | `docs/evidence/2026-07-02-voice-first-room-acceptance-s1-v2.md` | accepted evidence | S1 retest completed the one-speaker minimum voice-room gate with automatic microphone selection, live wakeword, real microphone ASR, Ollama LLM guidance, CosyVoice3 streaming TTS, item 9 staff-review routing, public report token creation, and background runtime/agent-turn collection. Current status is `LIVE_MINIMUM_COMPLETED`; multi-speaker field readiness remains a future gate. |
 
 ## Planning, Handoff, Or Future-Dated Documents
 

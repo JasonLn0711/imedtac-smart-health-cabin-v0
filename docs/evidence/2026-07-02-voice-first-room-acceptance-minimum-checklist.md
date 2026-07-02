@@ -30,7 +30,7 @@ acceptance plan.
 
 | Field | Pilot setting |
 | --- | --- |
-| Run ID | `voice_first_room_acceptance_20260702_s1_v1` |
+| Run ID | `voice_first_room_acceptance_20260702_s1_v1`; retest `voice_first_room_retest_20260702_s1_v2` |
 | Speaker count | `1` speaker |
 | Speaker ID | `S1` |
 | Questionnaire | PHQ-9 |
@@ -49,7 +49,8 @@ and evidence boundaries live in these connected files:
 | --- | --- |
 | `docs/evidence/voice-first-room-acceptance-plan.md` | Full physical-room acceptance protocol. This checklist narrows that plan to one speaker for the first minimum pilot. |
 | `docs/evidence/EVIDENCE_CHRONOLOGY.md` | Evidence interpretation policy. This checklist is planning/reference until a run artifact and evidence report are written. |
-| `docs/evidence/2026-07-02-voice-first-room-acceptance-s1-v1.md` | Current S1 runtime evidence report. It records run-folder creation, live provider readiness, background collector setup, and the next real-room test step. |
+| `docs/evidence/2026-07-02-voice-first-room-acceptance-s1-v2.md` | Current S1 accepted evidence. It records the retest with automatic microphone selection, live room loop, item 9 staff-review routing, report token creation, and background runtime/agent-turn collection. |
+| `docs/evidence/2026-07-02-voice-first-room-acceptance-s1-v1.md` | Prior blocked S1 runtime evidence. It remains the failure/recovery history for the VRAM/OOM and empty-ASR blocker. |
 | `docs/evidence/cosyvoice3-streaming-provider-validation.md` | TTS provider validation record for `cosyvoice3_streaming`, including provider gates, live mini benchmark, and remaining room/Taiwan-speaker gates. |
 | `docs/decisions/2026-06-26-voice-first-cosyvoice3-product-path.md` | Product decision that makes `VOICE_CONVERSATION_PRIMARY` and CosyVoice3 streaming the current product path. |
 | `docs/evidence/2026-06-25-wakeword-continuous-live-voice-loop-experiment-log.md` | Prior local continuous-loop evidence using simulated wake and fake microphone audio. The current pilot upgrades that scope to real room and real microphone. |
@@ -79,12 +80,13 @@ and evidence boundaries live in these connected files:
 
 ## Checklist
 
-Current S1 outcome: `BLOCKED_UNRESOLVED`. The pilot produced live provider
-readiness, wakeword evidence, real microphone ASR turns, corrected PHQ-9 answer
-mapping, and retry/touch fallback protection. It did not complete the
-voice-first room loop because VRAM pressure produced ASR CUDA failures, the user
-observed incoherent real-time spoken feedback after OOM, and the post-restart
-front-end run produced repeated empty ASR transcripts.
+Current S1 outcome: `LIVE_MINIMUM_COMPLETED` after retest
+`voice_first_room_retest_20260702_s1_v2`. The retest produced automatic
+microphone selection, live wakeword, real microphone ASR, Ollama LLM guidance,
+CosyVoice3 streaming TTS, PHQ-9 voice mapping, item 9 staff-review routing,
+public report token creation, and background runtime/agent-turn collection.
+The earlier `voice_first_room_acceptance_20260702_s1_v1` result remains the
+blocked recovery history.
 
 ### 0. Freeze Pilot Goal
 
@@ -142,7 +144,7 @@ python3 scripts/voice-room/collect_voice_room_runtime.py \
   before utterance completion.
 - [x] Kiosk receives a streaming TTS descriptor.
 - [ ] Touch fallback can still complete a questionnaire answer.
-- [ ] PHQ-9 item 9 safety wording routes to staff-support language.
+- [x] PHQ-9 item 9 safety wording routes to staff-support language.
 - [x] Provider status confirms live providers, not mock providers.
 
 ### 4. Test Spoken Wakeword With S1
@@ -157,12 +159,12 @@ python3 scripts/voice-room/collect_voice_room_runtime.py \
 
 ### 5. Test ASR Option Mapping With S1
 
-- [ ] S1 says `完全沒有`.
+- [x] S1 says `完全沒有`.
 - [x] S1 says `有幾天`.
 - [x] S1 says `一半以上的天數`.
 - [x] S1 says `幾乎每天`.
-- [ ] Record ASR transcript for each phrase.
-- [ ] Record mapped candidate for each phrase.
+- [x] Record ASR transcript for each phrase.
+- [x] Record mapped candidate for each phrase.
 - [x] Record confidence or confirmation requirement when available.
 - [x] Record ambiguity, misfill, or fallback reason.
 - [x] Pay special attention to `完全沒有`, because prior evidence showed an ASR
@@ -188,8 +190,8 @@ retest of all four option phrases.
 - [ ] Each question records write decision.
 - [ ] Each question records turn latency.
 - [ ] Each question records TTS first-audio latency when available.
-- [ ] Completed response creates report section and public report token.
-- [ ] PHQ-9 item 9 positive answer routes to staff-review support wording.
+- [x] Completed response creates report section and public report token.
+- [x] PHQ-9 item 9 positive answer routes to staff-review support wording.
 
 ### 7. Test Recovery And Fallback With S1
 
