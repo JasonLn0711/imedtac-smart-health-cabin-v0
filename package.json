@@ -10,6 +10,8 @@
     "build": "corepack pnpm -r build",
     "test": "vitest run",
     "live:check": "node scripts/live-check.mjs",
+    "room:start": "python3 scripts/voice-room/start_voice_room_session.py",
+    "room:summarize": "node scripts/voice-room/summarize_voice_room_session.mjs",
     "smoke:api": "node scripts/smoke-api.mjs",
     "smoke:voice-agent": "node scripts/smoke-voice-agent.mjs",
     "smoke:cosyvoice3": "node scripts/smoke-cosyvoice3.mjs",
