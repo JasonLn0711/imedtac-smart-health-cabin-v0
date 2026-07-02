@@ -4,6 +4,25 @@ This folder owns experiment evidence for Smart Health Cabin runnable work.
 Every experiment entry records enough context to reproduce the run, compare
 later runs, and explain which validation layer the result supports.
 
+## Active Voice UX Gate
+
+The current ASR + LLM + TTS user-experience gate starts from:
+
+```text
+docs/evidence/2026-07-02-voice-first-room-acceptance-minimum-checklist.md
+```
+
+This is a one-speaker minimum pilot checklist connected to the broader
+`voice-first-room-acceptance-plan.md`. It is planning/reference until a real
+room run produces an evidence report and run artifacts. The full field-ready
+gate remains the multi-speaker physical-room acceptance protocol.
+
+Current S1 `BLOCKED_UNRESOLVED` evidence and the next rerun gate are recorded in:
+
+```text
+docs/evidence/2026-07-02-voice-first-room-acceptance-s1-v1.md
+```
+
 ## Required Fields For Every Experiment
 
 Every future experiment log entry must include:

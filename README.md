@@ -187,6 +187,9 @@ docs/dev/LOCAL_DEV.md
 | `docs/specs/MVP-SYSTEM-SPEC.md` | Full-system MVP reference spec for monorepo structure, four modules, API, PostgreSQL, Redpanda, deployment, versioning, tests, and acceptance gates. |
 | `docs/specs/MVP-FAST-MARCH-SPRINT-PLAN.md` | Superseded historical ten-working-day four-module plan. |
 | `docs/specs/MVP-QUESTIONNAIRE-AVATAR-SPRINT-PLAN.md` | Active revised sprint plan for questionnaire platform plus ASR/LLM/TTS Avatar Agent. |
+| `docs/evidence/2026-07-02-voice-first-room-acceptance-minimum-checklist.md` | Current one-speaker minimum checklist for the ASR + LLM + CosyVoice3 real-room low-latency voice UX gate. |
+| `docs/evidence/2026-07-02-voice-first-room-acceptance-s1-v1.md` | Current S1 `BLOCKED_UNRESOLVED` evidence report and next live test entrypoint. |
+| `docs/evidence/voice-first-room-acceptance-plan.md` | Full multi-speaker physical-room voice-first PHQ-9 acceptance protocol. |
 | `docs/devlog/README.md` | Daily sprint closeout convention for actual results, validation, blockers, and handoff. |
 | `docs/devlog/2026-06-25.md` | Pivot/source devlog for the questionnaire + Avatar MVP route, PHQ-9 seed, and planning mirror. |
 | `docs/dev/LOCAL_DEV.md` | Sprint 0-4 local development and verification commands. |

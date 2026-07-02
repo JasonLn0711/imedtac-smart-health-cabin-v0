@@ -53,6 +53,8 @@ claim.
 | `2026-06-26` | `docs/evidence/2026-06-26-expert-review-voice-first-cosyvoice3-update.md` | expert review evidence | Updated expert recommendation adopted as current product direction: voice-first questionnaire conversation, CosyVoice3 streaming as production candidate, BreezyVoice fallback/research. |
 | `2026-06-26` | `docs/evidence/cosyvoice3-streaming-provider-validation.md` | accepted evidence | CosyVoice3 provider boundary, local official backend install, provider default alignment, API descriptor smoke, WebSocket PCM16 chunk streaming, and mini live provider benchmark. Physical-room acceptance and Taiwan speaker-prompt review remain future gates. |
 | `2026-06-26` | `docs/evidence/voice-first-room-acceptance-plan.md` | planning/reference | Physical-room voice-first PHQ-9 acceptance plan and manual data template command. Not field-ready evidence until real-room runs are recorded. |
+| `2026-07-02` | `docs/evidence/2026-07-02-voice-first-room-acceptance-minimum-checklist.md` | planning/reference | One-speaker minimum pilot checklist for the ASR + LLM + CosyVoice3 real-room UX gate. It is not completion evidence until the S1 run artifact and evidence report exist. |
+| `2026-07-02` | `docs/evidence/2026-07-02-voice-first-room-acceptance-s1-v1.md` | blocked runtime evidence | One-speaker S1 pilot evidence with live wakeword/ASR/LLM/TTS checks, ASR mapping rounds, VRAM/OOM failure, user-observed incoherent TTS feedback after OOM, and repeated empty-ASR recovery. Current status is `BLOCKED_UNRESOLVED` until the full voice-first loop completes under a clean GPU memory envelope. |
 
 ## Planning, Handoff, Or Future-Dated Documents
 
@@ -90,6 +92,8 @@ CosyVoice3 streaming TTS provider live validation exists.
 Field-ready voice product is not yet proven.
 Current product direction is VOICE_CONVERSATION_PRIMARY with CosyVoice3
 streaming as the production TTS candidate.
+The next execution layer is a one-speaker real-room minimum pilot before the
+full multi-speaker field-ready gate.
 ```
 
 Field readiness still requires:
