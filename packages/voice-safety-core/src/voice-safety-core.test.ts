@@ -50,6 +50,25 @@ describe("voice-safety-core", () => {
     expect(result.confirmationRequired).toBe(false);
   });
 
+  it.each(["一半以上的天數", "一半以上"])("maps %s to the PHQ-9 option 2 candidate", (rawText) => {
+    const result = processVoiceEvidence({
+      rawText,
+      asrConfidence: 0.91,
+      choices: phq9Choices,
+      domainPackIds: ["phq9_zh_tw"]
+    });
+
+    expect(result.semanticFrame.questionnaireAnswerCandidates).toEqual([
+      {
+        optionId: "2",
+        optionText: "一半以上的天數",
+        confidence: rawText === "一半以上的天數" ? 0.92 : 0.86,
+        evidenceText: rawText
+      }
+    ]);
+    expect(result.routingDecision).toBe("high_confidence_clear_answer");
+  });
+
   it("routes low-confidence ASR to retry/touch instead of answer truth", () => {
     const result = processVoiceEvidence({
       rawText: "幾乎每天",

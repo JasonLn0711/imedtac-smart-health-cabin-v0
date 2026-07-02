@@ -67,7 +67,7 @@ function speechRms(data: Uint8Array): number {
 
 export function AvatarPanel({ model, touchVisible, onRequestTouchFallback }: AvatarPanelProps) {
   const [snapshot, send] = useMachine(avatarStateMachine);
-  const [transcript, setTranscript] = useState("完全沒有");
+  const [transcript, setTranscript] = useState("");
   const [draft, setDraft] = useState<VoiceAnswerDraft | null>(null);
   const [confirmedCount, setConfirmedCount] = useState(0);
   const [turnCount, setTurnCount] = useState(0);
@@ -83,6 +83,7 @@ export function AvatarPanel({ model, touchVisible, onRequestTouchFallback }: Ava
   const agentSessionIdRef = useRef<string | null>(null);
   const wakeIntroPlayingRef = useRef(false);
   const stopReasonRef = useRef<StopReason | null>(null);
+  const emptyTranscriptStreakRef = useRef(0);
   const cancelRecordingRef = useRef(false);
   const cleanupRef = useRef<(() => void) | null>(null);
   const state = snapshot.value as AvatarState;
@@ -320,12 +321,32 @@ export function AvatarPanel({ model, touchVisible, onRequestTouchFallback }: Ava
       agentSessionId,
       questionName: question?.name,
       audioBase64,
-      audioFormat: audioFormatFromBlob(audioBlob),
-      fallbackTranscript: transcript.trim()
+      audioFormat: audioFormatFromBlob(audioBlob)
     });
-    const heardText = asr.transcript?.trim() || transcript.trim() || "尚未取得可用語音文字";
+    const heardText = asr.transcript?.trim() ?? "";
     setTranscript(heardText);
     send({ type: "ASR_DONE" });
+
+    if (!heardText) {
+      emptyTranscriptStreakRef.current += 1;
+      if (emptyTranscriptStreakRef.current >= 2) {
+        const fallbackText = "連續兩次沒有取得可用語音文字，系統已切回觸控填答，現場人員也可以協助確認。";
+        setMessage(fallbackText);
+        onRequestTouchFallback?.();
+        setContinuousVoiceActive(false);
+        continuousVoiceRef.current = false;
+        send({ type: "ASR_LOW_CONFIDENCE" });
+        await speakText({ agentSessionId, questionName: question.name, text: fallbackText });
+        return "hold";
+      }
+      const retryText = "這次沒有取得可用語音文字，請重新錄音一次，或直接用觸控填答。";
+      setMessage(retryText);
+      onRequestTouchFallback?.();
+      send({ type: "ASR_LOW_CONFIDENCE" });
+      await speakText({ agentSessionId, questionName: question.name, text: retryText });
+      return "continue";
+    }
+    emptyTranscriptStreakRef.current = 0;
 
     const command = commandFromTranscript(heardText);
     if (command === "retry") {

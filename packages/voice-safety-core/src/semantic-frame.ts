@@ -6,6 +6,18 @@ function includesAny(text: string, terms: string[]): string | null {
   return sorted.find((term) => text.includes(term)) ?? null;
 }
 
+function includesAnswerEvidence(text: string, terms: string[]): string | null {
+  const sorted = [...terms].sort((a, b) => b.length - a.length);
+  return (
+    sorted.find((term) => {
+      if (term.length === 1) {
+        return text === term;
+      }
+      return text.includes(term);
+    }) ?? null
+  );
+}
+
 function choiceAllows(alias: VoiceDomainAnswerAlias, choices: VoiceChoice[]): boolean {
   if (choices.length === 0) {
     return true;
@@ -22,7 +34,7 @@ function answerCandidates(text: string, packs: VoiceDomainPack[], choices: Voice
     .flatMap((pack) => pack.answerAliases)
     .filter((alias) => choiceAllows(alias, choices))
     .flatMap((alias) => {
-      const evidence = includesAny(text, [alias.optionText, ...alias.aliases]);
+      const evidence = includesAnswerEvidence(text, [alias.optionText, ...alias.aliases]);
       if (!evidence) {
         return [];
       }
