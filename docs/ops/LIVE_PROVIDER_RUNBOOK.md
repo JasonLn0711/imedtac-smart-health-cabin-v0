@@ -65,6 +65,19 @@ snapshot_download(
     local_dir='.local/CosyVoice/pretrained_models/Fun-CosyVoice3-0.5B',
 )
 PY
+.local/cosyvoice-venv/bin/python - <<'PY'
+from huggingface_hub import snapshot_download
+snapshot_download(
+    'FunAudioLLM/CosyVoice-ttsfrd',
+    local_dir='.local/CosyVoice/pretrained_models/CosyVoice-ttsfrd',
+)
+PY
+cd .local/CosyVoice/pretrained_models/CosyVoice-ttsfrd
+unzip resource.zip -d .
+/absolute/path/to/.local/cosyvoice-venv/bin/python -m ensurepip --upgrade
+/absolute/path/to/.local/cosyvoice-venv/bin/python -m pip install \
+  ttsfrd_dependency-0.1-py3-none-any.whl \
+  ttsfrd-0.4.2-cp310-cp310-linux_x86_64.whl
 ```
 
 Local live sidecar command:
@@ -75,12 +88,31 @@ COSYVOICE3_PROVIDER_MODE=live \
 COSYVOICE3_REPO_PATH=/home/jnclaw/every_on_git_jnclaw/phd-life-system/imedtac-smart-health-cabin-v0/.local/CosyVoice \
 COSYVOICE3_MODEL_DIR=/home/jnclaw/every_on_git_jnclaw/phd-life-system/imedtac-smart-health-cabin-v0/.local/CosyVoice/pretrained_models/Fun-CosyVoice3-0.5B \
 COSYVOICE3_PROMPT_WAV=/home/jnclaw/every_on_git_jnclaw/phd-life-system/imedtac-smart-health-cabin-v0/.local/CosyVoice/asset/zero_shot_prompt.wav \
+COSYVOICE3_PROMPT_TEXT='You are a helpful assistant.<|endofprompt|>希望你以后能够做的比我还好呦。' \
 COSYVOICE3_COMPUTE_BACKEND=gpu \
 /home/jnclaw/every_on_git_jnclaw/phd-life-system/imedtac-smart-health-cabin-v0/.local/cosyvoice-venv/bin/python -m uvicorn server:app --host 127.0.0.1 --port 8015
 ```
 
 The official `asset/zero_shot_prompt.wav` is acceptable for smoke testing only.
-Production acceptance still needs a Taiwan Mandarin healthcare prompt wav.
+Its `COSYVOICE3_PROMPT_TEXT` must remain the official transcript shown above.
+Zero-shot cloning requires the prompt text to match the prompt audio content
+exactly; mismatched content, language, emotion, length, noise profile, or actual
+words can mix speaker style with linguistic content and destabilize alignment.
+Production acceptance still needs a Taiwan Mandarin healthcare prompt wav and
+its exact transcript in `COSYVOICE3_PROMPT_TEXT`.
+
+TTS text preprocessing:
+
+- sidecar input is normalized with OpenCC `tw2s` before CosyVoice;
+- emoji, markdown, and noisy symbols are removed;
+- PHQ-9 / ASR / LLM / TTS / API / GPU / QR Code and health numeric patterns are
+  normalized before synthesis;
+- local streaming splits normalized text into short sentences before invoking
+  CosyVoice;
+- browser-facing streaming metadata keeps the original Traditional Chinese
+  text and does not expose the simplified TTS transcript to UI code;
+- official CosyVoice frontend uses `ttsfrd` when installed, otherwise it falls
+  back to WeTextProcessing.
 
 Port `8015` is reserved for the CosyVoice sidecar so it does not collide with
 the wakeword service on `8013`.

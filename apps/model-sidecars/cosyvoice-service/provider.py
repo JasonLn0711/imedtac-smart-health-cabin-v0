@@ -9,11 +9,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from tw_normalization import normalize_taiwan_healthcare_text
+from tw_normalization import normalize_taiwan_healthcare_text, split_tts_sentences
 
 
 PROVIDER = "cosyvoice3_streaming"
 DEFAULT_MODEL = "FunAudioLLM/Fun-CosyVoice3-0.5B-2512"
+COSYVOICE3_PROMPT_PREFIX = "You are a helpful assistant.<|endofprompt|>"
+OFFICIAL_ZERO_SHOT_PROMPT_AUDIO_TEXT = "希望你以后能够做的比我还好呦。"
+DEFAULT_PROMPT_TEXT = f"{COSYVOICE3_PROMPT_PREFIX}{OFFICIAL_ZERO_SHOT_PROMPT_AUDIO_TEXT}"
 
 
 class ProviderUnavailable(RuntimeError):
@@ -37,15 +40,19 @@ class ProviderConfig:
     repo_path: str = _env("COSYVOICE3_REPO_PATH")
     model_dir: str = _env("COSYVOICE3_MODEL_DIR")
     prompt_wav: str = _env("COSYVOICE3_PROMPT_WAV")
-    prompt_text: str = _env("COSYVOICE3_PROMPT_TEXT", "You are a helpful assistant.<|endofprompt|>您好，我是慧誠智醫健康互動助理。")
+    prompt_text: str = _env("COSYVOICE3_PROMPT_TEXT", DEFAULT_PROMPT_TEXT)
     prompt_profile: str = _env("COSYVOICE3_TW_PROMPT_PROFILE", "default_tw_healthcare")
     mode: str = _env("COSYVOICE3_PROVIDER_MODE", "unavailable")
 
     @property
-    def local_ready(self) -> bool:
+    def local_paths_ready(self) -> bool:
         return bool(self.repo_path and self.model_dir and self.prompt_wav) and all(
             Path(path).exists() for path in [self.repo_path, self.model_dir, self.prompt_wav]
         )
+
+    @property
+    def local_ready(self) -> bool:
+        return self.local_paths_ready and self.prompt_text_ready
 
     @property
     def ready(self) -> bool:
@@ -54,6 +61,18 @@ class ProviderConfig:
     @property
     def streaming_ready(self) -> bool:
         return self.mode == "live" and (bool(self.stream_ws_url) or self.local_ready)
+
+    @property
+    def prompt_audio_text(self) -> str:
+        return prompt_audio_text(self.prompt_text)
+
+    @property
+    def prompt_text_ready(self) -> bool:
+        if not self.prompt_wav:
+            return False
+        if Path(self.prompt_wav).name == "zero_shot_prompt.wav":
+            return self.prompt_audio_text == OFFICIAL_ZERO_SHOT_PROMPT_AUDIO_TEXT
+        return bool(os.getenv("COSYVOICE3_PROMPT_TEXT") and self.prompt_audio_text)
 
 
 class CosyVoiceProvider:
@@ -65,6 +84,11 @@ class CosyVoiceProvider:
         blocker = None
         if not self.config.ready:
             blocker = "Configure COSYVOICE3_BACKEND_URL, or COSYVOICE3_REPO_PATH + COSYVOICE3_MODEL_DIR + COSYVOICE3_PROMPT_WAV"
+        if self.config.local_paths_ready and not self.config.prompt_text_ready:
+            blocker = (
+                "COSYVOICE3_PROMPT_TEXT must exactly match COSYVOICE3_PROMPT_WAV. "
+                "Use the official zero_shot_prompt text for zero_shot_prompt.wav, or set matching text for custom prompt audio."
+            )
         return {
             "provider": self.config.provider,
             "model": self.config.model,
@@ -74,21 +98,28 @@ class CosyVoiceProvider:
             "audio_transport": "ws_pcm16",
             "compute_backend": _env("COSYVOICE3_COMPUTE_BACKEND", _env("TTS_COMPUTE_BACKEND", "unknown")),
             "fallback_provider": _env("TTS_FALLBACK_PROVIDER", "breezyvoice_default"),
+            "prompt_wav": self.config.prompt_wav,
+            "prompt_text_ready": self.config.prompt_text_ready,
+            "local_paths_ready": self.config.local_paths_ready,
             "blocker_reason": blocker,
         }
 
     def normalize(self, text: str) -> str:
         return normalize_taiwan_healthcare_text(text)
 
+    def split_sentences(self, text: str) -> list[str]:
+        return split_tts_sentences(text)
+
     def synthesize(self, text: str, voice_id: str, response_format: str = "wav") -> dict[str, Any]:
         if not self.config.ready:
             raise ProviderUnavailable("CosyVoice3 backend is not configured")
         if self.config.local_ready and not self.config.base_url:
             return self._synthesize_local(text)
+        normalized = self.normalize(text)
         payload = {
             "model": self.config.model,
-            "text": self.normalize(text),
-            "input": self.normalize(text),
+            "text": normalized,
+            "input": normalized,
             "voice_id": voice_id,
             "prompt_profile": self.config.prompt_profile,
             "response_format": response_format,
@@ -153,13 +184,14 @@ class CosyVoiceProvider:
     def stream_local_pcm_chunks(self, text: str):
         model = self._load_local_model()
         try:
-            for output in model.inference_zero_shot(
-                self.normalize(text),
-                self.config.prompt_text,
-                self.config.prompt_wav,
-                stream=True,
-            ):
-                yield _tensor_to_pcm16(output["tts_speech"]), model.sample_rate
+            for sentence in self.split_sentences(text):
+                for output in model.inference_zero_shot(
+                    sentence,
+                    self.config.prompt_text,
+                    self.config.prompt_wav,
+                    stream=True,
+                ):
+                    yield _tensor_to_pcm16(output["tts_speech"]), model.sample_rate
         except Exception as exc:
             raise ProviderUnavailable(f"CosyVoice3 local streaming failed: {exc}") from exc
 
@@ -178,6 +210,13 @@ def _tensor_to_pcm16(tensor: Any) -> bytes:
     values = tensor.detach().cpu().clamp(-1, 1).flatten()
     pcm = (values * 32767).to(dtype=__import__("torch").int16).numpy()
     return pcm.tobytes()
+
+
+def prompt_audio_text(text: str) -> str:
+    value = text.strip()
+    if "<|endofprompt|>" in value:
+        value = value.split("<|endofprompt|>", 1)[1]
+    return value.strip()
 
 
 provider = CosyVoiceProvider()

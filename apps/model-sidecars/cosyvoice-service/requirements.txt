@@ -2,3 +2,4 @@ fastapi>=0.115
 uvicorn[standard]>=0.30
 pydantic>=2.8
 websockets>=12
+opencc-python-reimplemented>=0.1.7

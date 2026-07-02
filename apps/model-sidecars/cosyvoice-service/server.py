@@ -56,8 +56,11 @@ async def audio_stream(socket: WebSocket):
     payload = await socket.receive_json()
     text = str(payload.get("text") or payload.get("input") or "")
     normalized_text = provider.normalize(text)
+    normalized_sentences = provider.split_sentences(text)
     await socket.send_json(event("request_received", provider="cosyvoice3_streaming"))
-    await socket.send_json(event("text_normalized", text=normalized_text))
+    await socket.send_json(
+        event("tts_input_prepared", text=text, tts_sentence_count=len(normalized_sentences), tts_text_normalized=True)
+    )
 
     status = provider.status()
     if not status["streaming"]:
@@ -77,7 +80,7 @@ async def audio_stream(socket: WebSocket):
         first_chunk = True
         chunk_index = 0
         try:
-            for chunk, sample_rate in provider.stream_local_pcm_chunks(normalized_text):
+            for chunk, sample_rate in provider.stream_local_pcm_chunks(text):
                 fields = {
                     "chunk_index": chunk_index,
                     "sample_rate": sample_rate,
