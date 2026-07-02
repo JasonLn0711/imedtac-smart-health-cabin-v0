@@ -110,10 +110,13 @@ SHERPA_ONNX_KWS_NUM_THREADS=2 \
 SHERPA_ONNX_KWS_PROVIDER=cpu \
 WAKE_WORD_THRESHOLD=0.65 \
 WAKE_WORD_COOLDOWN_MS=2000 \
-WAKE_WORD_DEVICE_INDEX=0 \
 WAKE_WORD_LOCAL_ONLY=true \
 ../../../.local/wakeword-venv/bin/python -m uvicorn app:app --host 0.0.0.0 --port 8013
 ```
+
+By default, live mode auto-selects the input device with a real signal level and
+reports the selected device plus probe RMS / peak in `/status`. Set
+`WAKE_WORD_DEVICE_INDEX=12` only when the field setup needs a fixed override.
 
 Live acceptance check:
 

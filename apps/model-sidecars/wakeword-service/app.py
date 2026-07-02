@@ -6,7 +6,7 @@ import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,6 +27,8 @@ last_detection_ms: Optional[int] = None
 listening = False
 detector_stop = threading.Event()
 detector_thread: Optional[threading.Thread] = None
+selected_mic_index: Optional[int] = None
+last_mic_probe: Optional[dict] = None
 repo_root = Path(__file__).resolve().parents[3]
 
 
@@ -79,9 +81,69 @@ def chunk_size() -> int:
     return int(os.getenv("WAKE_WORD_CHUNK_SIZE", "1280"))
 
 
-def mic_index() -> Optional[int]:
+def requested_mic_index() -> Optional[int]:
     value = os.getenv("WAKE_WORD_DEVICE_INDEX")
-    return int(value) if value not in {None, ""} else None
+    return int(value) if value not in {None, "", "auto"} else None
+
+
+def mic_selection_mode() -> str:
+    return "manual" if requested_mic_index() is not None else "auto"
+
+
+def mic_index() -> Optional[int]:
+    return requested_mic_index() if mic_selection_mode() == "manual" else selected_mic_index
+
+
+def mic_probe_seconds() -> float:
+    return float(os.getenv("WAKE_WORD_AUTO_DEVICE_PROBE_SEC", "0.75"))
+
+
+def mic_probe_min_peak() -> float:
+    return float(os.getenv("WAKE_WORD_AUTO_DEVICE_MIN_PEAK", "0.001"))
+
+
+def select_active_mic_index(sd: Any, np: Any) -> tuple[Optional[int], dict]:
+    candidates = []
+    for index, device in enumerate(sd.query_devices()):
+        if int(device.get("max_input_channels") or 0) <= 0:
+            continue
+        try:
+            audio = sd.rec(
+                int(max(0.1, mic_probe_seconds()) * sample_rate()),
+                samplerate=sample_rate(),
+                channels=1,
+                dtype="float32",
+                device=index,
+            )
+            sd.wait()
+            samples = audio.flatten()
+            rms = float(np.sqrt(np.mean(np.square(samples))))
+            peak = float(np.max(np.abs(samples)))
+            candidates.append(
+                {
+                    "index": index,
+                    "name": device.get("name"),
+                    "rms": round(rms, 6),
+                    "peak": round(peak, 6),
+                    "usable": peak >= mic_probe_min_peak(),
+                }
+            )
+        except Exception as exc:  # noqa: BLE001 - probe should keep scanning.
+            candidates.append({"index": index, "name": device.get("name"), "error": str(exc), "usable": False})
+
+    usable = [candidate for candidate in candidates if candidate["usable"]]
+    selected = max(usable, key=lambda candidate: candidate["rms"]) if usable else None
+    return (
+        int(selected["index"]) if selected else None,
+        {
+            "mode": "auto",
+            "probe_sec": mic_probe_seconds(),
+            "min_peak": mic_probe_min_peak(),
+            "selected_index": selected["index"] if selected else None,
+            "selected_name": selected["name"] if selected else None,
+            "candidates": candidates,
+        },
+    )
 
 
 def threshold() -> float:
@@ -197,6 +259,8 @@ def provider_status() -> dict:
         "cooldown_ms": cooldown_ms(),
         "listening": listening,
         "mic_index": mic_index(),
+        "mic_selection": mic_selection_mode(),
+        "mic_probe": last_mic_probe,
         "sample_rate": sample_rate(),
         "chunk_size": chunk_size(),
         "inference_framework": inference_framework(),
@@ -248,7 +312,7 @@ def broadcast_from_thread(event: dict) -> None:
 
 
 def run_live_detector() -> None:
-    global last_detection_ms, last_error, last_event, listening
+    global last_detection_ms, last_error, last_event, last_mic_probe, listening, selected_mic_index
     try:
         import numpy as np
         import sherpa_onnx
@@ -268,6 +332,12 @@ def run_live_detector() -> None:
             provider=sherpa_execution_provider(),
         )
         keyword_stream = spotter.create_stream()
+        if mic_selection_mode() == "auto":
+            selected_mic_index, last_mic_probe = select_active_mic_index(sd, np)
+        else:
+            selected_mic_index = requested_mic_index()
+            last_mic_probe = {"mode": "manual", "selected_index": selected_mic_index}
+
         stream_kwargs = {
             "samplerate": sample_rate(),
             "channels": 1,
